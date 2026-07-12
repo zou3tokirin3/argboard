@@ -17,8 +17,10 @@ const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
+const LINK_LANE_GAP = 16;
 
 type Viewport = { x: number; y: number; zoom: number };
+type Point = { x: number; y: number };
 
 function defaultViewport(boardViewport?: Viewport): Viewport {
   return boardViewport ?? { x: 0, y: 0, zoom: 1 };
@@ -27,7 +29,7 @@ function defaultViewport(boardViewport?: Viewport): Viewport {
 function nodeCenter(
   cardId: string,
   positions: Record<string, { x: number; y: number }>,
-) {
+): Point {
   const position = positions[cardId] ?? { x: 0, y: 0 };
   return { x: position.x + NODE_WIDTH / 2, y: position.y + NODE_HEIGHT / 2 };
 }
@@ -35,9 +37,78 @@ function nodeCenter(
 function threadAnchor(
   cardId: string,
   positions: Record<string, { x: number; y: number }>,
-) {
+): Point {
   const position = positions[cardId] ?? { x: 0, y: 0 };
   return { x: position.x + NODE_WIDTH, y: position.y + NODE_HEIGHT / 2 };
+}
+
+/** Border point of the card rect, on the ray from `from` toward `toward`. */
+function rectEdge(from: Point, toward: Point): Point {
+  const dx = toward.x - from.x;
+  const dy = toward.y - from.y;
+  if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return from;
+  const halfW = NODE_WIDTH / 2;
+  const halfH = NODE_HEIGHT / 2;
+  const sx = Math.abs(dx) < 0.001
+    ? Number.POSITIVE_INFINITY
+    : halfW / Math.abs(dx);
+  const sy = Math.abs(dy) < 0.001
+    ? Number.POSITIVE_INFINITY
+    : halfH / Math.abs(dy);
+  const t = Math.min(sx, sy);
+  return { x: from.x + dx * t, y: from.y + dy * t };
+}
+
+function linkLane(link: Link, links: Link[]): number {
+  const siblings = links
+    .filter((item) =>
+      (item.from === link.from && item.to === link.to) ||
+      (item.from === link.to && item.to === link.from)
+    )
+    .toSorted((left, right) => left.id.localeCompare(right.id));
+  const index = siblings.findIndex((item) => item.id === link.id);
+  return index - (siblings.length - 1) / 2;
+}
+
+function offsetSegment(
+  start: Point,
+  end: Point,
+  lane: number,
+): { x1: number; y1: number; x2: number; y2: number; mx: number; my: number } {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  const px = -uy;
+  const py = ux;
+  const o = lane * LINK_LANE_GAP;
+  // Pull ends in so the arrowhead clears the card edge a bit.
+  const inset = Math.min(12, len / 4);
+  const x1 = start.x + ux * inset + px * o;
+  const y1 = start.y + uy * inset + py * o;
+  const x2 = end.x - ux * inset + px * o;
+  const y2 = end.y - uy * inset + py * o;
+  return {
+    x1,
+    y1,
+    x2,
+    y2,
+    mx: (x1 + x2) / 2,
+    my: (y1 + y2) / 2,
+  };
+}
+
+function linkGeometry(
+  link: Link,
+  links: Link[],
+  positions: Record<string, { x: number; y: number }>,
+) {
+  const from = nodeCenter(link.from, positions);
+  const to = nodeCenter(link.to, positions);
+  const start = rectEdge(from, to);
+  const end = rectEdge(to, from);
+  return offsetSegment(start, end, linkLane(link, links));
 }
 
 function clampZoom(zoom: number): number {
@@ -49,66 +120,90 @@ function clearTextSelection(): void {
   selection?.removeAllRanges();
 }
 
-function LinkLine(
-  { link, positions }: {
+function selectLink(linkId: string): void {
+  selectedLinkId.value = linkId;
+  selectedCardId.value = null;
+}
+
+function LinkVisual(
+  { link, geometry }: {
     link: Link;
-    positions: Record<string, { x: number; y: number }>;
+    geometry: ReturnType<typeof linkGeometry>;
   },
 ) {
-  const from = nodeCenter(link.from, positions);
-  const to = nodeCenter(link.to, positions);
-  const midpoint = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
   const selected = selectedLinkId.value === link.id;
+  const marker = link.kind === "contradicts"
+    ? "url(#arrow-contradicts)"
+    : "url(#arrow-connects)";
   return (
     <g
-      class={`link ${link.kind === "contradicts" ? "is-contradiction" : ""} ${
-        selected ? "is-selected" : ""
-      }`}
-      onPointerDown={(event) => {
-        event.stopPropagation();
-        event.preventDefault();
-        clearTextSelection();
-        selectedLinkId.value = link.id;
-        selectedCardId.value = null;
-      }}
-      role="button"
-      tabIndex={0}
-      aria-label={link.label ? `糸: ${link.label}` : "糸を選択"}
+      class={`link link--visual ${
+        link.kind === "contradicts" ? "is-contradiction" : ""
+      } ${selected ? "is-selected" : ""}`}
     >
-      <line
-        class="link__hit"
-        x1={from.x}
-        y1={from.y}
-        x2={to.x}
-        y2={to.y}
-      />
       <line
         data-testid="link-line"
         data-link-id={link.id}
         class="link__stroke"
-        x1={from.x}
-        y1={from.y}
-        x2={to.x}
-        y2={to.y}
+        x1={geometry.x1}
+        y1={geometry.y1}
+        x2={geometry.x2}
+        y2={geometry.y2}
+        marker-end={marker}
       />
-      <g
-        class="link__knob"
-        transform={`translate(${midpoint.x} ${midpoint.y})`}
-      >
-        <circle class="link__knob-hit" r="14" />
-        <circle class="link__knob-face" r="7" />
-      </g>
       {link.label
         ? (
           <g
             class="link__label"
-            transform={`translate(${midpoint.x} ${midpoint.y - 22})`}
+            transform={`translate(${geometry.mx} ${geometry.my - 18})`}
           >
             <rect x="-48" y="-13" width="96" height="26" rx="5" />
             <text text-anchor="middle" y="4">{link.label}</text>
           </g>
         )
         : null}
+    </g>
+  );
+}
+
+function LinkHit(
+  { link, geometry }: {
+    link: Link;
+    geometry: ReturnType<typeof linkGeometry>;
+  },
+) {
+  const selected = selectedLinkId.value === link.id;
+  return (
+    <g
+      class={`link link--hit ${
+        link.kind === "contradicts" ? "is-contradiction" : ""
+      } ${selected ? "is-selected" : ""}`}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        clearTextSelection();
+        selectLink(link.id);
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={link.label
+        ? `糸: ${link.label}`
+        : `糸 ${link.from} → ${link.to}`}
+    >
+      <line
+        class="link__hit"
+        x1={geometry.x1}
+        y1={geometry.y1}
+        x2={geometry.x2}
+        y2={geometry.y2}
+      />
+      <g
+        class="link__knob"
+        transform={`translate(${geometry.mx} ${geometry.my})`}
+      >
+        <circle class="link__knob-hit" r="14" />
+        <circle class="link__knob-face" r="7" />
+      </g>
     </g>
   );
 }
@@ -490,9 +585,46 @@ export function BoardView() {
         onDrop={onDrop}
       >
         <svg aria-label="手がかりの関係図">
+          <defs>
+            <marker
+              id="arrow-connects"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--link)" />
+            </marker>
+            <marker
+              id="arrow-contradicts"
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="7"
+              markerHeight="7"
+              orient="auto-start-reverse"
+            >
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--danger)" />
+            </marker>
+          </defs>
           <g
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
           >
+            <g class="links links--visual" aria-hidden="true">
+              {current.links.map((link) => (
+                <LinkVisual
+                  key={`v-${link.id}`}
+                  link={link}
+                  geometry={linkGeometry(
+                    link,
+                    current.links,
+                    board.positions,
+                  )}
+                />
+              ))}
+            </g>
             <g class="nodes">
               {board.cardIds.map((cardId) => {
                 const card = cardMap.get(cardId);
@@ -513,13 +645,16 @@ export function BoardView() {
                   : null;
               })}
             </g>
-            {/* Links above nodes so threads stay clickable. */}
-            <g class="links">
+            <g class="links links--hit">
               {current.links.map((link) => (
-                <LinkLine
-                  key={link.id}
+                <LinkHit
+                  key={`h-${link.id}`}
                   link={link}
-                  positions={board.positions}
+                  geometry={linkGeometry(
+                    link,
+                    current.links,
+                    board.positions,
+                  )}
                 />
               ))}
               {rubber
