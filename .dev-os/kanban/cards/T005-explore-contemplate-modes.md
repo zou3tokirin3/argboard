@@ -1,7 +1,7 @@
 ---
 id: T005
 title: 探索と考察を別モードにする
-status: review
+status: doing
 owner: impl
 gate: human
 branch: "task/T005"
@@ -44,5 +44,8 @@ updated: 2026-07-12
 - 2026-07-12 impl: 取得。task/T005 worktree で A→B を進める
 - 2026-07-12 impl: PLAN §5/§7/§9 + 決定ログ改訂5。T003=探索(M1)、T004=考察ボード(M2)を§7に明記
 - 2026-07-12 impl: モード切替・探索主面・考察ボード＋サイド折りたたみ＋Inspector(title/body)・uiをProjectに保存。check/test/smoke緑 → main merge → review
+- 2026-07-12 impl: rework取得。サイド出し入れを‹ ›アイコン操作に直す
 
 ## 差し戻し履歴（追記のみ）
+
+- 2026-07-12 human: 考察の発見ログ出し入れを「サイドを閉じる／発見ログ」文言ボタンではなく、‹ ›のようなパネル出し入れアイコンに → rework
