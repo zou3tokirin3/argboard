@@ -1,10 +1,10 @@
 ---
 id: T004
 title: M2 ボードで糸を張れるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: auto
-branch: ""
+branch: "task/T004"
 template_ver: generic-0.2
 created: 2026-07-12
 updated: 2026-07-12
@@ -27,5 +27,7 @@ baseline のボードは静的表示のみ（デモ links / positions 固定）�
 ## 作業ログ（追記のみ）
 
 - 2026-07-12 planner: 受け入れ条件・gate 確認済み → ready
+- 2026-07-12 impl: 取得。task/T004 worktree でボード配置・糸張り・パンズームを本線にする
+- 2026-07-12 impl: worktree は `.worktrees/T004`（規約の `../argboard--T004` は既存方針に合わせる）
 
 ## 差し戻し履歴（追記のみ）
