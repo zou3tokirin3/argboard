@@ -1,7 +1,7 @@
 ---
 id: T003
 title: M1 ザクザク体験を完成させる
-status: backlog
+status: ready
 owner: none
 gate: auto
 branch: ""
@@ -24,5 +24,7 @@ baseline に capture / stream / export の原型あり。デモプロジェク�
 - [ ] スモーク E2E が緑（5 本上限内）
 
 ## 作業ログ（追記のみ）
+
+- 2026-07-12 planner: 受け入れ条件・gate 確認済み → ready
 
 ## 差し戻し履歴（追記のみ）
