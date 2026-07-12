@@ -257,8 +257,8 @@ export async function connectCards(
   if (!current) return;
   const next = applyConnectCards(current, fromId, toId, kind);
   if (!next) return;
-  const created = next.links.at(-1);
-  if (created) selectedLinkId.value = created.id;
+  // Keep the board quiet after drawing — edit later via link click + inspector.
+  selectedLinkId.value = null;
   selectedCardId.value = null;
   await persist(next);
 }

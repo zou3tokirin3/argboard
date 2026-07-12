@@ -42,9 +42,11 @@ export function Stream() {
             draggable={isContemplate}
             onDragStart={(event) => {
               if (!isContemplate) return;
+              globalThis.getSelection?.()?.removeAllRanges();
               event.dataTransfer?.setData(CARD_MIME, card.id);
               event.dataTransfer!.effectAllowed = "copy";
             }}
+            onDragEnd={() => globalThis.getSelection?.()?.removeAllRanges()}
             onClick={() => selectedCardId.value = card.id}
           >
             <span class="stream-card__meta">

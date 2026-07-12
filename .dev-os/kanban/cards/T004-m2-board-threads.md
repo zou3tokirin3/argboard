@@ -32,4 +32,6 @@ baseline のボードは静的表示のみ（デモ links / positions 固定）�
 - 2026-07-12 impl: 配置/糸/パンズーム・リンク編集・テストフック・smoke ②③を追加（`9901229`）
 - 2026-07-12 impl: check/test/smoke 緑。task/T004 を main へ merge → review
 
+- 2026-07-12 human→impl: UX修正。文字選択抑止・着地点ハイライト・引いた直後ポップアップ撤去・削除を右パネル/Deleteへ
+
 ## 差し戻し履歴（追記のみ）

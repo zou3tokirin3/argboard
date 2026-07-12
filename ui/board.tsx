@@ -7,10 +7,8 @@ import {
   project,
   removeLink,
   selectedCardId,
-  selectedLink,
   selectedLinkId,
   setBoardViewportLocal,
-  updateLink,
 } from "./state.ts";
 import type { Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
@@ -38,6 +36,11 @@ function clampZoom(zoom: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
 }
 
+function clearTextSelection(): void {
+  const selection = globalThis.getSelection?.();
+  selection?.removeAllRanges();
+}
+
 function LinkLine(
   { link, positions }: {
     link: Link;
@@ -53,8 +56,10 @@ function LinkLine(
       class={`link ${link.kind === "contradicts" ? "is-contradiction" : ""} ${
         selected ? "is-selected" : ""
       }`}
-      onClick={(event) => {
+      onPointerDown={(event) => {
         event.stopPropagation();
+        event.preventDefault();
+        clearTextSelection();
         selectedLinkId.value = link.id;
         selectedCardId.value = null;
       }}
@@ -69,7 +74,6 @@ function LinkLine(
         x2={to.x}
         y2={to.y}
       />
-      {/* Wider invisible hit target */}
       <line
         class="link__hit"
         x1={from.x}
@@ -93,19 +97,23 @@ function BoardNode({
   card,
   x,
   y,
+  isDropTarget,
   onNodePointerDown,
   onHandlePointerDown,
 }: {
   card: Card;
   x: number;
   y: number;
+  isDropTarget: boolean;
   onNodePointerDown: (event: PointerEvent, cardId: string) => void;
   onHandlePointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
   const selected = selectedCardId.value === card.id;
   return (
     <g
-      class={`board-node ${selected ? "is-selected" : ""}`}
+      class={`board-node ${selected ? "is-selected" : ""} ${
+        isDropTarget ? "is-drop-target" : ""
+      }`}
       data-testid="board-node"
       data-card-id={card.id}
       transform={`translate(${x} ${y})`}
@@ -156,70 +164,19 @@ function BoardNode({
   );
 }
 
-function LinkEditor() {
-  const link = selectedLink.value;
-  const [label, setLabel] = useState("");
-
-  useEffect(() => {
-    setLabel(link?.label ?? "");
-  }, [link?.id, link?.label]);
-
-  if (!link) return null;
-
-  return (
-    <div class="link-editor" data-testid="link-editor">
-      <label>
-        <span>糸のラベル</span>
-        <input
-          type="text"
-          data-testid="link-label-input"
-          value={label}
-          placeholder="同一人物？ など"
-          onInput={(event) => setLabel(event.currentTarget.value)}
-          onBlur={() => updateLink(link.id, { label })}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.currentTarget.blur();
-            }
-          }}
-        />
-      </label>
-      <div class="link-editor__row">
-        <button
-          type="button"
-          data-testid="link-kind-toggle"
-          class={link.kind === "contradicts" ? "is-danger" : undefined}
-          onClick={() =>
-            updateLink(link.id, {
-              kind: link.kind === "connects" ? "contradicts" : "connects",
-            })}
-        >
-          {link.kind === "connects" ? "関連" : "矛盾"}
-        </button>
-        <button
-          type="button"
-          data-testid="link-delete"
-          onClick={() => removeLink(link.id)}
-        >
-          削除
-        </button>
-        <button
-          type="button"
-          onClick={() => selectedLinkId.value = null}
-        >
-          閉じる
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export function BoardView() {
   const current = project.value;
   const board = current?.boards[0];
   const canvasRef = useRef<HTMLDivElement>(null);
   const [rubber, setRubber] = useState<
-    { fromId: string; x1: number; y1: number; x2: number; y2: number } | null
+    {
+      fromId: string;
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      targetId: string | null;
+    } | null
   >(null);
   const dragRef = useRef<
     | {
@@ -237,9 +194,30 @@ export function BoardView() {
     | {
       type: "link";
       fromId: string;
+      targetId: string | null;
     }
     | null
   >(null);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      const linkId = selectedLinkId.value;
+      if (!linkId) return;
+      event.preventDefault();
+      void removeLink(linkId);
+    }
+    globalThis.addEventListener("keydown", onKeyDown);
+    return () => globalThis.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   if (!current || !board) return null;
 
@@ -255,16 +233,24 @@ export function BoardView() {
     };
   }
 
-  function hitNode(worldX: number, worldY: number): string | null {
+  function hitNode(
+    worldX: number,
+    worldY: number,
+    exceptId?: string,
+  ): string | null {
     const positions = project.value?.boards[0]?.positions ?? {};
     const ids = project.value?.boards[0]?.cardIds ?? [];
+    const pad = 12;
     for (let index = ids.length - 1; index >= 0; index -= 1) {
       const cardId = ids[index]!;
+      if (cardId === exceptId) continue;
       const position = positions[cardId];
       if (!position) continue;
       if (
-        worldX >= position.x && worldX <= position.x + NODE_WIDTH &&
-        worldY >= position.y && worldY <= position.y + NODE_HEIGHT
+        worldX >= position.x - pad &&
+        worldX <= position.x + NODE_WIDTH + pad &&
+        worldY >= position.y - pad &&
+        worldY <= position.y + NODE_HEIGHT + pad
       ) {
         return cardId;
       }
@@ -276,6 +262,8 @@ export function BoardView() {
     if (event.button !== 0) return;
     const target = event.target as Element;
     if (target.closest(".board-node") || target.closest(".link")) return;
+    event.preventDefault();
+    clearTextSelection();
     selectedCardId.value = null;
     selectedLinkId.value = null;
     const vp = defaultViewport(project.value?.boards[0]?.viewport);
@@ -291,6 +279,8 @@ export function BoardView() {
   function onNodePointerDown(event: PointerEvent, cardId: string) {
     if (event.button !== 0) return;
     event.stopPropagation();
+    event.preventDefault();
+    clearTextSelection();
     selectedCardId.value = cardId;
     selectedLinkId.value = null;
     const world = clientToWorld(event.clientX, event.clientY);
@@ -308,18 +298,22 @@ export function BoardView() {
   function onHandlePointerDown(event: PointerEvent, cardId: string) {
     if (event.button !== 0) return;
     event.stopPropagation();
+    event.preventDefault();
+    clearTextSelection();
     selectedLinkId.value = null;
+    selectedCardId.value = null;
     const center = nodeCenter(
       cardId,
       project.value?.boards[0]?.positions ?? {},
     );
-    dragRef.current = { type: "link", fromId: cardId };
+    dragRef.current = { type: "link", fromId: cardId, targetId: null };
     setRubber({
       fromId: cardId,
       x1: center.x,
       y1: center.y,
       x2: center.x,
       y2: center.y,
+      targetId: null,
     });
     canvasRef.current?.setPointerCapture(event.pointerId);
   }
@@ -327,6 +321,8 @@ export function BoardView() {
   function onPointerMove(event: PointerEvent) {
     const drag = dragRef.current;
     if (!drag) return;
+    event.preventDefault();
+    clearTextSelection();
     if (drag.type === "pan") {
       setBoardViewportLocal({
         x: drag.origin.x + (event.clientX - drag.startX),
@@ -349,12 +345,18 @@ export function BoardView() {
       drag.fromId,
       project.value?.boards[0]?.positions ?? {},
     );
+    const targetId = hitNode(world.x, world.y, drag.fromId);
+    drag.targetId = targetId;
+    const tip = targetId
+      ? nodeCenter(targetId, project.value?.boards[0]?.positions ?? {})
+      : world;
     setRubber({
       fromId: drag.fromId,
       x1: center.x,
       y1: center.y,
-      x2: world.x,
-      y2: world.y,
+      x2: tip.x,
+      y2: tip.y,
+      targetId,
     });
   }
 
@@ -368,9 +370,9 @@ export function BoardView() {
       return;
     }
     const world = clientToWorld(event.clientX, event.clientY);
-    const targetId = hitNode(world.x, world.y);
-    if (targetId && targetId !== drag.fromId) {
-      await connectCards(drag.fromId, targetId);
+    const dropId = drag.targetId ?? hitNode(world.x, world.y, drag.fromId);
+    if (dropId) {
+      await connectCards(drag.fromId, dropId);
     }
   }
 
@@ -402,6 +404,7 @@ export function BoardView() {
     const cardId = event.dataTransfer?.getData(CARD_MIME);
     if (!cardId) return;
     event.preventDefault();
+    clearTextSelection();
     const world = clientToWorld(event.clientX, event.clientY);
     await placeCardOnBoard(
       cardId,
@@ -419,11 +422,11 @@ export function BoardView() {
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
         <span class="board__hint">
-          サイドからドロップで配置 / 取っ手から糸 / Ctrl+ホイールでズーム
+          サイドからドロップで配置 / 取っ手から糸 / 糸クリックで右パネル
         </span>
       </div>
       <div
-        class="board__canvas"
+        class={`board__canvas ${rubber ? "is-linking" : ""}`}
         ref={canvasRef}
         data-testid="board-canvas"
         onPointerDown={onCanvasPointerDown}
@@ -449,7 +452,9 @@ export function BoardView() {
               {rubber
                 ? (
                   <line
-                    class="link__rubber"
+                    class={`link__rubber ${
+                      rubber.targetId ? "is-snapped" : ""
+                    }`}
                     data-testid="link-rubber"
                     x1={rubber.x1}
                     y1={rubber.y1}
@@ -470,6 +475,7 @@ export function BoardView() {
                       card={card}
                       x={position.x}
                       y={position.y}
+                      isDropTarget={rubber?.targetId === card.id}
                       onNodePointerDown={onNodePointerDown}
                       onHandlePointerDown={onHandlePointerDown}
                     />
@@ -479,7 +485,6 @@ export function BoardView() {
             </g>
           </g>
         </svg>
-        <LinkEditor />
         <div class="board__legend">
           <span>
             <i class="thread"></i> 関連
