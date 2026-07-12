@@ -6,10 +6,12 @@ import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import {
   appMode,
+  connectCards,
   createProject,
   exportProject,
   flushSave,
   initialize,
+  placeCardOnBoard,
   project,
   projectSummaries,
   saveStatus,
@@ -17,6 +19,7 @@ import {
   setSideOpen,
   sideOpen,
   switchProject,
+  updateLink,
 } from "./state.ts";
 import { Stream } from "./stream.tsx";
 
@@ -29,6 +32,13 @@ declare global {
       createProject: (name?: string) => Promise<unknown>;
       switchProject: (id: string) => Promise<void>;
       listProjects: () => unknown;
+      placeCardOnBoard: (cardId: string, x: number, y: number) => Promise<void>;
+      connectCards: (fromId: string, toId: string) => Promise<void>;
+      updateLink: (
+        linkId: string,
+        patch: { label?: string; kind?: "connects" | "contradicts" },
+      ) => Promise<void>;
+      setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
     };
   }
 }
@@ -180,6 +190,10 @@ if (new URLSearchParams(location.search).has("test")) {
       structuredClone(await createProject(name)),
     switchProject,
     listProjects: () => structuredClone(projectSummaries.value),
+    placeCardOnBoard,
+    connectCards,
+    updateLink,
+    setAppMode,
   };
   document.documentElement.dataset.test = "true";
 }

@@ -1,8 +1,30 @@
-import { project, selectedCardId } from "./state.ts";
+import { useEffect, useRef, useState } from "preact/hooks";
+import {
+  connectCards,
+  flushSave,
+  moveCardOnBoardLocal,
+  placeCardOnBoard,
+  project,
+  removeLink,
+  selectedCardId,
+  selectedLink,
+  selectedLinkId,
+  setBoardViewportLocal,
+  updateLink,
+} from "./state.ts";
 import type { Card, Link } from "./types.ts";
+import { CARD_MIME } from "./types.ts";
 
 const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
+const MIN_ZOOM = 0.4;
+const MAX_ZOOM = 2.5;
+
+type Viewport = { x: number; y: number; zoom: number };
+
+function defaultViewport(boardViewport?: Viewport): Viewport {
+  return boardViewport ?? { x: 0, y: 0, zoom: 1 };
+}
 
 function nodeCenter(
   cardId: string,
@@ -10,6 +32,10 @@ function nodeCenter(
 ) {
   const position = positions[cardId] ?? { x: 0, y: 0 };
   return { x: position.x + NODE_WIDTH / 2, y: position.y + NODE_HEIGHT / 2 };
+}
+
+function clampZoom(zoom: number): number {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
 }
 
 function LinkLine(
@@ -21,10 +47,31 @@ function LinkLine(
   const from = nodeCenter(link.from, positions);
   const to = nodeCenter(link.to, positions);
   const midpoint = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+  const selected = selectedLinkId.value === link.id;
   return (
-    <g class={link.kind === "contradicts" ? "link is-contradiction" : "link"}>
+    <g
+      class={`link ${link.kind === "contradicts" ? "is-contradiction" : ""} ${
+        selected ? "is-selected" : ""
+      }`}
+      onClick={(event) => {
+        event.stopPropagation();
+        selectedLinkId.value = link.id;
+        selectedCardId.value = null;
+      }}
+      role="button"
+      tabIndex={0}
+    >
       <line
         data-testid="link-line"
+        data-link-id={link.id}
+        x1={from.x}
+        y1={from.y}
+        x2={to.x}
+        y2={to.y}
+      />
+      {/* Wider invisible hit target */}
+      <line
+        class="link__hit"
         x1={from.x}
         y1={from.y}
         x2={to.x}
@@ -42,14 +89,27 @@ function LinkLine(
   );
 }
 
-function BoardNode({ card, x, y }: { card: Card; x: number; y: number }) {
+function BoardNode({
+  card,
+  x,
+  y,
+  onNodePointerDown,
+  onHandlePointerDown,
+}: {
+  card: Card;
+  x: number;
+  y: number;
+  onNodePointerDown: (event: PointerEvent, cardId: string) => void;
+  onHandlePointerDown: (event: PointerEvent, cardId: string) => void;
+}) {
   const selected = selectedCardId.value === card.id;
   return (
     <g
       class={`board-node ${selected ? "is-selected" : ""}`}
       data-testid="board-node"
+      data-card-id={card.id}
       transform={`translate(${x} ${y})`}
-      onClick={() => selectedCardId.value = card.id}
+      onPointerDown={(event) => onNodePointerDown(event, card.id)}
       role="button"
       tabIndex={0}
     >
@@ -81,15 +141,274 @@ function BoardNode({ card, x, y }: { card: Card; x: number; y: number }) {
       <foreignObject x="18" y="40" width={NODE_WIDTH - 36} height="70">
         <div class="board-node__title">{card.title}</div>
       </foreignObject>
+      <circle
+        class="board-node__handle"
+        data-testid="link-handle"
+        cx={NODE_WIDTH}
+        cy={NODE_HEIGHT / 2}
+        r="8"
+        onPointerDown={(event) => {
+          event.stopPropagation();
+          onHandlePointerDown(event, card.id);
+        }}
+      />
     </g>
+  );
+}
+
+function LinkEditor() {
+  const link = selectedLink.value;
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    setLabel(link?.label ?? "");
+  }, [link?.id, link?.label]);
+
+  if (!link) return null;
+
+  return (
+    <div class="link-editor" data-testid="link-editor">
+      <label>
+        <span>糸のラベル</span>
+        <input
+          type="text"
+          data-testid="link-label-input"
+          value={label}
+          placeholder="同一人物？ など"
+          onInput={(event) => setLabel(event.currentTarget.value)}
+          onBlur={() => updateLink(link.id, { label })}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+            }
+          }}
+        />
+      </label>
+      <div class="link-editor__row">
+        <button
+          type="button"
+          data-testid="link-kind-toggle"
+          class={link.kind === "contradicts" ? "is-danger" : undefined}
+          onClick={() =>
+            updateLink(link.id, {
+              kind: link.kind === "connects" ? "contradicts" : "connects",
+            })}
+        >
+          {link.kind === "connects" ? "関連" : "矛盾"}
+        </button>
+        <button
+          type="button"
+          data-testid="link-delete"
+          onClick={() => removeLink(link.id)}
+        >
+          削除
+        </button>
+        <button
+          type="button"
+          onClick={() => selectedLinkId.value = null}
+        >
+          閉じる
+        </button>
+      </div>
+    </div>
   );
 }
 
 export function BoardView() {
   const current = project.value;
   const board = current?.boards[0];
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [rubber, setRubber] = useState<
+    { fromId: string; x1: number; y1: number; x2: number; y2: number } | null
+  >(null);
+  const dragRef = useRef<
+    | {
+      type: "pan";
+      startX: number;
+      startY: number;
+      origin: Viewport;
+    }
+    | {
+      type: "node";
+      cardId: string;
+      offsetX: number;
+      offsetY: number;
+    }
+    | {
+      type: "link";
+      fromId: string;
+    }
+    | null
+  >(null);
+
   if (!current || !board) return null;
+
+  const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
+
+  function clientToWorld(clientX: number, clientY: number) {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const vp = defaultViewport(project.value?.boards[0]?.viewport);
+    return {
+      x: (clientX - rect.left - vp.x) / vp.zoom,
+      y: (clientY - rect.top - vp.y) / vp.zoom,
+    };
+  }
+
+  function hitNode(worldX: number, worldY: number): string | null {
+    const positions = project.value?.boards[0]?.positions ?? {};
+    const ids = project.value?.boards[0]?.cardIds ?? [];
+    for (let index = ids.length - 1; index >= 0; index -= 1) {
+      const cardId = ids[index]!;
+      const position = positions[cardId];
+      if (!position) continue;
+      if (
+        worldX >= position.x && worldX <= position.x + NODE_WIDTH &&
+        worldY >= position.y && worldY <= position.y + NODE_HEIGHT
+      ) {
+        return cardId;
+      }
+    }
+    return null;
+  }
+
+  function onCanvasPointerDown(event: PointerEvent) {
+    if (event.button !== 0) return;
+    const target = event.target as Element;
+    if (target.closest(".board-node") || target.closest(".link")) return;
+    selectedCardId.value = null;
+    selectedLinkId.value = null;
+    const vp = defaultViewport(project.value?.boards[0]?.viewport);
+    dragRef.current = {
+      type: "pan",
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: { ...vp },
+    };
+    canvasRef.current?.setPointerCapture(event.pointerId);
+  }
+
+  function onNodePointerDown(event: PointerEvent, cardId: string) {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    selectedCardId.value = cardId;
+    selectedLinkId.value = null;
+    const world = clientToWorld(event.clientX, event.clientY);
+    const position = project.value?.boards[0]?.positions[cardId] ??
+      { x: 0, y: 0 };
+    dragRef.current = {
+      type: "node",
+      cardId,
+      offsetX: world.x - position.x,
+      offsetY: world.y - position.y,
+    };
+    canvasRef.current?.setPointerCapture(event.pointerId);
+  }
+
+  function onHandlePointerDown(event: PointerEvent, cardId: string) {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    selectedLinkId.value = null;
+    const center = nodeCenter(
+      cardId,
+      project.value?.boards[0]?.positions ?? {},
+    );
+    dragRef.current = { type: "link", fromId: cardId };
+    setRubber({
+      fromId: cardId,
+      x1: center.x,
+      y1: center.y,
+      x2: center.x,
+      y2: center.y,
+    });
+    canvasRef.current?.setPointerCapture(event.pointerId);
+  }
+
+  function onPointerMove(event: PointerEvent) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    if (drag.type === "pan") {
+      setBoardViewportLocal({
+        x: drag.origin.x + (event.clientX - drag.startX),
+        y: drag.origin.y + (event.clientY - drag.startY),
+        zoom: drag.origin.zoom,
+      });
+      return;
+    }
+    if (drag.type === "node") {
+      const world = clientToWorld(event.clientX, event.clientY);
+      moveCardOnBoardLocal(
+        drag.cardId,
+        world.x - drag.offsetX,
+        world.y - drag.offsetY,
+      );
+      return;
+    }
+    const world = clientToWorld(event.clientX, event.clientY);
+    const center = nodeCenter(
+      drag.fromId,
+      project.value?.boards[0]?.positions ?? {},
+    );
+    setRubber({
+      fromId: drag.fromId,
+      x1: center.x,
+      y1: center.y,
+      x2: world.x,
+      y2: world.y,
+    });
+  }
+
+  async function onPointerUp(event: PointerEvent) {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    setRubber(null);
+    if (!drag) return;
+    if (drag.type === "pan" || drag.type === "node") {
+      await flushSave();
+      return;
+    }
+    const world = clientToWorld(event.clientX, event.clientY);
+    const targetId = hitNode(world.x, world.y);
+    if (targetId && targetId !== drag.fromId) {
+      await connectCards(drag.fromId, targetId);
+    }
+  }
+
+  function onWheel(event: WheelEvent) {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const vp = defaultViewport(project.value?.boards[0]?.viewport);
+    const nextZoom = clampZoom(vp.zoom * (event.deltaY < 0 ? 1.08 : 0.92));
+    const cursorX = event.clientX - rect.left;
+    const cursorY = event.clientY - rect.top;
+    const worldX = (cursorX - vp.x) / vp.zoom;
+    const worldY = (cursorY - vp.y) / vp.zoom;
+    setBoardViewportLocal({
+      x: cursorX - worldX * nextZoom,
+      y: cursorY - worldY * nextZoom,
+      zoom: nextZoom,
+    });
+    void flushSave();
+  }
+
+  function onDragOver(event: DragEvent) {
+    if (!event.dataTransfer?.types.includes(CARD_MIME)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  async function onDrop(event: DragEvent) {
+    const cardId = event.dataTransfer?.getData(CARD_MIME);
+    if (!cardId) return;
+    event.preventDefault();
+    const world = clientToWorld(event.clientX, event.clientY);
+    await placeCardOnBoard(
+      cardId,
+      world.x - NODE_WIDTH / 2,
+      world.y - NODE_HEIGHT / 2,
+    );
+  }
 
   return (
     <section class="board" aria-label="捜査ボード">
@@ -99,32 +418,68 @@ export function BoardView() {
           <strong>{board.name}</strong>
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
-        <span class="board__hint">カードを選ぶと右で編集できます</span>
+        <span class="board__hint">
+          サイドからドロップで配置 / 取っ手から糸 / Ctrl+ホイールでズーム
+        </span>
       </div>
-      <div class="board__canvas">
-        <svg viewBox="0 0 800 590" aria-label="手がかりの関係図">
-          <g class="links">
-            {current.links.map((link) => (
-              <LinkLine link={link} positions={board.positions} />
-            ))}
-          </g>
-          <g class="nodes">
-            {board.cardIds.map((cardId) => {
-              const card = cardMap.get(cardId);
-              const position = board.positions[cardId];
-              return card && position
+      <div
+        class="board__canvas"
+        ref={canvasRef}
+        data-testid="board-canvas"
+        onPointerDown={onCanvasPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onWheel={onWheel}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+      >
+        <svg aria-label="手がかりの関係図">
+          <g
+            transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
+          >
+            <g class="links">
+              {current.links.map((link) => (
+                <LinkLine
+                  key={link.id}
+                  link={link}
+                  positions={board.positions}
+                />
+              ))}
+              {rubber
                 ? (
-                  <BoardNode
-                    key={card.id}
-                    card={card}
-                    x={position.x}
-                    y={position.y}
+                  <line
+                    class="link__rubber"
+                    data-testid="link-rubber"
+                    x1={rubber.x1}
+                    y1={rubber.y1}
+                    x2={rubber.x2}
+                    y2={rubber.y2}
                   />
                 )
-                : null;
-            })}
+                : null}
+            </g>
+            <g class="nodes">
+              {board.cardIds.map((cardId) => {
+                const card = cardMap.get(cardId);
+                const position = board.positions[cardId];
+                return card && position
+                  ? (
+                    <BoardNode
+                      key={card.id}
+                      card={card}
+                      x={position.x}
+                      y={position.y}
+                      onNodePointerDown={onNodePointerDown}
+                      onHandlePointerDown={onHandlePointerDown}
+                    />
+                  )
+                  : null;
+              })}
+            </g>
           </g>
         </svg>
+        <LinkEditor />
         <div class="board__legend">
           <span>
             <i class="thread"></i> 関連

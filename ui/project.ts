@@ -1,4 +1,4 @@
-import type { Card, Project } from "./types.ts";
+import type { Board, Card, Link, Project } from "./types.ts";
 
 export function createEmptyProject(
   name: string,
@@ -19,6 +19,99 @@ export function createEmptyProject(
     }],
     ui: { mode: "explore", sideOpen: false },
   };
+}
+
+function withMainBoard(
+  project: Project,
+  update: (board: Board) => Board,
+): Project {
+  const board = project.boards[0];
+  if (!board) return project;
+  return { ...project, boards: [update(board), ...project.boards.slice(1)] };
+}
+
+/** Place or move a card on the main board. Returns null if the card is unknown. */
+export function applyPlaceCardOnBoard(
+  project: Project,
+  cardId: string,
+  x: number,
+  y: number,
+): Project | null {
+  if (!project.cards.some((card) => card.id === cardId)) return null;
+  return withMainBoard(project, (board) => ({
+    ...board,
+    cardIds: board.cardIds.includes(cardId)
+      ? board.cardIds
+      : [...board.cardIds, cardId],
+    positions: { ...board.positions, [cardId]: { x, y } },
+  }));
+}
+
+/** Create a link between two board cards. Returns null when invalid / duplicate. */
+export function applyConnectCards(
+  project: Project,
+  fromId: string,
+  toId: string,
+  kind: Link["kind"] = "connects",
+): Project | null {
+  if (fromId === toId) return null;
+  const board = project.boards[0];
+  if (!board?.cardIds.includes(fromId) || !board.cardIds.includes(toId)) {
+    return null;
+  }
+  if (
+    project.links.some((link) => link.from === fromId && link.to === toId)
+  ) {
+    return null;
+  }
+  const link: Link = {
+    id: crypto.randomUUID(),
+    from: fromId,
+    to: toId,
+    kind,
+    createdAt: Date.now(),
+  };
+  return { ...project, links: [...project.links, link] };
+}
+
+export function applyUpdateLink(
+  project: Project,
+  linkId: string,
+  patch: Partial<Pick<Link, "label" | "kind">>,
+): Project | null {
+  if (!project.links.some((link) => link.id === linkId)) return null;
+  return {
+    ...project,
+    links: project.links.map((link) => {
+      if (link.id !== linkId) return link;
+      const label = patch.label !== undefined
+        ? (patch.label.trim() || undefined)
+        : link.label;
+      return {
+        ...link,
+        label,
+        kind: patch.kind ?? link.kind,
+      };
+    }),
+  };
+}
+
+export function applyRemoveLink(
+  project: Project,
+  linkId: string,
+): Project | null {
+  if (!project.links.some((link) => link.id === linkId)) return null;
+  return {
+    ...project,
+    links: project.links.filter((link) => link.id !== linkId),
+  };
+}
+
+export function applySetBoardViewport(
+  project: Project,
+  viewport: NonNullable<Board["viewport"]>,
+): Project {
+  return withMainBoard(project, (board) => ({ ...board, viewport }));
 }
 
 export function createDemoProject(now = Date.now()): Project {

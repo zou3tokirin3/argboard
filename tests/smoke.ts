@@ -156,6 +156,164 @@ try {
     // ④ エクスポートボタンが存在しクリックできる
     await page.waitForSelector('[data-testid="export-btn"]');
     await page.locator('[data-testid="export-btn"]').click();
+
+    // ② ストリーム→ボード配置（フック経由・§10-3）
+    const boardCase = await page.evaluate(async (name: string) => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          createProject: (projectName?: string) => Promise<{ id: string }>;
+        };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      return await api.createProject(name);
+    }, { args: [`ボードケース ${Date.now()}`] });
+
+    await page.waitForFunction(
+      (projectId: string) =>
+        (globalThis as typeof globalThis & {
+          __argboardTest?: { getState: () => { id: string } };
+        }).__argboardTest?.getState().id === projectId,
+      { args: [boardCase.id] },
+    );
+
+    const placedTitles = [
+      `配置A ${Date.now()}`,
+      `配置B ${Date.now() + 1}`,
+    ] as const;
+
+    for (const cardTitle of placedTitles) {
+      await page.waitForSelector('[data-testid="capture-input"]');
+      await page.locator<HTMLInputElement>('[data-testid="capture-input"]')
+        .fill(cardTitle);
+      await page.keyboard.press("Enter", {});
+      await page.waitForFunction(
+        (expectedTitle: string) =>
+          document.body.textContent?.includes(expectedTitle) ?? false,
+        { args: [cardTitle] },
+      );
+    }
+
+    const cardIds = await page.evaluate((titles: string[]) => {
+      const state = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          getState: () => { cards: { id: string; title: string }[] };
+        };
+      }).__argboardTest?.getState();
+      if (!state) throw new Error("Missing state");
+      return titles.map((title) => {
+        const card = state.cards.find((item) => item.title === title);
+        if (!card) throw new Error(`Missing card ${title}`);
+        return card.id;
+      });
+    }, { args: [[...placedTitles]] });
+
+    await page.evaluate(async () => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
+        };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      await api.setAppMode("contemplate");
+    });
+
+    await page.waitForFunction(
+      () =>
+        (globalThis as typeof globalThis & {
+          __argboardTest?: {
+            getState: () => { ui?: { mode?: string } };
+          };
+        }).__argboardTest?.getState().ui?.mode === "contemplate",
+    );
+
+    await page.evaluate(
+      async (
+        payload: { ids: string[]; points: [number, number][] },
+      ) => {
+        const api = (globalThis as typeof globalThis & {
+          __argboardTest?: {
+            placeCardOnBoard: (
+              cardId: string,
+              x: number,
+              y: number,
+            ) => Promise<void>;
+          };
+        }).__argboardTest;
+        if (!api) throw new Error("Test hooks were not installed");
+        for (let index = 0; index < payload.ids.length; index += 1) {
+          const [x, y] = payload.points[index]!;
+          await api.placeCardOnBoard(payload.ids[index]!, x, y);
+        }
+      },
+      {
+        args: [{
+          ids: cardIds,
+          points: [[80, 90], [360, 140]] as [number, number][],
+        }],
+      },
+    );
+
+    await page.waitForFunction(
+      (ids: string[]) => {
+        const board = (globalThis as typeof globalThis & {
+          __argboardTest?: {
+            getState: () => {
+              boards: { cardIds: string[] }[];
+            };
+          };
+        }).__argboardTest?.getState().boards[0];
+        return ids.every((id) => board?.cardIds.includes(id));
+      },
+      { args: [cardIds] },
+    );
+
+    // ③ 糸を張る→ラベル（フック経由）
+    await page.evaluate(async (ids: string[]) => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          connectCards: (fromId: string, toId: string) => Promise<void>;
+          updateLink: (
+            linkId: string,
+            patch: { label?: string; kind?: "connects" | "contradicts" },
+          ) => Promise<void>;
+          getState: () => { links: { id: string; from: string; to: string }[] };
+        };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      await api.connectCards(ids[0]!, ids[1]!);
+      const link = api.getState().links.find((item) =>
+        item.from === ids[0] && item.to === ids[1]
+      );
+      if (!link) throw new Error("Link was not created");
+      await api.updateLink(link.id, {
+        label: "同一人物?",
+        kind: "contradicts",
+      });
+    }, { args: [cardIds] });
+
+    await page.waitForFunction(
+      (ids: string[]) => {
+        const link = (globalThis as typeof globalThis & {
+          __argboardTest?: {
+            getState: () => {
+              links: {
+                from: string;
+                to: string;
+                label?: string;
+                kind: string;
+              }[];
+            };
+          };
+        }).__argboardTest?.getState().links.find((item) =>
+          item.from === ids[0] && item.to === ids[1]
+        );
+        return link?.label === "同一人物?" && link.kind === "contradicts";
+      },
+      { args: [cardIds] },
+    );
+
+    await page.waitForSelector('[data-testid="link-line"]');
+    await page.waitForSelector('[data-testid="board-node"]');
   } finally {
     await browser.close();
   }

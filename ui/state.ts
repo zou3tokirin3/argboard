@@ -1,7 +1,15 @@
 import { computed, signal } from "@preact/signals";
 import { store } from "./db.ts";
-import { createDemoProject, createEmptyProject } from "./project.ts";
-import type { AppMode, Card, Project } from "./types.ts";
+import {
+  applyConnectCards,
+  applyPlaceCardOnBoard,
+  applyRemoveLink,
+  applySetBoardViewport,
+  applyUpdateLink,
+  createDemoProject,
+  createEmptyProject,
+} from "./project.ts";
+import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
 
@@ -46,6 +54,7 @@ export const project = signal<Project | null>(null);
 export const projectSummaries = signal<ProjectSummary[]>([]);
 export const search = signal("");
 export const selectedCardId = signal<string | null>(null);
+export const selectedLinkId = signal<string | null>(null);
 export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(
   "loading",
 );
@@ -72,6 +81,13 @@ export const selectedCard = computed(() => {
   const id = selectedCardId.value;
   if (!current || !id) return null;
   return current.cards.find((card) => card.id === id) ?? null;
+});
+
+export const selectedLink = computed(() => {
+  const current = project.value;
+  const id = selectedLinkId.value;
+  if (!current || !id) return null;
+  return current.links.find((link) => link.id === id) ?? null;
 });
 
 async function refreshSummaries(): Promise<void> {
@@ -108,9 +124,15 @@ function withUi(
 function activateProject(next: Project): void {
   writeActiveProjectId(next.id);
   selectedCardId.value = null;
+  selectedLinkId.value = null;
   search.value = "";
   project.value = next;
   saveStatus.value = "saved";
+}
+
+/** Update in-memory project without writing to IndexedDB (drag/pan frames). */
+export function patchProjectLocal(next: Project): void {
+  project.value = next;
 }
 
 export async function initialize(): Promise<void> {
@@ -210,4 +232,80 @@ export function exportProject(): void {
 
 export async function flushSave(): Promise<void> {
   if (project.value) await store.saveProject(project.value);
+}
+
+export async function placeCardOnBoard(
+  cardId: string,
+  x: number,
+  y: number,
+): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  const next = applyPlaceCardOnBoard(current, cardId, x, y);
+  if (!next) return;
+  selectedCardId.value = cardId;
+  selectedLinkId.value = null;
+  await persist(next);
+}
+
+export async function connectCards(
+  fromId: string,
+  toId: string,
+  kind: Link["kind"] = "connects",
+): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  const next = applyConnectCards(current, fromId, toId, kind);
+  if (!next) return;
+  const created = next.links.at(-1);
+  if (created) selectedLinkId.value = created.id;
+  selectedCardId.value = null;
+  await persist(next);
+}
+
+export async function updateLink(
+  linkId: string,
+  patch: Partial<Pick<Link, "label" | "kind">>,
+): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  const next = applyUpdateLink(current, linkId, patch);
+  if (!next) return;
+  await persist(next);
+}
+
+export async function removeLink(linkId: string): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  const next = applyRemoveLink(current, linkId);
+  if (!next) return;
+  if (selectedLinkId.value === linkId) selectedLinkId.value = null;
+  await persist(next);
+}
+
+export async function setBoardViewport(
+  viewport: NonNullable<Board["viewport"]>,
+): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  await persist(applySetBoardViewport(current, viewport));
+}
+
+export function moveCardOnBoardLocal(
+  cardId: string,
+  x: number,
+  y: number,
+): void {
+  const current = project.value;
+  if (!current) return;
+  const next = applyPlaceCardOnBoard(current, cardId, x, y);
+  if (next) patchProjectLocal(next);
+}
+
+export function setBoardViewportLocal(
+  viewport: NonNullable<Board["viewport"]>,
+): void {
+  const current = project.value;
+  if (!current) return;
+  patchProjectLocal(applySetBoardViewport(current, viewport));
 }

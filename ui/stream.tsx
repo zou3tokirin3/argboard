@@ -1,4 +1,5 @@
 import { filteredCards, project, search, selectedCardId } from "./state.ts";
+import { CARD_MIME } from "./types.ts";
 
 const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
   hour: "2-digit",
@@ -7,6 +8,8 @@ const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
 
 export function Stream() {
   const boardCardIds = new Set(project.value?.boards[0]?.cardIds ?? []);
+  const isContemplate = (project.value?.ui?.mode ?? "explore") ===
+    "contemplate";
 
   return (
     <section class="stream" aria-label="発見ログ">
@@ -33,8 +36,15 @@ export function Stream() {
             type="button"
             class={`stream-card ${
               selectedCardId.value === card.id ? "is-selected" : ""
-            }`}
+            } ${isContemplate ? "is-draggable" : ""}`}
             data-testid="stream-card"
+            data-card-id={card.id}
+            draggable={isContemplate}
+            onDragStart={(event) => {
+              if (!isContemplate) return;
+              event.dataTransfer?.setData(CARD_MIME, card.id);
+              event.dataTransfer!.effectAllowed = "copy";
+            }}
             onClick={() => selectedCardId.value = card.id}
           >
             <span class="stream-card__meta">

@@ -42,3 +42,6 @@ export type Board = {
   positions: Record<string, { x: number; y: number }>;
   viewport?: { x: number; y: number; zoom: number };
 };
+
+/** Drag payload when placing a stream card onto the board. */
+export const CARD_MIME = "application/x-argboard-card";
