@@ -115,6 +115,38 @@ body {
   font-size: 15px;
   font-weight: 600;
 }
+.project-switcher label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.project-switcher select {
+  min-width: 180px;
+  max-width: 280px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  padding: 6px 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.project-switcher > button {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  align-self: end;
+}
+.project-switcher > button:hover {
+  background: var(--bg-soft);
+  border-color: var(--muted);
+}
 .topbar__actions {
   gap: 12px;
 }
@@ -604,7 +636,14 @@ kbd {
     padding: 10px 14px;
   }
   .case-title {
-    display: none;
+    justify-content: flex-start;
+  }
+  .project-switcher {
+    width: 100%;
+  }
+  .project-switcher select {
+    max-width: none;
+    width: 100%;
   }
   .save-status {
     display: none;

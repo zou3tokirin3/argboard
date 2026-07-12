@@ -40,11 +40,18 @@ try {
     const page = await browser.newPage(`${origin}/?test=1`);
     await page.waitForSelector('[data-testid="capture-input"]');
 
+    // ① カード作成 → persist 要求 → リロードで残る
     const title = `スモーク手がかり ${Date.now()}`;
     await page.locator<HTMLInputElement>('[data-testid="capture-input"]').fill(
       title,
     );
     await page.keyboard.press("Enter", {});
+    await page.waitForFunction(
+      () =>
+        ((globalThis as typeof globalThis & {
+          __argboardTest?: { getPersistenceRequestCount: () => number };
+        }).__argboardTest?.getPersistenceRequestCount() ?? 0) >= 1,
+    );
     await page.waitForFunction(
       (expectedTitle: string) =>
         document.body.textContent?.includes(expectedTitle),
@@ -71,6 +78,84 @@ try {
         document.body.textContent?.includes(expectedTitle),
       { args: [title] },
     );
+
+    // ⑤ プロジェクト作成・切替でカードが分離される
+    const firstProjectId = await page.evaluate(() =>
+      (globalThis as typeof globalThis & {
+        __argboardTest?: { getState: () => { id: string } };
+      }).__argboardTest?.getState().id ?? ""
+    );
+    if (!firstProjectId) throw new Error("Missing first project id");
+
+    const second = await page.evaluate(async (name: string) => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          createProject: (
+            projectName?: string,
+          ) => Promise<{ id: string; name: string }>;
+        };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      return await api.createProject(name);
+    }, { args: [`切替ケース ${Date.now()}`] });
+
+    await page.waitForFunction(
+      (projectId: string) =>
+        (globalThis as typeof globalThis & {
+          __argboardTest?: { getState: () => { id: string } };
+        }).__argboardTest?.getState().id === projectId,
+      { args: [second.id] },
+    );
+    const stillHasFirstCard = await page.evaluate(
+      (expectedTitle: string) =>
+        document.body.textContent?.includes(expectedTitle) ?? false,
+      { args: [title] },
+    );
+    if (stillHasFirstCard) {
+      throw new Error("New project still showed the previous project's card");
+    }
+
+    const secondTitle = `別ケースの手がかり ${Date.now()}`;
+    await page.locator<HTMLInputElement>('[data-testid="capture-input"]').fill(
+      secondTitle,
+    );
+    await page.keyboard.press("Enter", {});
+    await page.waitForFunction(
+      (expectedTitle: string) =>
+        document.body.textContent?.includes(expectedTitle),
+      { args: [secondTitle] },
+    );
+    await page.evaluate(async () =>
+      await (globalThis as typeof globalThis & {
+        __argboardTest?: { flushSave: () => Promise<void> };
+      }).__argboardTest?.flushSave()
+    );
+
+    await page.evaluate(async (projectId: string) => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: { switchProject: (id: string) => Promise<void> };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      await api.switchProject(projectId);
+    }, { args: [firstProjectId] });
+
+    await page.waitForFunction(
+      (expectedTitle: string) =>
+        document.body.textContent?.includes(expectedTitle) ?? false,
+      { args: [title] },
+    );
+    const leakedSecondCard = await page.evaluate(
+      (expectedTitle: string) =>
+        document.body.textContent?.includes(expectedTitle) ?? false,
+      { args: [secondTitle] },
+    );
+    if (leakedSecondCard) {
+      throw new Error("Switched project still showed the other project's card");
+    }
+
+    // ④ エクスポートボタンが存在しクリックできる
+    await page.waitForSelector('[data-testid="export-btn"]');
+    await page.locator('[data-testid="export-btn"]').click();
   } finally {
     await browser.close();
   }

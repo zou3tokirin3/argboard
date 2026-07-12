@@ -6,14 +6,17 @@ import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import {
   appMode,
+  createProject,
   exportProject,
   flushSave,
   initialize,
   project,
+  projectSummaries,
   saveStatus,
   setAppMode,
   setSideOpen,
   sideOpen,
+  switchProject,
 } from "./state.ts";
 import { Stream } from "./stream.tsx";
 
@@ -23,6 +26,9 @@ declare global {
       getState: () => unknown;
       flushSave: () => Promise<void>;
       getPersistenceRequestCount: () => number;
+      createProject: (name?: string) => Promise<unknown>;
+      switchProject: (id: string) => Promise<void>;
+      listProjects: () => unknown;
     };
   }
 }
@@ -54,9 +60,31 @@ function App() {
             <small>手がかりノート</small>
           </div>
         </div>
-        <div class="case-title">
-          <small>プロジェクト</small>
-          <strong>{project.value.name}</strong>
+        <div class="case-title project-switcher">
+          <label>
+            <small>プロジェクト</small>
+            <select
+              data-testid="project-select"
+              aria-label="プロジェクト切替"
+              value={project.value.id}
+              onChange={(event) => switchProject(event.currentTarget.value)}
+            >
+              {projectSummaries.value
+                .toSorted((left, right) => right.updatedAt - left.updatedAt)
+                .map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            data-testid="project-create"
+            onClick={() => createProject()}
+          >
+            新規
+          </button>
         </div>
         <div class="topbar__actions">
           <div class="mode-switch" role="tablist" aria-label="モード">
@@ -148,6 +176,10 @@ if (new URLSearchParams(location.search).has("test")) {
     getState: () => structuredClone(project.value),
     flushSave,
     getPersistenceRequestCount,
+    createProject: async (name?: string) =>
+      structuredClone(await createProject(name)),
+    switchProject,
+    listProjects: () => structuredClone(projectSummaries.value),
   };
   document.documentElement.dataset.test = "true";
 }

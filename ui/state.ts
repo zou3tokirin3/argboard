@@ -1,91 +1,49 @@
 import { computed, signal } from "@preact/signals";
 import { store } from "./db.ts";
+import { createDemoProject, createEmptyProject } from "./project.ts";
 import type { AppMode, Card, Project } from "./types.ts";
 
-const PROJECT_ID = "first-case";
-const now = Date.now();
+export { createDemoProject, createEmptyProject } from "./project.ts";
+
+const ACTIVE_PROJECT_KEY = "argboard.activeProjectId";
 let persistenceRequested = false;
 
-function createDemoProject(): Project {
-  const cards: Card[] = [
-    {
-      id: "radio-signal",
-      title: "23:17の短波ラジオ",
-      body: "毎晩同じ時刻に数字列が流れる。",
-      tags: ["音声", "時刻"],
-      foundAt: now - 3600000,
-    },
-    {
-      id: "station-locker",
-      title: "東口ロッカー B-17",
-      body: "動画の背景に一瞬だけ映り込んだ。",
-      tags: ["場所"],
-      foundAt: now - 2800000,
-    },
-    {
-      id: "missing-poster",
-      title: "消えた告知ポスター",
-      body: "アーカイブにはあるが、現地では剥がされていた。",
-      tags: ["矛盾"],
-      foundAt: now - 1900000,
-    },
-    {
-      id: "seventeen-theory",
-      title: "17は集合時刻ではなく番号？",
-      body: "時刻、ロッカー、投稿IDに17が繰り返し現れる。",
-      tags: ["仮説"],
-      foundAt: now - 900000,
-    },
-  ];
+export type ProjectSummary = {
+  id: string;
+  name: string;
+  cardCount: number;
+  updatedAt: number;
+};
 
-  return {
-    version: 1,
-    id: PROJECT_ID,
-    name: "CASE 017 / 夜の放送",
-    createdAt: now,
-    cards,
-    links: [
-      {
-        id: "signal-theory",
-        from: "radio-signal",
-        to: "seventeen-theory",
-        label: "17が反復",
-        kind: "connects",
-        createdAt: now,
-      },
-      {
-        id: "locker-theory",
-        from: "station-locker",
-        to: "seventeen-theory",
-        label: "B-17",
-        kind: "connects",
-        createdAt: now,
-      },
-      {
-        id: "poster-signal",
-        from: "missing-poster",
-        to: "radio-signal",
-        label: "日付が矛盾",
-        kind: "contradicts",
-        createdAt: now,
-      },
-    ],
-    boards: [{
-      id: "main-board",
-      name: "メインボード",
-      cardIds: cards.map((card) => card.id),
-      positions: {
-        "radio-signal": { x: 90, y: 90 },
-        "station-locker": { x: 480, y: 70 },
-        "missing-poster": { x: 95, y: 345 },
-        "seventeen-theory": { x: 470, y: 330 },
-      },
-    }],
-    ui: { mode: "explore", sideOpen: false },
-  };
+function readActiveProjectId(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_PROJECT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeActiveProjectId(id: string): void {
+  try {
+    localStorage.setItem(ACTIVE_PROJECT_KEY, id);
+  } catch {
+    // Quota or privacy mode: active id is best-effort only.
+  }
+}
+
+function pickProjectId(summaries: ProjectSummary[]): string {
+  const preferred = readActiveProjectId();
+  if (preferred && summaries.some((item) => item.id === preferred)) {
+    return preferred;
+  }
+  return summaries.toSorted((left, right) =>
+    right.updatedAt - left.updatedAt
+  )[0]
+    .id;
 }
 
 export const project = signal<Project | null>(null);
+export const projectSummaries = signal<ProjectSummary[]>([]);
 export const search = signal("");
 export const selectedCardId = signal<string | null>(null);
 export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(
@@ -116,11 +74,16 @@ export const selectedCard = computed(() => {
   return current.cards.find((card) => card.id === id) ?? null;
 });
 
+async function refreshSummaries(): Promise<void> {
+  projectSummaries.value = await store.listProjects();
+}
+
 async function persist(next: Project): Promise<void> {
   project.value = next;
   saveStatus.value = "saving";
   try {
     await store.saveProject(next);
+    await refreshSummaries();
     saveStatus.value = "saved";
   } catch (error) {
     console.error(error);
@@ -142,12 +105,48 @@ function withUi(
   };
 }
 
-export async function initialize(): Promise<void> {
-  const existing = await store.loadProject(PROJECT_ID);
-  const initial = existing ?? createDemoProject();
-  project.value = initial;
-  if (!existing) await store.saveProject(initial);
+function activateProject(next: Project): void {
+  writeActiveProjectId(next.id);
+  selectedCardId.value = null;
+  search.value = "";
+  project.value = next;
   saveStatus.value = "saved";
+}
+
+export async function initialize(): Promise<void> {
+  let summaries = await store.listProjects();
+  if (summaries.length === 0) {
+    const seeded = createDemoProject();
+    await store.saveProject(seeded);
+    writeActiveProjectId(seeded.id);
+    summaries = await store.listProjects();
+  }
+
+  const id = pickProjectId(summaries);
+  let initial = await store.loadProject(id);
+  if (!initial) {
+    initial = createEmptyProject("新しいケース");
+    await store.saveProject(initial);
+  }
+  activateProject(initial);
+  projectSummaries.value = await store.listProjects();
+}
+
+export async function createProject(
+  name = "新しいケース",
+): Promise<Project> {
+  const next = createEmptyProject(name);
+  await store.saveProject(next);
+  activateProject(next);
+  await refreshSummaries();
+  return next;
+}
+
+export async function switchProject(id: string): Promise<void> {
+  if (project.value?.id === id) return;
+  const loaded = await store.loadProject(id);
+  if (!loaded) return;
+  activateProject(loaded);
 }
 
 export async function addCard(title: string): Promise<void> {
@@ -160,11 +159,11 @@ export async function addCard(title: string): Promise<void> {
     title: cleanTitle,
     foundAt: Date.now(),
   };
-  await persist({ ...current, cards: [...current.cards, card] });
   if (!persistenceRequested) {
     persistenceRequested = true;
     await store.requestPersistence().catch(() => false);
   }
+  await persist({ ...current, cards: [...current.cards, card] });
 }
 
 export async function setAppMode(mode: AppMode): Promise<void> {
