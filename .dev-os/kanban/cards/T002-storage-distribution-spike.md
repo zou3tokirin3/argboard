@@ -1,10 +1,10 @@
 ---
 id: T002
 title: IndexedDB 保存と GitHub Pages 配布を確認する
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: auto
-branch: ""
+branch: "task/T002"
 template_ver: generic-0.2
 created: 2026-07-12
 updated: 2026-07-12
@@ -24,5 +24,6 @@ M0(b) の保存・配布スパイクを完了する。コードは `ui/db.ts` / 
 ## 作業ログ（追記のみ）
 
 - 2026-07-12 planner: smoke は Astral で capture→保存→reload を検証済み（ローカル）。ブラウザ実機と Pages 公開が未了
+- 2026-07-12 impl: 取得。task/T002 worktree で保存・Pages スパイクを進める
 
 ## 差し戻し履歴（追記のみ）
