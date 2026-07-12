@@ -1,7 +1,7 @@
 ---
 id: T002
 title: IndexedDB 保存と GitHub Pages 配布を確認する
-status: review
+status: done
 owner: impl
 gate: auto
 branch: "task/T002"
@@ -35,5 +35,6 @@ M0(b) の保存・配布スパイクを完了する。コードは `ui/db.ts` / 
 - 2026-07-12 impl: 公開 URL https://zou3tokirin3.github.io/argboard/ （index/bundle/styles は HTTP 200）。別プロファイルでの動作確認は人間待ち
 - 2026-07-12 human: Pages URL で動作確認OK
 - 2026-07-12 impl: 受け入れ条件すべて満たした → review
+- 2026-07-12 human: OK → done（IndexedDB保存・persist・Pages公開を確認）
 
 ## 差し戻し履歴（追記のみ）
