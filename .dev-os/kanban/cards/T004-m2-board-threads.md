@@ -1,7 +1,7 @@
 ---
 id: T004
 title: M2 ボードで糸を張れるようにする
-status: backlog
+status: ready
 owner: none
 gate: auto
 branch: ""
@@ -25,5 +25,7 @@ baseline のボードは静的表示のみ（デモ links / positions 固定）�
 - [ ] スモーク E2E が緑
 
 ## 作業ログ（追記のみ）
+
+- 2026-07-12 planner: 受け入れ条件・gate 確認済み → ready
 
 ## 差し戻し履歴（追記のみ）
