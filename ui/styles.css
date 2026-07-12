@@ -552,32 +552,44 @@ kbd {
   min-height: 0;
 }
 .board-node {
-  cursor: grab;
-}
-.board-node:active {
-  cursor: grabbing;
+  cursor: default;
 }
 .board-node__shadow {
   fill: rgb(15 20 25 / 12%);
+  pointer-events: none;
 }
 .board-node__paper {
   fill: var(--paper);
   stroke: var(--ink);
   stroke-width: 2;
+  cursor: pointer;
 }
 .board-node.is-selected .board-node__paper {
   stroke: var(--accent);
   stroke-width: 3;
 }
 .board-node__pin {
+  cursor: grab;
+}
+.board-node__pin:active {
+  cursor: grabbing;
+}
+.board-node__pin-hit {
+  fill: transparent;
+}
+.board-node__pin-head {
   fill: var(--accent);
   stroke: #fff;
   stroke-width: 2;
+}
+.board-node__pin-needle {
+  fill: var(--muted);
 }
 .board-node__index {
   fill: var(--muted);
   font: 500 10px "IBM Plex Mono", monospace;
   letter-spacing: .04em;
+  pointer-events: none;
 }
 .board-node__title {
   color: var(--paper-ink);
@@ -587,20 +599,36 @@ kbd {
   -webkit-user-select: none;
 }
 .board-node.is-drop-target .board-node__paper {
-  stroke: var(--accent);
+  stroke: var(--link);
   stroke-width: 4;
-  fill: #fff8e8;
+  fill: #eef5ff;
 }
-.board-node.is-drop-target .board-node__pin {
-  fill: var(--ink);
+.board-node.is-drop-target .board-node__pin-head {
+  fill: var(--link);
 }
-.board-node__handle {
-  fill: var(--accent);
-  stroke: #fff;
-  stroke-width: 2;
+.board-node__thread {
   cursor: crosshair;
 }
-.board-node__handle:hover {
+.board-node__thread-hit {
+  fill: transparent;
+}
+.board-node__thread-cord {
+  stroke: var(--link);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.board-node__thread-end {
+  fill: var(--link);
+  stroke: #fff;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+.board-node__thread:hover .board-node__thread-cord,
+.board-node__thread:hover .board-node__thread-end {
+  stroke: var(--ink);
+}
+.board-node__thread:hover .board-node__thread-end {
   fill: var(--ink);
 }
 .link {

@@ -32,6 +32,14 @@ function nodeCenter(
   return { x: position.x + NODE_WIDTH / 2, y: position.y + NODE_HEIGHT / 2 };
 }
 
+function threadAnchor(
+  cardId: string,
+  positions: Record<string, { x: number; y: number }>,
+) {
+  const position = positions[cardId] ?? { x: 0, y: 0 };
+  return { x: position.x + NODE_WIDTH, y: position.y + NODE_HEIGHT / 2 };
+}
+
 function clampZoom(zoom: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom));
 }
@@ -98,17 +106,21 @@ function BoardNode({
   x,
   y,
   isDropTarget,
-  onNodePointerDown,
-  onHandlePointerDown,
+  onPaperPointerDown,
+  onPinPointerDown,
+  onThreadPointerDown,
 }: {
   card: Card;
   x: number;
   y: number;
   isDropTarget: boolean;
-  onNodePointerDown: (event: PointerEvent, cardId: string) => void;
-  onHandlePointerDown: (event: PointerEvent, cardId: string) => void;
+  onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
+  onPinPointerDown: (event: PointerEvent, cardId: string) => void;
+  onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
   const selected = selectedCardId.value === card.id;
+  const pinX = NODE_WIDTH / 2;
+  const threadY = NODE_HEIGHT / 2;
   return (
     <g
       class={`board-node ${selected ? "is-selected" : ""} ${
@@ -117,9 +129,6 @@ function BoardNode({
       data-testid="board-node"
       data-card-id={card.id}
       transform={`translate(${x} ${y})`}
-      onPointerDown={(event) => onNodePointerDown(event, card.id)}
-      role="button"
-      tabIndex={0}
     >
       <rect
         class="board-node__shadow"
@@ -134,14 +143,7 @@ function BoardNode({
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
         rx="3"
-      />
-      <rect
-        class="board-node__pin"
-        x={NODE_WIDTH / 2 - 8}
-        y="-7"
-        width="16"
-        height="16"
-        rx="8"
+        onPointerDown={(event) => onPaperPointerDown(event, card.id)}
       />
       <text class="board-node__index" x="18" y="27">
         {card.id.slice(0, 8)}
@@ -149,17 +151,46 @@ function BoardNode({
       <foreignObject x="18" y="40" width={NODE_WIDTH - 36} height="70">
         <div class="board-node__title">{card.title}</div>
       </foreignObject>
-      <circle
-        class="board-node__handle"
+
+      {/* Pin: move card. Invisible hit disc is larger than the visible head. */}
+      <g
+        class="board-node__pin"
+        data-testid="board-pin"
+        transform={`translate(${pinX} 0)`}
+        onPointerDown={(event) => onPinPointerDown(event, card.id)}
+        role="button"
+        aria-label="ピンをドラッグして移動"
+      >
+        <circle class="board-node__pin-hit" cx="0" cy="2" r="18" />
+        <circle class="board-node__pin-head" cx="0" cy="0" r="9" />
+        <polygon
+          class="board-node__pin-needle"
+          points="-3,6 3,6 0,18"
+        />
+      </g>
+
+      {/* Thread stub: draw a link. Not a pin — a short thread end. */}
+      <g
+        class="board-node__thread"
         data-testid="link-handle"
-        cx={NODE_WIDTH}
-        cy={NODE_HEIGHT / 2}
-        r="8"
-        onPointerDown={(event) => {
-          event.stopPropagation();
-          onHandlePointerDown(event, card.id);
-        }}
-      />
+        transform={`translate(${NODE_WIDTH} ${threadY})`}
+        onPointerDown={(event) => onThreadPointerDown(event, card.id)}
+        role="button"
+        aria-label="糸をドラッグして接続"
+      >
+        <rect
+          class="board-node__thread-hit"
+          x="-4"
+          y="-16"
+          width="36"
+          height="32"
+        />
+        <line class="board-node__thread-cord" x1="0" y1="0" x2="18" y2="0" />
+        <path
+          class="board-node__thread-end"
+          d="M18 -5 Q28 -8 26 0 Q28 8 18 5 Z"
+        />
+      </g>
     </g>
   );
 }
@@ -276,7 +307,16 @@ export function BoardView() {
     canvasRef.current?.setPointerCapture(event.pointerId);
   }
 
-  function onNodePointerDown(event: PointerEvent, cardId: string) {
+  function onPaperPointerDown(event: PointerEvent, cardId: string) {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    clearTextSelection();
+    selectedCardId.value = cardId;
+    selectedLinkId.value = null;
+  }
+
+  function onPinPointerDown(event: PointerEvent, cardId: string) {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
@@ -295,24 +335,24 @@ export function BoardView() {
     canvasRef.current?.setPointerCapture(event.pointerId);
   }
 
-  function onHandlePointerDown(event: PointerEvent, cardId: string) {
+  function onThreadPointerDown(event: PointerEvent, cardId: string) {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
     clearTextSelection();
     selectedLinkId.value = null;
     selectedCardId.value = null;
-    const center = nodeCenter(
+    const start = threadAnchor(
       cardId,
       project.value?.boards[0]?.positions ?? {},
     );
     dragRef.current = { type: "link", fromId: cardId, targetId: null };
     setRubber({
       fromId: cardId,
-      x1: center.x,
-      y1: center.y,
-      x2: center.x,
-      y2: center.y,
+      x1: start.x,
+      y1: start.y,
+      x2: start.x,
+      y2: start.y,
       targetId: null,
     });
     canvasRef.current?.setPointerCapture(event.pointerId);
@@ -341,7 +381,7 @@ export function BoardView() {
       return;
     }
     const world = clientToWorld(event.clientX, event.clientY);
-    const center = nodeCenter(
+    const start = threadAnchor(
       drag.fromId,
       project.value?.boards[0]?.positions ?? {},
     );
@@ -352,8 +392,8 @@ export function BoardView() {
       : world;
     setRubber({
       fromId: drag.fromId,
-      x1: center.x,
-      y1: center.y,
+      x1: start.x,
+      y1: start.y,
       x2: tip.x,
       y2: tip.y,
       targetId,
@@ -422,7 +462,7 @@ export function BoardView() {
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
         <span class="board__hint">
-          サイドからドロップで配置 / 取っ手から糸 / 糸クリックで右パネル
+          ピンで移動 / 右の糸端で接続 / 紙面は選択
         </span>
       </div>
       <div
@@ -476,8 +516,9 @@ export function BoardView() {
                       x={position.x}
                       y={position.y}
                       isDropTarget={rubber?.targetId === card.id}
-                      onNodePointerDown={onNodePointerDown}
-                      onHandlePointerDown={onHandlePointerDown}
+                      onPaperPointerDown={onPaperPointerDown}
+                      onPinPointerDown={onPinPointerDown}
+                      onThreadPointerDown={onThreadPointerDown}
                     />
                   )
                   : null;
