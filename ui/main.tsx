@@ -2,6 +2,7 @@ import { render } from "preact";
 import { useEffect } from "preact/hooks";
 import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
+import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import {
   appMode,
@@ -21,6 +22,7 @@ declare global {
     __argboardTest?: {
       getState: () => unknown;
       flushSave: () => Promise<void>;
+      getPersistenceRequestCount: () => number;
     };
   }
 }
@@ -145,6 +147,7 @@ if (new URLSearchParams(location.search).has("test")) {
   (globalThis as Window & typeof globalThis).__argboardTest = {
     getState: () => structuredClone(project.value),
     flushSave,
+    getPersistenceRequestCount,
   };
   document.documentElement.dataset.test = "true";
 }

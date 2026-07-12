@@ -1,6 +1,7 @@
 const root = new URL("./dist/", import.meta.url);
+const port = Number(Deno.env.get("PORT") ?? "8000");
 
-Deno.serve({ port: 8000 }, async (request) => {
+Deno.serve({ port }, async (request) => {
   const pathname = new URL(request.url).pathname;
   const relativePath = pathname === "/" ? "index.html" : pathname.slice(1);
   const fileUrl = new URL(relativePath, root);
