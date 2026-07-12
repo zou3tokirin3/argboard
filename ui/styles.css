@@ -634,34 +634,67 @@ kbd {
 .link {
   cursor: pointer;
 }
-.link line {
+.link__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22;
+  pointer-events: stroke;
+}
+.link__stroke {
+  fill: none;
   stroke: var(--link);
   stroke-width: 3.5;
   pointer-events: none;
 }
-.link__hit {
-  stroke: transparent;
-  stroke-width: 16;
-  pointer-events: stroke;
+.link.is-contradiction .link__stroke {
+  stroke: var(--danger);
+  stroke-dasharray: 8 5;
 }
-.link.is-selected line {
-  stroke-width: 5;
+.link:hover .link__stroke,
+.link.is-selected .link__stroke {
+  stroke-width: 5.5;
 }
-.link rect {
+.link__knob {
+  pointer-events: none;
+}
+.link__knob-hit {
+  fill: transparent;
+  pointer-events: all;
+  cursor: pointer;
+}
+.link__knob-face {
+  fill: #fff;
+  stroke: var(--link);
+  stroke-width: 2.5;
+  opacity: 0;
+}
+.link:hover .link__knob-face {
+  opacity: 1;
+}
+.link.is-selected .link__knob-face {
+  opacity: 1;
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 3;
+  r: 9;
+}
+.link.is-contradiction .link__knob-face {
+  stroke: var(--danger);
+}
+.link.is-selected.is-contradiction .link__knob-face {
+  stroke: var(--danger);
+  fill: #fdecec;
+}
+.link__label rect {
   fill: #fff;
   stroke: var(--ink);
   stroke-width: 1.5;
   pointer-events: none;
 }
-.link text {
+.link__label text {
   fill: var(--ink);
   font: 600 12px "IBM Plex Sans JP", sans-serif;
   pointer-events: none;
-}
-.link.is-contradiction line {
-  stroke: var(--danger);
-  stroke-width: 3.5;
-  stroke-dasharray: 8 5;
 }
 .link__rubber {
   stroke: var(--accent);

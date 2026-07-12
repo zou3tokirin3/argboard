@@ -73,15 +73,8 @@ function LinkLine(
       }}
       role="button"
       tabIndex={0}
+      aria-label={link.label ? `糸: ${link.label}` : "糸を選択"}
     >
-      <line
-        data-testid="link-line"
-        data-link-id={link.id}
-        x1={from.x}
-        y1={from.y}
-        x2={to.x}
-        y2={to.y}
-      />
       <line
         class="link__hit"
         x1={from.x}
@@ -89,9 +82,28 @@ function LinkLine(
         x2={to.x}
         y2={to.y}
       />
+      <line
+        data-testid="link-line"
+        data-link-id={link.id}
+        class="link__stroke"
+        x1={from.x}
+        y1={from.y}
+        x2={to.x}
+        y2={to.y}
+      />
+      <g
+        class="link__knob"
+        transform={`translate(${midpoint.x} ${midpoint.y})`}
+      >
+        <circle class="link__knob-hit" r="14" />
+        <circle class="link__knob-face" r="7" />
+      </g>
       {link.label
         ? (
-          <g transform={`translate(${midpoint.x} ${midpoint.y})`}>
+          <g
+            class="link__label"
+            transform={`translate(${midpoint.x} ${midpoint.y - 22})`}
+          >
             <rect x="-48" y="-13" width="96" height="26" rx="5" />
             <text text-anchor="middle" y="4">{link.label}</text>
           </g>
@@ -481,6 +493,27 @@ export function BoardView() {
           <g
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
           >
+            <g class="nodes">
+              {board.cardIds.map((cardId) => {
+                const card = cardMap.get(cardId);
+                const position = board.positions[cardId];
+                return card && position
+                  ? (
+                    <BoardNode
+                      key={card.id}
+                      card={card}
+                      x={position.x}
+                      y={position.y}
+                      isDropTarget={rubber?.targetId === card.id}
+                      onPaperPointerDown={onPaperPointerDown}
+                      onPinPointerDown={onPinPointerDown}
+                      onThreadPointerDown={onThreadPointerDown}
+                    />
+                  )
+                  : null;
+              })}
+            </g>
+            {/* Links above nodes so threads stay clickable. */}
             <g class="links">
               {current.links.map((link) => (
                 <LinkLine
@@ -503,26 +536,6 @@ export function BoardView() {
                   />
                 )
                 : null}
-            </g>
-            <g class="nodes">
-              {board.cardIds.map((cardId) => {
-                const card = cardMap.get(cardId);
-                const position = board.positions[cardId];
-                return card && position
-                  ? (
-                    <BoardNode
-                      key={card.id}
-                      card={card}
-                      x={position.x}
-                      y={position.y}
-                      isDropTarget={rubber?.targetId === card.id}
-                      onPaperPointerDown={onPaperPointerDown}
-                      onPinPointerDown={onPinPointerDown}
-                      onThreadPointerDown={onThreadPointerDown}
-                    />
-                  )
-                  : null;
-              })}
             </g>
           </g>
         </svg>
