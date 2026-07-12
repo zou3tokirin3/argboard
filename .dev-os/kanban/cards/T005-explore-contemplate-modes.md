@@ -1,10 +1,10 @@
 ---
 id: T005
 title: 探索と考察を別モードにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T005"
 template_ver: generic-0.2
 created: 2026-07-12
 updated: 2026-07-12
@@ -41,5 +41,6 @@ updated: 2026-07-12
 ## 作業ログ（追記のみ）
 
 - 2026-07-12 planner: 会話で方針確定。探索＝表でガリガリ／考察＝ボード＋サイド折りたたみ＋簡易編集。表部品は後続。ready 起票
+- 2026-07-12 impl: 取得。task/T005 worktree で A→B を進める
 
 ## 差し戻し履歴（追記のみ）
