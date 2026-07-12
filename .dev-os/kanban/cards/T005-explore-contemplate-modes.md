@@ -1,7 +1,7 @@
 ---
 id: T005
 title: 探索と考察を別モードにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T005"
@@ -48,6 +48,7 @@ updated: 2026-07-12
 - 2026-07-12 impl: 左レールの `<`/`>` トグルに変更。文言ボタン削除。check/test/smoke緑 → review
 - 2026-07-12 impl: rework取得。サイド出し入れに幅アニメを付ける
 - 2026-07-12 impl: パネル常時マウント＋width 240ms。check/test緑 → review（smokeは:8000使用中で未再実行）
+- 2026-07-12 human: OK → done（モード切替・‹›レール・ヌルヌル開閉で合格）
 
 ## 差し戻し履歴（追記のみ）
 
