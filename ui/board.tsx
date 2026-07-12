@@ -99,7 +99,7 @@ export function BoardView() {
           <strong>{board.name}</strong>
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
-        <span class="board__hint">カードを選ぶとハイライトされます</span>
+        <span class="board__hint">カードを選ぶと右で編集できます</span>
       </div>
       <div class="board__canvas">
         <svg viewBox="0 0 800 590" aria-label="手がかりの関係図">

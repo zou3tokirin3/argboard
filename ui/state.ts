@@ -1,6 +1,6 @@
 import { computed, signal } from "@preact/signals";
 import { store } from "./db.ts";
-import type { Card, Project } from "./types.ts";
+import type { AppMode, Card, Project } from "./types.ts";
 
 const PROJECT_ID = "first-case";
 const now = Date.now();
@@ -81,6 +81,7 @@ function createDemoProject(): Project {
         "seventeen-theory": { x: 470, y: 330 },
       },
     }],
+    ui: { mode: "explore", sideOpen: false },
   };
 }
 
@@ -90,6 +91,11 @@ export const selectedCardId = signal<string | null>(null);
 export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(
   "loading",
 );
+
+export const appMode = computed<AppMode>(() =>
+  project.value?.ui?.mode ?? "explore"
+);
+export const sideOpen = computed(() => project.value?.ui?.sideOpen ?? false);
 
 export const filteredCards = computed(() => {
   const current = project.value;
@@ -102,6 +108,39 @@ export const filteredCards = computed(() => {
       .some((value) => value!.toLocaleLowerCase("ja").includes(query));
   }).toSorted((left, right) => right.foundAt - left.foundAt);
 });
+
+export const selectedCard = computed(() => {
+  const current = project.value;
+  const id = selectedCardId.value;
+  if (!current || !id) return null;
+  return current.cards.find((card) => card.id === id) ?? null;
+});
+
+async function persist(next: Project): Promise<void> {
+  project.value = next;
+  saveStatus.value = "saving";
+  try {
+    await store.saveProject(next);
+    saveStatus.value = "saved";
+  } catch (error) {
+    console.error(error);
+    saveStatus.value = "error";
+  }
+}
+
+function withUi(
+  current: Project,
+  patch: Partial<NonNullable<Project["ui"]>>,
+): Project {
+  return {
+    ...current,
+    ui: {
+      mode: current.ui?.mode ?? "explore",
+      sideOpen: current.ui?.sideOpen ?? false,
+      ...patch,
+    },
+  };
+}
 
 export async function initialize(): Promise<void> {
   const existing = await store.loadProject(PROJECT_ID);
@@ -121,20 +160,40 @@ export async function addCard(title: string): Promise<void> {
     title: cleanTitle,
     foundAt: Date.now(),
   };
-  project.value = { ...current, cards: [...current.cards, card] };
-  saveStatus.value = "saving";
-
-  try {
-    await store.saveProject(project.value);
-    if (!persistenceRequested) {
-      persistenceRequested = true;
-      await store.requestPersistence().catch(() => false);
-    }
-    saveStatus.value = "saved";
-  } catch (error) {
-    console.error(error);
-    saveStatus.value = "error";
+  await persist({ ...current, cards: [...current.cards, card] });
+  if (!persistenceRequested) {
+    persistenceRequested = true;
+    await store.requestPersistence().catch(() => false);
   }
+}
+
+export async function setAppMode(mode: AppMode): Promise<void> {
+  const current = project.value;
+  if (!current || (current.ui?.mode ?? "explore") === mode) return;
+  await persist(withUi(current, { mode }));
+}
+
+export async function setSideOpen(open: boolean): Promise<void> {
+  const current = project.value;
+  if (!current || (current.ui?.sideOpen ?? false) === open) return;
+  await persist(withUi(current, { sideOpen: open }));
+}
+
+export async function updateCard(
+  id: string,
+  patch: Pick<Card, "title" | "body">,
+): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  const title = patch.title.trim();
+  if (!title) return;
+  const body = patch.body?.trim() ? patch.body.trim() : undefined;
+  await persist({
+    ...current,
+    cards: current.cards.map((card) =>
+      card.id === id ? { ...card, title, body } : card
+    ),
+  });
 }
 
 export function exportProject(): void {

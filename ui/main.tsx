@@ -2,12 +2,17 @@ import { render } from "preact";
 import { useEffect } from "preact/hooks";
 import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
+import { Inspector } from "./inspector.tsx";
 import {
+  appMode,
   exportProject,
   flushSave,
   initialize,
   project,
   saveStatus,
+  setAppMode,
+  setSideOpen,
+  sideOpen,
 } from "./state.ts";
 import { Stream } from "./stream.tsx";
 
@@ -29,6 +34,8 @@ function App() {
     return <main class="loading">読み込み中…</main>;
   }
 
+  const mode = appMode.value;
+  const side = sideOpen.value;
   const statusLabel = saveStatus.value === "saving"
     ? "保存中…"
     : saveStatus.value === "error"
@@ -36,7 +43,7 @@ function App() {
     : "このブラウザに保存済み";
 
   return (
-    <main class="app-shell">
+    <main class={`app-shell mode-${mode}`}>
       <header class="topbar">
         <div class="brand">
           <span class="brand__mark" aria-hidden="true">A</span>
@@ -50,6 +57,28 @@ function App() {
           <strong>{project.value.name}</strong>
         </div>
         <div class="topbar__actions">
+          <div class="mode-switch" role="tablist" aria-label="モード">
+            <button
+              type="button"
+              role="tab"
+              data-testid="mode-explore"
+              aria-selected={mode === "explore"}
+              class={mode === "explore" ? "is-active" : undefined}
+              onClick={() => setAppMode("explore")}
+            >
+              探索
+            </button>
+            <button
+              type="button"
+              role="tab"
+              data-testid="mode-contemplate"
+              aria-selected={mode === "contemplate"}
+              class={mode === "contemplate" ? "is-active" : undefined}
+              onClick={() => setAppMode("contemplate")}
+            >
+              考察
+            </button>
+          </div>
           <span class={`save-status is-${saveStatus.value}`}>
             {statusLabel}
           </span>
@@ -62,11 +91,58 @@ function App() {
           </button>
         </div>
       </header>
-      <Capture />
-      <div class="workspace">
-        <Stream />
-        <BoardView />
-      </div>
+
+      {mode === "explore"
+        ? (
+          <>
+            <Capture />
+            <div class="workspace workspace--explore">
+              <Stream />
+            </div>
+          </>
+        )
+        : (
+          <div
+            class={`workspace workspace--contemplate ${
+              side ? "is-side-open" : ""
+            }`}
+          >
+            {side
+              ? (
+                <aside class="side-panel" aria-label="発見ログサイド">
+                  <div class="side-panel__tools">
+                    <button
+                      type="button"
+                      data-testid="side-close"
+                      onClick={() => setSideOpen(false)}
+                    >
+                      サイドを閉じる
+                    </button>
+                  </div>
+                  <Capture />
+                  <Stream />
+                </aside>
+              )
+              : null}
+            <div class="contemplate-main">
+              <div class="board-chrome">
+                {!side
+                  ? (
+                    <button
+                      type="button"
+                      data-testid="side-open"
+                      onClick={() => setSideOpen(true)}
+                    >
+                      発見ログ
+                    </button>
+                  )
+                  : null}
+              </div>
+              <BoardView />
+              <Inspector />
+            </div>
+          </div>
+        )}
     </main>
   );
 }

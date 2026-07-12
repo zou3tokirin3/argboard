@@ -1,3 +1,10 @@
+export type AppMode = "explore" | "contemplate";
+
+export type ProjectUi = {
+  mode: AppMode;
+  sideOpen?: boolean;
+};
+
 export type Project = {
   version: 1;
   id: string;
@@ -6,6 +13,7 @@ export type Project = {
   cards: Card[];
   links: Link[];
   boards: Board[];
+  ui?: ProjectUi;
 };
 
 export type Card = {
