@@ -1,7 +1,7 @@
 ---
 id: T002
 title: IndexedDB 保存と GitHub Pages 配布を確認する
-status: doing
+status: review
 owner: impl
 gate: auto
 branch: "task/T002"
@@ -18,7 +18,7 @@ M0(b) の保存・配布スパイクを完了する。コードは `ui/db.ts` / 
 
 - [x] Chrome と Safari の 2 ブラウザで、手がかり追加 → リロード後も残ることを確認
 - [x] 初回カード作成時に `navigator.storage.persist()` が呼ばれる（DevTools で確認可）
-- [ ] `deno task build` の `dist/` を GitHub Pages に公開し、別端末（または別プロファイル）で URL を開いて動作確認
+- [x] `deno task build` の `dist/` を GitHub Pages に公開し、別端末（または別プロファイル）で URL を開いて動作確認
 - [x] `deno task check && deno task test && deno task smoke` が緑
 
 ## 作業ログ（追記のみ）
@@ -33,5 +33,7 @@ M0(b) の保存・配布スパイクを完了する。コードは `ui/db.ts` / 
 - 2026-07-12 human: 手がかり追加→リロード後も残ることを確認
 - 2026-07-12 impl: task/T002 を main へ merge（`2d96809`）。repo 作成・push・Pages(Actions) デプロイ成功
 - 2026-07-12 impl: 公開 URL https://zou3tokirin3.github.io/argboard/ （index/bundle/styles は HTTP 200）。別プロファイルでの動作確認は人間待ち
+- 2026-07-12 human: Pages URL で動作確認OK
+- 2026-07-12 impl: 受け入れ条件すべて満たした → review
 
 ## 差し戻し履歴（追記のみ）
