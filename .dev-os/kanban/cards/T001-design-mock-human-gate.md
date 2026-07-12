@@ -1,7 +1,7 @@
 ---
 id: T001
 title: デザインモックの合格判定を得る
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T001"
@@ -28,6 +28,7 @@ M0(a) の完了条件「自分が毎日触りたいと思える」を人間が�
 - 2026-07-12 human: 確認済み。全体が暗すぎて毎日触りたい気持ちにならない → ポップ寄りへの方向転換が必要
 - 2026-07-12 human: 方向は C。X／Wikipedia っぽい事務的・見やすさ優先
 - 2026-07-12 impl: 取得。明るい事務的トーンへ styles を作り直し
+- 2026-07-12 impl: 白背景・青アクセント・タイムライン風に差し替え、main へ merge → review
 
 ## 差し戻し履歴（追記のみ）
 
