@@ -1,10 +1,10 @@
 ---
 id: T003
 title: M1 ザクザク体験を完成させる
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: auto
-branch: ""
+branch: "task/T003"
 template_ver: generic-0.2
 created: 2026-07-12
 updated: 2026-07-12
@@ -26,5 +26,6 @@ baseline に capture / stream / export の原型あり。デモプロジェク�
 ## 作業ログ（追記のみ）
 
 - 2026-07-12 planner: 受け入れ条件・gate 確認済み → ready
+- 2026-07-12 impl: 取得。task/T003 worktree でプロジェクト作成・切替を本線にする
 
 ## 差し戻し履歴（追記のみ）
