@@ -12,7 +12,7 @@ export function Stream() {
     <section class="stream" aria-label="発見ログ">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">EVIDENCE STREAM</span>
+          <span class="eyebrow">タイムライン</span>
           <h2>発見ログ</h2>
         </div>
         <span class="count">{project.value?.cards.length ?? 0}</span>
@@ -40,8 +40,8 @@ export function Stream() {
             <span class="stream-card__meta">
               <time>{timeFormatter.format(card.foundAt)}</time>
               {boardCardIds.has(card.id)
-                ? <span>● BOARD</span>
-                : <span>○ UNFILED</span>}
+                ? <span>ボード済</span>
+                : <span>未配置</span>}
             </span>
             <strong>{card.title}</strong>
             {card.body ? <small>{card.body}</small> : null}

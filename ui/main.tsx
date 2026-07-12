@@ -26,7 +26,7 @@ function App() {
   }, []);
 
   if (!project.value) {
-    return <main class="loading">捜査資料を開いています…</main>;
+    return <main class="loading">読み込み中…</main>;
   }
 
   const statusLabel = saveStatus.value === "saving"
@@ -41,12 +41,12 @@ function App() {
         <div class="brand">
           <span class="brand__mark" aria-hidden="true">A</span>
           <div>
-            <span>ARGBOARD</span>
-            <small>INVESTIGATION NOTEBOOK</small>
+            <span>ARGBoard</span>
+            <small>手がかりノート</small>
           </div>
         </div>
         <div class="case-title">
-          <small>ACTIVE CASE</small>
+          <small>プロジェクト</small>
           <strong>{project.value.name}</strong>
         </div>
         <div class="topbar__actions">
@@ -58,7 +58,7 @@ function App() {
             data-testid="export-btn"
             onClick={exportProject}
           >
-            ↓ JSONを書き出す
+            JSONを書き出す
           </button>
         </div>
       </header>

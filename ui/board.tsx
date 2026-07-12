@@ -76,7 +76,7 @@ function BoardNode({ card, x, y }: { card: Card; x: number; y: number }) {
         rx="8"
       />
       <text class="board-node__index" x="18" y="27">
-        EVIDENCE / {card.id.slice(0, 4).toUpperCase()}
+        {card.id.slice(0, 8)}
       </text>
       <foreignObject x="18" y="40" width={NODE_WIDTH - 36} height="70">
         <div class="board-node__title">{card.title}</div>
@@ -99,7 +99,7 @@ export function BoardView() {
           <strong>{board.name}</strong>
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
-        <span class="board__hint">カードを選んで関連を確認</span>
+        <span class="board__hint">カードを選ぶとハイライトされます</span>
       </div>
       <div class="board__canvas">
         <svg viewBox="0 0 800 590" aria-label="手がかりの関係図">
