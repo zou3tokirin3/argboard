@@ -1,7 +1,7 @@
 ---
 id: T003
 title: M1 ザクザク体験を完成させる
-status: review
+status: done
 owner: impl
 gate: auto
 branch: "task/T003"
@@ -30,5 +30,6 @@ baseline に capture / stream / export の原型あり。デモプロジェク�
 - 2026-07-12 impl: worktree は `.worktrees/T003`（規約の `../argboard--T003` は既存方針に合わせる）
 - 2026-07-12 impl: プロジェクト select/新規・activeId・空プロジェクト生成を追加。smoke に切替シナリオを足した（`5562529`）
 - 2026-07-12 impl: check/test/smoke 緑。task/T003 を main へ merge → review
+- 2026-07-12 human: 確認済み → done（キャプチャ・永続化・プロジェクト切替・エクスポート）
 
 ## 差し戻し履歴（追記のみ）
