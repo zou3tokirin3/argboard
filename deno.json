@@ -11,7 +11,7 @@
     "jsxImportSource": "preact"
   },
   "fmt": {
-    "exclude": ["PLAN.md", ".dev-os/"]
+    "exclude": ["PLAN.md", ".dev-os/", ".worktrees/"]
   },
   "imports": {
     "@astral/astral": "jsr:@astral/astral@^0.5.6",

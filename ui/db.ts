@@ -13,6 +13,13 @@ export interface Store {
 const DB_NAME = "argboard";
 const STORE_NAME = "projects";
 
+/** Test/diagnostics: how many times `requestPersistence` was invoked. */
+let persistenceRequestCount = 0;
+
+export function getPersistenceRequestCount(): number {
+  return persistenceRequestCount;
+}
+
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, 1);
@@ -76,6 +83,7 @@ export const store: Store = {
     );
   },
   async requestPersistence() {
+    persistenceRequestCount += 1;
     return await navigator.storage?.persist?.() ?? false;
   },
 };
