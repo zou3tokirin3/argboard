@@ -31,5 +31,7 @@ M0(b) の保存・配布スパイクを完了する。コードは `ui/db.ts` / 
 - 2026-07-12 impl: ブロッカー — remote 未設定 + `gh` トークン無効。Pages 公開は `gh auth refresh` 後に続行
 - 2026-07-12 impl: Chrome/Safari に localhost:8000 を開いた。人間のリロード確認待ち
 - 2026-07-12 human: 手がかり追加→リロード後も残ることを確認
+- 2026-07-12 impl: task/T002 を main へ merge（`2d96809`）。repo 作成・push・Pages(Actions) デプロイ成功
+- 2026-07-12 impl: 公開 URL https://zou3tokirin3.github.io/argboard/ （index/bundle/styles は HTTP 200）。別プロファイルでの動作確認は人間待ち
 
 ## 差し戻し履歴（追記のみ）
