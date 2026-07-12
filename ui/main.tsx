@@ -109,35 +109,29 @@ function App() {
           >
             {side
               ? (
-                <aside class="side-panel" aria-label="発見ログサイド">
-                  <div class="side-panel__tools">
-                    <button
-                      type="button"
-                      data-testid="side-close"
-                      onClick={() => setSideOpen(false)}
-                    >
-                      サイドを閉じる
-                    </button>
-                  </div>
+                <aside
+                  class="side-panel"
+                  id="discovery-side"
+                  aria-label="発見ログサイド"
+                >
                   <Capture />
                   <Stream />
                 </aside>
               )
               : null}
+            <button
+              type="button"
+              class="side-toggle"
+              data-testid={side ? "side-close" : "side-open"}
+              aria-expanded={side}
+              aria-controls="discovery-side"
+              aria-label={side ? "発見ログを閉じる" : "発見ログを開く"}
+              title={side ? "発見ログを閉じる" : "発見ログを開く"}
+              onClick={() => setSideOpen(!side)}
+            >
+              <span aria-hidden="true">{side ? "<" : ">"}</span>
+            </button>
             <div class="contemplate-main">
-              <div class="board-chrome">
-                {!side
-                  ? (
-                    <button
-                      type="button"
-                      data-testid="side-open"
-                      onClick={() => setSideOpen(true)}
-                    >
-                      発見ログ
-                    </button>
-                  )
-                  : null}
-              </div>
               <BoardView />
               <Inspector />
             </div>

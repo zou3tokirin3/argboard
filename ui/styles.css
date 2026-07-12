@@ -235,35 +235,38 @@ kbd {
 }
 .workspace--contemplate {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 28px minmax(0, 1fr);
   height: calc(100vh - 56px);
 }
 .workspace--contemplate.is-side-open {
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 360px 28px minmax(0, 1fr);
 }
 .side-panel {
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--line-strong);
+  border-right: 0;
   background: var(--panel);
 }
-.side-panel__tools {
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 12px 0;
-}
-.side-panel__tools button,
-.board-chrome button {
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  padding: 6px 12px;
-  background: var(--bg);
-  color: var(--ink);
+.side-toggle {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  width: 28px;
+  margin: 0;
+  border: 0;
+  border-right: 1px solid var(--line-strong);
+  border-left: 1px solid var(--line-strong);
+  padding: 0;
+  background: var(--bg-soft);
+  color: var(--muted);
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 500;
+  font: 600 16px/1 "IBM Plex Mono", monospace;
+}
+.side-toggle:hover {
+  background: var(--accent-soft);
+  color: var(--ink);
 }
 .side-panel .capture {
   width: calc(100% - 24px);
@@ -280,30 +283,13 @@ kbd {
 .contemplate-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
-  grid-template-rows: auto 1fr;
   min-width: 0;
   min-height: 0;
 }
-.board-chrome {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--line-strong);
-  background: var(--panel);
-}
-.board-chrome:empty {
-  display: none;
-}
 .contemplate-main .board {
-  grid-column: 1;
-  grid-row: 2;
+  min-height: 0;
 }
 .inspector {
-  grid-column: 2;
-  grid-row: 2;
   min-height: 0;
   overflow: auto;
   border-left: 1px solid var(--line-strong);
@@ -621,6 +607,13 @@ kbd {
   .workspace--contemplate.is-side-open {
     display: block;
     height: auto;
+  }
+  .side-toggle {
+    width: 100%;
+    height: 36px;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-strong);
   }
   .stream {
     min-height: calc(100vh - 130px);
