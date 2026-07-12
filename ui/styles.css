@@ -6,12 +6,12 @@
   --bg: #ffffff;
   --bg-soft: #f7f9f9;
   --panel: #ffffff;
-  --line: #eff3f4;
-  --line-strong: #cfd9de;
+  --line: #d8dee4;
+  --line-strong: #8b98a5;
   --accent: #1d9bf0;
   --accent-soft: #e8f5fd;
-  --link: #0b63ce;
-  --danger: #c41c1c;
+  --link: #0657b8;
+  --danger: #a01212;
   --ok: #00ba7c;
   --warn: #ff7a00;
   --paper: #ffffff;
@@ -67,7 +67,7 @@ body {
   display: grid;
   grid-template-columns: 280px 1fr auto;
   align-items: center;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
   padding: 0 var(--space-4);
   background: var(--panel);
 }
@@ -194,12 +194,12 @@ kbd {
   display: grid;
   grid-template-columns: 360px minmax(620px, 1fr);
   height: calc(100vh - 134px);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--line-strong);
 }
 .stream {
   min-height: 0;
   overflow: hidden;
-  border-right: 1px solid var(--line);
+  border-right: 1px solid var(--line-strong);
   background: var(--panel);
 }
 .section-heading {
@@ -207,7 +207,7 @@ kbd {
   justify-content: space-between;
   align-items: end;
   padding: 16px 16px 12px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
 }
 .section-heading h2 {
   margin: 2px 0 0;
@@ -260,7 +260,7 @@ kbd {
   width: 100%;
   display: block;
   border: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
   padding: 14px 16px;
   background: transparent;
   text-align: left;
@@ -329,7 +329,7 @@ kbd {
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
   background: var(--panel);
 }
 .board__toolbar > div {
@@ -354,10 +354,10 @@ kbd {
   position: relative;
   height: calc(100% - 48px);
   overflow: hidden;
-  background-color: #f0f3f4;
+  background-color: #e8ecef;
   background-image:
-    linear-gradient(rgb(15 20 25 / 4%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(15 20 25 / 4%) 1px, transparent 1px);
+    linear-gradient(rgb(15 20 25 / 10%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(15 20 25 / 10%) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 .board__canvas::after {
@@ -371,39 +371,41 @@ kbd {
 }
 .link line {
   stroke: var(--link);
-  stroke-width: 2;
+  stroke-width: 3.5;
 }
 .link rect {
   fill: #fff;
-  stroke: var(--line-strong);
+  stroke: var(--ink);
+  stroke-width: 1.5;
 }
 .link text {
   fill: var(--ink);
-  font: 11px "IBM Plex Sans JP", sans-serif;
+  font: 600 12px "IBM Plex Sans JP", sans-serif;
 }
 .link.is-contradiction line {
   stroke: var(--danger);
-  stroke-dasharray: 6 5;
+  stroke-width: 3.5;
+  stroke-dasharray: 8 5;
 }
 .board-node {
   cursor: pointer;
 }
 .board-node__shadow {
-  fill: rgb(15 20 25 / 8%);
+  fill: rgb(15 20 25 / 12%);
 }
 .board-node__paper {
   fill: var(--paper);
-  stroke: var(--line-strong);
-  stroke-width: 1.5;
+  stroke: var(--ink);
+  stroke-width: 2;
 }
 .board-node.is-selected .board-node__paper {
   stroke: var(--accent);
-  stroke-width: 2.5;
+  stroke-width: 3;
 }
 .board-node__pin {
   fill: var(--accent);
   stroke: #fff;
-  stroke-width: 1.5;
+  stroke-width: 2;
 }
 .board-node__index {
   fill: var(--muted);
@@ -431,7 +433,7 @@ kbd {
 .thread {
   display: inline-block;
   width: 22px;
-  border-top: 2px solid var(--link);
+  border-top: 3px solid var(--link);
   vertical-align: middle;
 }
 .thread.is-dashed {
