@@ -107,18 +107,18 @@ function App() {
               side ? "is-side-open" : ""
             }`}
           >
-            {side
-              ? (
-                <aside
-                  class="side-panel"
-                  id="discovery-side"
-                  aria-label="発見ログサイド"
-                >
-                  <Capture />
-                  <Stream />
-                </aside>
-              )
-              : null}
+            <aside
+              class="side-panel"
+              id="discovery-side"
+              aria-label="発見ログサイド"
+              aria-hidden={!side}
+              inert={!side || undefined}
+            >
+              <div class="side-panel__inner">
+                <Capture />
+                <Stream />
+              </div>
+            </aside>
             <button
               type="button"
               class="side-toggle"

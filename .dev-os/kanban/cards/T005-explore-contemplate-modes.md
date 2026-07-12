@@ -46,7 +46,10 @@ updated: 2026-07-12
 - 2026-07-12 impl: モード切替・探索主面・考察ボード＋サイド折りたたみ＋Inspector(title/body)・uiをProjectに保存。check/test/smoke緑 → main merge → review
 - 2026-07-12 impl: rework取得。サイド出し入れを‹ ›アイコン操作に直す
 - 2026-07-12 impl: 左レールの `<`/`>` トグルに変更。文言ボタン削除。check/test/smoke緑 → review
+- 2026-07-12 impl: rework取得。サイド出し入れに幅アニメを付ける
+- 2026-07-12 impl: パネル常時マウント＋width 240ms。check/test緑 → review（smokeは:8000使用中で未再実行）
 
 ## 差し戻し履歴（追記のみ）
 
 - 2026-07-12 human: 考察の発見ログ出し入れを「サイドを閉じる／発見ログ」文言ボタンではなく、‹ ›のようなパネル出し入れアイコンに → rework
+- 2026-07-12 human: パネルの出し入れをもっとヌルヌル動かしたい → rework
