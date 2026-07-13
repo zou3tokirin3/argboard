@@ -88,14 +88,22 @@ function offsetSegment(
   start: Point,
   end: Point,
   lane: number,
+  /** Canonical axis for the unordered pair — keeps reciprocal lanes apart. */
+  axisFrom: Point,
+  axisTo: Point,
 ): { x1: number; y1: number; x2: number; y2: number; mx: number; my: number } {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const len = Math.hypot(dx, dy) || 1;
   const ux = dx / len;
   const uy = dy / len;
-  const px = -uy;
-  const py = ux;
+  // Perpendicular from card-id order, not stroke direction — otherwise A→B
+  // and B→A flip the normal and cancel each other's lane offset.
+  const ax = axisTo.x - axisFrom.x;
+  const ay = axisTo.y - axisFrom.y;
+  const alen = Math.hypot(ax, ay) || 1;
+  const px = -ay / alen;
+  const py = ax / alen;
   const o = lane * LINK_LANE_GAP;
   // Pull ends in so the arrowhead clears the card edge a bit.
   const inset = Math.min(12, len / 4);
@@ -125,8 +133,17 @@ function linkGeometry(
   const siblings = pairSiblings(link, links);
   // One thread = undirected (no arrow). Opposite/extra threads = directed lanes.
   const directed = siblings.length >= 2;
+  const [axisFromId, axisToId] = link.from < link.to
+    ? [link.from, link.to]
+    : [link.to, link.from];
   return {
-    ...offsetSegment(start, end, linkLane(link, siblings)),
+    ...offsetSegment(
+      start,
+      end,
+      linkLane(link, siblings),
+      nodeCenter(axisFromId, positions),
+      nodeCenter(axisToId, positions),
+    ),
     directed,
   };
 }
