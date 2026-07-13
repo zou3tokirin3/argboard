@@ -1,7 +1,7 @@
 ---
 id: T007
 title: 連続キャプチャでカードを失わないようにする
-status: doing
+status: review
 owner: impl
 gate: auto
 branch: "task/T007"
@@ -17,12 +17,12 @@ updated: 2026-07-13
 
 ## 受け入れ条件
 
-- [ ] `requestPersistence()` の完了待ちがカードのオンメモリ反映をブロックしない
-- [ ] 初回persist応答を遅延させ、2件を連続追加しても両方がオンメモリに残る
-- [ ] 保存完了後にreloadしても2件とも残る
-- [ ] 古いProjectスナップショットが新しい状態を後から上書きしない
-- [ ] 既存smoke①を「2件連続追加→reload→両方残る」へ強化し、シナリオ総数は5本以内を維持する
-- [ ] 最新コミットで check / test / smoke が緑
+- [x] `requestPersistence()` の完了待ちがカードのオンメモリ反映をブロックしない
+- [x] 初回persist応答を遅延させ、2件を連続追加しても両方がオンメモリに残る
+- [x] 保存完了後にreloadしても2件とも残る
+- [x] 古いProjectスナップショットが新しい状態を後から上書きしない
+- [x] 既存smoke①を「2件連続追加→reload→両方残る」へ強化し、シナリオ総数は5本以内を維持する
+- [x] 最新コミットで check / test / smoke が緑
 
 ## このカードでやらない
 
@@ -36,5 +36,7 @@ updated: 2026-07-13
 - 2026-07-13 planner: 目的・受け入れ条件・auto gate・非スコープを確認 → ready
 
 - 2026-07-13 impl: 着手。保存競合（requestPersistence待機中の連続追加）を直す
+
+- 2026-07-13 impl: 状態先行+保存直列化を実装。smoke①を2件連続追加へ強化。check/test/smoke緑 → review（7934c3f）
 
 ## 差し戻し履歴（追記のみ）
