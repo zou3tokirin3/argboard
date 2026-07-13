@@ -1,10 +1,10 @@
 ---
 id: T007
 title: 連続キャプチャでカードを失わないようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: auto
-branch: ""
+branch: "task/T007"
 template_ver: generic-0.2
 created: 2026-07-13
 updated: 2026-07-13
@@ -34,5 +34,7 @@ updated: 2026-07-13
 
 - 2026-07-13 planner: 方針レビューで再現したデータ消失をP0として起票
 - 2026-07-13 planner: 目的・受け入れ条件・auto gate・非スコープを確認 → ready
+
+- 2026-07-13 impl: 着手。保存競合（requestPersistence待機中の連続追加）を直す
 
 ## 差し戻し履歴（追記のみ）
