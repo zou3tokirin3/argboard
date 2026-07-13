@@ -19,7 +19,7 @@ T008で核体験が成立した後、外部利用・長期運用より前に完�
 
 - [ ] ヘッダーからversion 1のProject JSONを選択して読み込める
 - [ ] 元データを上書きせず、新しいidの新規プロジェクトとして取り込む
-- [ ] cards / links / boards / positions / viewport / uiを復元する
+- [ ] cards（roleを含む）/ links（通常・要検討を含む）/ boards / positions / viewport / uiを復元する
 - [ ] 不正JSON・未対応versionでは既存データを変更せず、利用者へエラーを示す
 - [ ] export→importの往復で同等データへ復元できる
 - [ ] 既存smoke④を往復検証へ置き換え、シナリオ総数は5本以内を維持する
