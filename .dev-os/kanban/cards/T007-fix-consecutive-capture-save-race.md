@@ -1,7 +1,7 @@
 ---
 id: T007
 title: 連続キャプチャでカードを失わないようにする
-status: backlog
+status: ready
 owner: none
 gate: auto
 branch: ""
@@ -33,5 +33,6 @@ updated: 2026-07-13
 ## 作業ログ（追記のみ）
 
 - 2026-07-13 planner: 方針レビューで再現したデータ消失をP0として起票
+- 2026-07-13 planner: 目的・受け入れ条件・auto gate・非スコープを確認 → ready
 
 ## 差し戻し履歴（追記のみ）
