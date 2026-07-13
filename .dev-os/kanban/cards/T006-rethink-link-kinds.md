@@ -1,10 +1,10 @@
 ---
 id: T006
 title: 糸を後から要検討にできるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: task/T006
 template_ver: generic-0.2
 created: 2026-07-13
 updated: 2026-07-13
@@ -49,5 +49,6 @@ P0のT007は完了済みで、このカードを次の実装対象とする。
 - 2026-07-13 human: 矛盾・疑問を後置きで目立たせ、あとで解決する意味は残したいと再検討
 - 2026-07-13 planner: 種別ではなく「通常 / 要検討」の状態へ再定義。T007先行は維持
 - 2026-07-13 planner: T007完了と受け入れ条件・人間ゲート・行数制約を確認し、backlogからreadyへ移行
+- 2026-07-13 impl: 着手。基準行数2,736・純増上限10行。既存kind/セレクタ/破線赤を再利用しUI語を通常/要検討へ
 
 ## 差し戻し履歴（追記のみ）
