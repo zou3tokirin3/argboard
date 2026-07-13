@@ -43,7 +43,17 @@ dropped → backlog（人間のみ・復活）
 - doing の1カード ＝ 1ブランチ ＝ 1worktree
 - ブランチ名: `task/<id>`（例: `task/T003`）
 - 作成: `git worktree add ../<リポジトリ名>--<id> -b task/<id>`
+- サンドボックスで親ディレクトリへ作れない場合は、リポジトリ内 `.worktrees/<id>` を正式な代替先とする
 - merge 後は branch と worktree を削除する。カードの branch 欄は消さない（履歴として残す）
+
+## done 前チェック
+
+- 最新の実装コミットに対して check / test / smoke が緑である（カードに明示した例外を除く）
+- PLANに影響する決定・UI変更は、done前にPLANへ同期されている
+- 本体・テストのファイル数/行数予算内、または人間が明示承認した例外内である
+- マイルストーン境界、デザイン、公開URL、ドッグフードは `gate: human` とする
+- review中に追加実装が必要になった場合、必ず理由を記録して rework → doing を経る
+- merge後にbranch/worktreeを片付けてからdoneへ進める
 
 ## カード命名
 
