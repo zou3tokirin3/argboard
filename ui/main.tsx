@@ -5,6 +5,7 @@ import { Capture } from "./capture.tsx";
 import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import {
+  addCard,
   appMode,
   connectCards,
   createProject,
@@ -29,6 +30,7 @@ declare global {
       getState: () => unknown;
       flushSave: () => Promise<void>;
       getPersistenceRequestCount: () => number;
+      addCard: (title: string) => Promise<void>;
       createProject: (name?: string) => Promise<unknown>;
       switchProject: (id: string) => Promise<void>;
       listProjects: () => unknown;
@@ -186,6 +188,7 @@ if (new URLSearchParams(location.search).has("test")) {
     getState: () => structuredClone(project.value),
     flushSave,
     getPersistenceRequestCount,
+    addCard,
     createProject: async (name?: string) =>
       structuredClone(await createProject(name)),
     switchProject,
