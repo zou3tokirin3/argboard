@@ -28,6 +28,8 @@ type LinkGeometry = {
   y2: number;
   mx: number;
   my: number;
+  labelX: number;
+  labelY: number;
   /** True when the pair has 2+ threads (e.g. A→B and B→A). */
   directed: boolean;
 };
@@ -91,7 +93,16 @@ function offsetSegment(
   /** Canonical axis for the unordered pair — keeps reciprocal lanes apart. */
   axisFrom: Point,
   axisTo: Point,
-): { x1: number; y1: number; x2: number; y2: number; mx: number; my: number } {
+): {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  mx: number;
+  my: number;
+  px: number;
+  py: number;
+} {
   const dx = end.x - start.x;
   const dy = end.y - start.y;
   const len = Math.hypot(dx, dy) || 1;
@@ -118,6 +129,8 @@ function offsetSegment(
     y2,
     mx: (x1 + x2) / 2,
     my: (y1 + y2) / 2,
+    px,
+    py,
   };
 }
 
@@ -133,17 +146,34 @@ function linkGeometry(
   const siblings = pairSiblings(link, links);
   // One thread = undirected (no arrow). Opposite/extra threads = directed lanes.
   const directed = siblings.length >= 2;
+  const lane = linkLane(link, siblings);
   const [axisFromId, axisToId] = link.from < link.to
     ? [link.from, link.to]
     : [link.to, link.from];
+  const segment = offsetSegment(
+    start,
+    end,
+    lane,
+    nodeCenter(axisFromId, positions),
+    nodeCenter(axisToId, positions),
+  );
+  // Directed: park the label near the arrow tip so reciprocal labels split apart.
+  // Undirected: keep the midpoint, nudged slightly off the stroke.
+  const along = directed ? 0.78 : 0.5;
+  const side = lane === 0 ? 1 : Math.sign(lane);
+  const labelX = segment.x1 + (segment.x2 - segment.x1) * along +
+    segment.px * side * 12;
+  const labelY = segment.y1 + (segment.y2 - segment.y1) * along +
+    segment.py * side * 12 - (directed ? 0 : 14);
   return {
-    ...offsetSegment(
-      start,
-      end,
-      linkLane(link, siblings),
-      nodeCenter(axisFromId, positions),
-      nodeCenter(axisToId, positions),
-    ),
+    x1: segment.x1,
+    y1: segment.y1,
+    x2: segment.x2,
+    y2: segment.y2,
+    mx: segment.mx,
+    my: segment.my,
+    labelX,
+    labelY,
     directed,
   };
 }
@@ -194,9 +224,9 @@ function LinkVisual(
         ? (
           <g
             class="link__label"
-            transform={`translate(${geometry.mx} ${geometry.my - 18})`}
+            transform={`translate(${geometry.labelX} ${geometry.labelY})`}
           >
-            <rect x="-48" y="-13" width="96" height="26" rx="5" />
+            <rect x="-40" y="-11" width="80" height="22" rx="4" />
             <text text-anchor="middle" y="4">{link.label}</text>
           </g>
         )
@@ -630,8 +660,8 @@ export function BoardView() {
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="7"
-              markerHeight="7"
+              markerWidth="5"
+              markerHeight="5"
               orient="auto-start-reverse"
             >
               <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--link)" />
@@ -641,8 +671,8 @@ export function BoardView() {
               viewBox="0 0 10 10"
               refX="9"
               refY="5"
-              markerWidth="7"
-              markerHeight="7"
+              markerWidth="5"
+              markerHeight="5"
               orient="auto-start-reverse"
             >
               <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--danger)" />
