@@ -40,23 +40,54 @@ try {
     const page = await browser.newPage(`${origin}/?test=1`);
     await page.waitForSelector('[data-testid="capture-input"]');
 
-    // ① カード作成 → persist 要求 → リロードで残る
-    const title = `スモーク手がかり ${Date.now()}`;
-    await page.locator<HTMLInputElement>('[data-testid="capture-input"]').fill(
-      title,
-    );
-    await page.keyboard.press("Enter", {});
+    // ① 連続キャプチャ → persist 要求はブロックしない → リロードで両方残る
+    await page.evaluate(() => {
+      const storage = navigator.storage;
+      if (!storage?.persist) {
+        throw new Error("navigator.storage.persist is unavailable");
+      }
+      const original = storage.persist.bind(storage);
+      storage.persist = () =>
+        new Promise((resolve) => {
+          // Hold the permission prompt so overlapping captures can race.
+          setTimeout(() => {
+            void original().then(resolve, () => resolve(false));
+          }, 1_500);
+        });
+    });
+
+    const stamp = Date.now();
+    const titles = [`連続A ${stamp}`, `連続B ${stamp}`] as const;
+    await page.evaluate(async (cardTitles: string[]) => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: { addCard: (title: string) => Promise<void> };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      // Overlap the two adds while requestPersistence is still pending.
+      await Promise.all(cardTitles.map((title) => api.addCard(title)));
+    }, { args: [[...titles]] });
+
     await page.waitForFunction(
       () =>
         ((globalThis as typeof globalThis & {
           __argboardTest?: { getPersistenceRequestCount: () => number };
         }).__argboardTest?.getPersistenceRequestCount() ?? 0) >= 1,
     );
-    await page.waitForFunction(
-      (expectedTitle: string) =>
-        document.body.textContent?.includes(expectedTitle),
-      { args: [title] },
-    );
+
+    for (const title of titles) {
+      await page.waitForFunction(
+        (expectedTitle: string) => {
+          const cards = (globalThis as typeof globalThis & {
+            __argboardTest?: {
+              getState: () => { cards: { title: string }[] };
+            };
+          }).__argboardTest?.getState().cards ?? [];
+          return cards.some((card) => card.title === expectedTitle);
+        },
+        { args: [title] },
+      );
+    }
+
     const persistCalls = await page.evaluate(() =>
       (globalThis as typeof globalThis & {
         __argboardTest?: { getPersistenceRequestCount: () => number };
@@ -67,17 +98,37 @@ try {
         "navigator.storage.persist() was not requested after first card",
       );
     }
+
+    const inMemoryCount = await page.evaluate((expected: string[]) => {
+      const cards = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          getState: () => { cards: { title: string }[] };
+        };
+      }).__argboardTest?.getState().cards ?? [];
+      return expected.filter((title) =>
+        cards.some((card) => card.title === title)
+      ).length;
+    }, { args: [[...titles]] });
+    if (inMemoryCount !== 2) {
+      throw new Error(
+        `Expected both consecutive cards in memory, found ${inMemoryCount}`,
+      );
+    }
+
     await page.evaluate(async () =>
       await (globalThis as typeof globalThis & {
         __argboardTest?: { flushSave: () => Promise<void> };
       }).__argboardTest?.flushSave()
     );
     await page.reload();
-    await page.waitForFunction(
-      (expectedTitle: string) =>
-        document.body.textContent?.includes(expectedTitle),
-      { args: [title] },
-    );
+    await page.waitForSelector('[data-testid="capture-input"]');
+    for (const title of titles) {
+      await page.waitForFunction(
+        (expectedTitle: string) =>
+          document.body.textContent?.includes(expectedTitle) ?? false,
+        { args: [title] },
+      );
+    }
 
     // ⑤ プロジェクト作成・切替でカードが分離される
     const firstProjectId = await page.evaluate(() =>
@@ -109,7 +160,7 @@ try {
     const stillHasFirstCard = await page.evaluate(
       (expectedTitle: string) =>
         document.body.textContent?.includes(expectedTitle) ?? false,
-      { args: [title] },
+      { args: [titles[0]] },
     );
     if (stillHasFirstCard) {
       throw new Error("New project still showed the previous project's card");
@@ -142,7 +193,7 @@ try {
     await page.waitForFunction(
       (expectedTitle: string) =>
         document.body.textContent?.includes(expectedTitle) ?? false,
-      { args: [title] },
+      { args: [titles[0]] },
     );
     const leakedSecondCard = await page.evaluate(
       (expectedTitle: string) =>

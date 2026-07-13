@@ -8,8 +8,9 @@ export function Capture() {
     event.preventDefault();
     const title = input.current?.value ?? "";
     if (!title.trim()) return;
-    await addCard(title);
+    // Clear first so the next capture can start while save drains.
     if (input.current) input.current.value = "";
+    await addCard(title);
   }
 
   return (

@@ -94,16 +94,38 @@ async function refreshSummaries(): Promise<void> {
   projectSummaries.value = await store.listProjects();
 }
 
+/** Serialize IndexedDB writes and always persist the latest in-memory project. */
+let saveChain: Promise<void> = Promise.resolve();
+let saveDirty = false;
+let saveGeneration = 0;
+
+async function drainSaves(): Promise<void> {
+  while (saveDirty) {
+    saveDirty = false;
+    const latest = project.value;
+    if (!latest) continue;
+    await store.saveProject(latest);
+    await refreshSummaries();
+  }
+}
+
 async function persist(next: Project): Promise<void> {
   project.value = next;
+  saveDirty = true;
+  const myGeneration = ++saveGeneration;
   saveStatus.value = "saving";
+
+  const task = saveChain.then(drainSaves);
+  saveChain = task.catch((error) => {
+    console.error(error);
+  });
+
   try {
-    await store.saveProject(next);
-    await refreshSummaries();
-    saveStatus.value = "saved";
+    await task;
+    if (myGeneration === saveGeneration) saveStatus.value = "saved";
   } catch (error) {
     console.error(error);
-    saveStatus.value = "error";
+    if (myGeneration === saveGeneration) saveStatus.value = "error";
   }
 }
 
@@ -172,20 +194,30 @@ export async function switchProject(id: string): Promise<void> {
 }
 
 export async function addCard(title: string): Promise<void> {
-  const current = project.value;
   const cleanTitle = title.trim();
-  if (!current || !cleanTitle) return;
+  if (!cleanTitle) return;
+
+  // Read + write memory must stay synchronous so overlapping captures
+  // cannot both snapshot the same Project and drop a later card.
+  const current = project.value;
+  if (!current) return;
 
   const card: Card = {
     id: crypto.randomUUID(),
     title: cleanTitle,
     foundAt: Date.now(),
   };
+  const next = { ...current, cards: [...current.cards, card] };
+  // persist() writes project.value synchronously before any await.
+  const saving = persist(next);
+
   if (!persistenceRequested) {
     persistenceRequested = true;
-    await store.requestPersistence().catch(() => false);
+    // Must not block on-memory reflection or later captures.
+    void store.requestPersistence().catch(() => false);
   }
-  await persist({ ...current, cards: [...current.cards, card] });
+
+  await saving;
 }
 
 export async function setAppMode(mode: AppMode): Promise<void> {
@@ -231,6 +263,7 @@ export function exportProject(): void {
 }
 
 export async function flushSave(): Promise<void> {
+  await saveChain;
   if (project.value) await store.saveProject(project.value);
 }
 
