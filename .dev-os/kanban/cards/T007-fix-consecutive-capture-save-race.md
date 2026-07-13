@@ -1,7 +1,7 @@
 ---
 id: T007
 title: 連続キャプチャでカードを失わないようにする
-status: review
+status: done
 owner: impl
 gate: auto
 branch: "task/T007"
@@ -38,5 +38,7 @@ updated: 2026-07-13
 - 2026-07-13 impl: 着手。保存競合（requestPersistence待機中の連続追加）を直す
 
 - 2026-07-13 impl: 状態先行+保存直列化を実装。smoke①を2件連続追加へ強化。check/test/smoke緑 → review（7934c3f）
+
+- 2026-07-13 reviewer: 受け入れ条件・人間確認OK。task/T007をmerge、worktree/branch削除 → done（49bb673）
 
 ## 差し戻し履歴（追記のみ）
