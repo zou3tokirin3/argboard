@@ -1,13 +1,13 @@
 ---
 id: T004
 title: M2 ボードで糸を張れるようにする
-status: review
+status: done
 owner: impl
 gate: auto
 branch: "task/T004"
 template_ver: generic-0.2
 created: 2026-07-12
-updated: 2026-07-12
+updated: 2026-07-13
 ---
 
 ## 目的
@@ -31,9 +31,8 @@ baseline のボードは静的表示のみ（デモ links / positions 固定）�
 - 2026-07-12 impl: worktree は `.worktrees/T004`（規約の `../argboard--T004` は既存方針に合わせる）
 - 2026-07-12 impl: 配置/糸/パンズーム・リンク編集・テストフック・smoke ②③を追加（`9901229`）
 - 2026-07-12 impl: check/test/smoke 緑。task/T004 を main へ merge → review
-
 - 2026-07-12 human→impl: UX修正。文字選択抑止・着地点ハイライト・引いた直後ポップアップ撤去・削除を右パネル/Deleteへ
-
 - 2026-07-13 planner: 糸種別（関連/矛盾）見直しは T006 に分離
+- 2026-07-13 human: ドッグフード確認済み（ピン/糸端、往復矢印・ラベル配置など）→ done
 
 ## 差し戻し履歴（追記のみ）
