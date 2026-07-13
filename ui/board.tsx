@@ -17,10 +17,20 @@ const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
-const LINK_LANE_GAP = 16;
+const LINK_LANE_GAP = 22;
 
 type Viewport = { x: number; y: number; zoom: number };
 type Point = { x: number; y: number };
+type LinkGeometry = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  mx: number;
+  my: number;
+  /** True when the pair has 2+ threads (e.g. A→B and B→A). */
+  directed: boolean;
+};
 
 function defaultViewport(boardViewport?: Viewport): Viewport {
   return boardViewport ?? { x: 0, y: 0, zoom: 1 };
@@ -59,13 +69,17 @@ function rectEdge(from: Point, toward: Point): Point {
   return { x: from.x + dx * t, y: from.y + dy * t };
 }
 
-function linkLane(link: Link, links: Link[]): number {
-  const siblings = links
+function pairSiblings(link: Link, links: Link[]): Link[] {
+  return links
     .filter((item) =>
       (item.from === link.from && item.to === link.to) ||
       (item.from === link.to && item.to === link.from)
     )
     .toSorted((left, right) => left.id.localeCompare(right.id));
+}
+
+function linkLane(link: Link, siblings: Link[]): number {
+  if (siblings.length < 2) return 0;
   const index = siblings.findIndex((item) => item.id === link.id);
   return index - (siblings.length - 1) / 2;
 }
@@ -103,12 +117,18 @@ function linkGeometry(
   link: Link,
   links: Link[],
   positions: Record<string, { x: number; y: number }>,
-) {
+): LinkGeometry {
   const from = nodeCenter(link.from, positions);
   const to = nodeCenter(link.to, positions);
   const start = rectEdge(from, to);
   const end = rectEdge(to, from);
-  return offsetSegment(start, end, linkLane(link, links));
+  const siblings = pairSiblings(link, links);
+  // One thread = undirected (no arrow). Opposite/extra threads = directed lanes.
+  const directed = siblings.length >= 2;
+  return {
+    ...offsetSegment(start, end, linkLane(link, siblings)),
+    directed,
+  };
 }
 
 function clampZoom(zoom: number): number {
@@ -128,13 +148,15 @@ function selectLink(linkId: string): void {
 function LinkVisual(
   { link, geometry }: {
     link: Link;
-    geometry: ReturnType<typeof linkGeometry>;
+    geometry: LinkGeometry;
   },
 ) {
   const selected = selectedLinkId.value === link.id;
-  const marker = link.kind === "contradicts"
-    ? "url(#arrow-contradicts)"
-    : "url(#arrow-connects)";
+  const marker = geometry.directed
+    ? (link.kind === "contradicts"
+      ? "url(#arrow-contradicts)"
+      : "url(#arrow-connects)")
+    : undefined;
   return (
     <g
       class={`link link--visual ${
@@ -169,7 +191,7 @@ function LinkVisual(
 function LinkHit(
   { link, geometry }: {
     link: Link;
-    geometry: ReturnType<typeof linkGeometry>;
+    geometry: LinkGeometry;
   },
 ) {
   const selected = selectedLinkId.value === link.id;
@@ -569,7 +591,7 @@ export function BoardView() {
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
         <span class="board__hint">
-          ピンで移動 / 右の糸端で接続 / 紙面は選択
+          ピンで移動 / 糸端で接続（往復すると矢印） / 紙面は選択
         </span>
       </div>
       <div
