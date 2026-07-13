@@ -318,7 +318,7 @@ try {
       { args: [cardIds] },
     );
 
-    // ③ 糸を張る→ラベル（フック経由）
+    // ③ 糸を張る→ラベル→要検討→通常（フック経由）
     await page.evaluate(async (ids: string[]) => {
       const api = (globalThis as typeof globalThis & {
         __argboardTest?: {
@@ -359,6 +359,47 @@ try {
           item.from === ids[0] && item.to === ids[1]
         );
         return link?.label === "同一人物?" && link.kind === "contradicts";
+      },
+      { args: [cardIds] },
+    );
+
+    await page.evaluate(async (ids: string[]) => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          updateLink: (
+            linkId: string,
+            patch: { label?: string; kind?: "connects" | "contradicts" },
+          ) => Promise<void>;
+          getState: () => {
+            links: { id: string; from: string; to: string }[];
+          };
+        };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      const link = api.getState().links.find((item) =>
+        item.from === ids[0] && item.to === ids[1]
+      );
+      if (!link) throw new Error("Link was not found");
+      await api.updateLink(link.id, { kind: "connects" });
+    }, { args: [cardIds] });
+
+    await page.waitForFunction(
+      (ids: string[]) => {
+        const link = (globalThis as typeof globalThis & {
+          __argboardTest?: {
+            getState: () => {
+              links: {
+                from: string;
+                to: string;
+                label?: string;
+                kind: string;
+              }[];
+            };
+          };
+        }).__argboardTest?.getState().links.find((item) =>
+          item.from === ids[0] && item.to === ids[1]
+        );
+        return link?.label === "同一人物?" && link.kind === "connects";
       },
       { args: [cardIds] },
     );

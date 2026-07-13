@@ -173,7 +173,7 @@ export function createDemoProject(now = Date.now()): Project {
         id: "poster-signal",
         from: "missing-poster",
         to: "radio-signal",
-        label: "日付が矛盾",
+        label: "日付が合わない?",
         kind: "contradicts",
         createdAt: now,
       },

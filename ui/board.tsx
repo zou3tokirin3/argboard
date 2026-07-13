@@ -745,10 +745,10 @@ export function BoardView() {
         </svg>
         <div class="board__legend">
           <span>
-            <i class="thread"></i> 関連
+            <i class="thread"></i> 通常
           </span>
           <span>
-            <i class="thread is-dashed"></i> 矛盾
+            <i class="thread is-dashed"></i> 要検討
           </span>
         </div>
       </div>

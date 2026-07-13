@@ -47,7 +47,7 @@ export function Inspector() {
           />
         </label>
         <label class="inspector__field">
-          <span>種別</span>
+          <span>状態</span>
           <select
             data-testid="link-kind-toggle"
             value={link.kind}
@@ -56,8 +56,8 @@ export function Inspector() {
                 kind: event.currentTarget.value as "connects" | "contradicts",
               })}
           >
-            <option value="connects">関連</option>
-            <option value="contradicts">矛盾</option>
+            <option value="connects">通常</option>
+            <option value="contradicts">要検討</option>
           </select>
         </label>
         <button
