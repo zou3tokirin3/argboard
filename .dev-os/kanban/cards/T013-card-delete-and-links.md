@@ -34,5 +34,6 @@ updated: 2026-07-16
 - 2026-07-16 impl: 着手。task/T013 worktree で実装
 - 2026-07-16 impl: 実測で60行では不足。PLANをT013=110・T009=70・T010=0(延期)へ更新
 - 2026-07-16 impl: 完了→review。純増103行(2,803→2,906)。a4c8137 で check/test/smoke 緑。人間ゲート待ち
+- 2026-07-16 impl: task/T013をmainへmergeしdist再ビルド。localhostで確認可能
 
 ## 差し戻し履歴（追記のみ）
