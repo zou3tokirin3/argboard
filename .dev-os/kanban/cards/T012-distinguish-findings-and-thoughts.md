@@ -40,6 +40,8 @@ T007、T006の完了後、T008のドッグフード前に行う。
 - 2026-07-15 human: 「finding|thought」の分類が見当たらない → rework
 - 2026-07-15 impl: rework着手。UIに発見/考察を両方明示する
 - 2026-07-15 impl: 発見ログ・ボード・インスペクタに「発見/考察」を常時表示。08f3bb3・純増67行(2,803)・check/test/smoke緑 → review
+- 2026-07-16 human: まだ見えない（main上のdevは未マージ実装を見ていた）
+- 2026-07-16 impl: task/T012をmainへmergeしdist再ビルド。localhost:8000を再起動して確認可能に
 
 ## 差し戻し履歴（追記のみ）
 
