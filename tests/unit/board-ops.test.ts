@@ -79,6 +79,14 @@ Deno.test("applyUpdateLink sets label and kind", () => {
   if (labeled.links[0]?.kind !== "contradicts") {
     throw new Error("kind not applied");
   }
+  const resolved = applyUpdateLink(labeled, linkId, { kind: "connects" });
+  if (!resolved) throw new Error("resolve failed");
+  if (resolved.links[0]?.kind !== "connects") {
+    throw new Error("kind not restored to connects");
+  }
+  if (resolved.links[0]?.label !== "同一人物?") {
+    throw new Error("label must remain after kind restore");
+  }
 });
 
 Deno.test("applySetBoardViewport stores pan/zoom", () => {
