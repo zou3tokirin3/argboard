@@ -249,7 +249,11 @@ body {
   margin: 0 12px;
 }
 .board-node.is-thought .board-node__paper {
-  fill: #eef5ff;
+  fill: var(--accent-soft);
+  stroke-dasharray: 5 4;
+}
+.board-node.is-thought .board-node__index {
+  fill: var(--accent);
 }
 kbd {
   border: 1px solid var(--line-strong);
@@ -457,9 +461,13 @@ kbd {
 .stream-card:hover {
   background: var(--bg-soft);
 }
-.stream-card.is-selected {
+.stream-card.is-selected,
+.stream-card.is-thought {
   background: var(--accent-soft);
   box-shadow: inset 3px 0 0 var(--accent);
+}
+.stream-card.is-thought .stream-card__meta span {
+  color: var(--accent);
 }
 .stream-card__meta {
   display: flex;

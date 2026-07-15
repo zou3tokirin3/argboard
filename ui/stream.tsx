@@ -36,7 +36,9 @@ export function Stream() {
             type="button"
             class={`stream-card ${
               selectedCardId.value === card.id ? "is-selected" : ""
-            } ${isContemplate ? "is-draggable" : ""}`}
+            } ${card.role === "thought" ? "is-thought" : ""} ${
+              isContemplate ? "is-draggable" : ""
+            }`}
             data-testid="stream-card"
             data-card-id={card.id}
             data-role={card.role === "thought" ? "thought" : "finding"}

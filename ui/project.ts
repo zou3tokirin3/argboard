@@ -107,6 +107,29 @@ export function applyRemoveLink(
   };
 }
 
+/** Remove a card and cascade links + board placement. */
+export function applyRemoveCard(
+  project: Project,
+  cardId: string,
+): Project | null {
+  if (!project.cards.some((card) => card.id === cardId)) return null;
+  return withMainBoard(
+    {
+      ...project,
+      cards: project.cards.filter((card) => card.id !== cardId),
+      links: project.links.filter((l) => l.from !== cardId && l.to !== cardId),
+    },
+    (board) => {
+      const { [cardId]: _, ...positions } = board.positions;
+      return {
+        ...board,
+        cardIds: board.cardIds.filter((id) => id !== cardId),
+        positions,
+      };
+    },
+  );
+}
+
 export function applySetBoardViewport(
   project: Project,
   viewport: NonNullable<Board["viewport"]>,

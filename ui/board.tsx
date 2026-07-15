@@ -6,6 +6,7 @@ import {
   moveCardOnBoardLocal,
   placeCardOnBoard,
   project,
+  removeCard,
   removeLink,
   selectedCardId,
   selectedLinkId,
@@ -421,9 +422,15 @@ export function BoardView() {
         return;
       }
       const linkId = selectedLinkId.value;
-      if (!linkId) return;
+      if (linkId) {
+        event.preventDefault();
+        void removeLink(linkId);
+        return;
+      }
+      const cardId = selectedCardId.value;
+      if (!cardId) return;
       event.preventDefault();
-      void removeLink(linkId);
+      void removeCard(cardId);
     }
     globalThis.addEventListener("keydown", onKeyDown);
     return () => globalThis.removeEventListener("keydown", onKeyDown);

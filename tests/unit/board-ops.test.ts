@@ -1,6 +1,7 @@
 import {
   applyConnectCards,
   applyPlaceCardOnBoard,
+  applyRemoveCard,
   applySetBoardViewport,
   applyUpdateLink,
   createEmptyProject,
@@ -110,5 +111,36 @@ Deno.test("thought cards share board placement", () => {
       .includes(cardId)
   ) {
     throw new Error("thought must place like finding");
+  }
+});
+
+Deno.test("applyRemoveCard cascades card links and placement", () => {
+  const a = crypto.randomUUID();
+  const b = crypto.randomUUID();
+  let project = createEmptyProject("ボード", 1);
+  project = {
+    ...project,
+    cards: [
+      { id: a, title: "A", foundAt: 1 },
+      { id: b, title: "B", foundAt: 2 },
+    ],
+  };
+  project = applyPlaceCardOnBoard(project, a, 0, 0)!;
+  project = applyPlaceCardOnBoard(project, b, 100, 0)!;
+  project = applyConnectCards(project, a, b)!;
+  const next = applyRemoveCard(project, a);
+  if (!next) throw new Error("remove should succeed");
+  if (next.cards.some((card) => card.id === a)) {
+    throw new Error("card must be removed");
+  }
+  if (next.links.length !== 0) throw new Error("links must cascade");
+  if (next.boards[0]?.cardIds.includes(a)) {
+    throw new Error("board cardIds must drop card");
+  }
+  if (next.boards[0]?.positions[a]) {
+    throw new Error("board positions must drop card");
+  }
+  if (!next.cards.some((card) => card.id === b)) {
+    throw new Error("other card must remain");
   }
 });
