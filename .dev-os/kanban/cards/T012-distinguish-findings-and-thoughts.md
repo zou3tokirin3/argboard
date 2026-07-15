@@ -1,7 +1,7 @@
 ---
 id: T012
 title: 発見カードと考察カードを区別する
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T012"
@@ -39,6 +39,7 @@ T007、T006の完了後、T008のドッグフード前に行う。
 - 2026-07-15 impl: 完了→review。本体純増68行(2,736→2,804)。f107cc0 で check/test/smoke 緑。人間ゲート待ち
 - 2026-07-15 human: 「finding|thought」の分類が見当たらない → rework
 - 2026-07-15 impl: rework着手。UIに発見/考察を両方明示する
+- 2026-07-15 impl: 発見ログ・ボード・インスペクタに「発見/考察」を常時表示。08f3bb3・純増67行(2,803)・check/test/smoke緑 → review
 
 ## 差し戻し履歴（追記のみ）
 
