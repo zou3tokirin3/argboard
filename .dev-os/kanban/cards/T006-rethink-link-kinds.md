@@ -1,13 +1,13 @@
 ---
 id: T006
 title: 糸を後から要検討にできるようにする
-status: review
+status: done
 owner: impl
 gate: human
-branch: task/T006
+branch: "task/T006"
 template_ver: generic-0.2
 created: 2026-07-13
-updated: 2026-07-13
+updated: 2026-07-15
 ---
 
 ## 目的
@@ -39,7 +39,7 @@ P0のT007は完了済みで、このカードを次の実装対象とする。
 - [x] 既存smoke③でラベル作成と通常⇄要検討の変更を維持する
 - [x] 着手前に本体行数の増減見積もりを記録し、3,000行の絶対上限を守る
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間がラベル編集・既存リンク表示を確認する
+- [x] 人間がラベル編集・既存リンク表示を確認する
 
 ## 作業ログ（追記のみ）
 
@@ -51,5 +51,7 @@ P0のT007は完了済みで、このカードを次の実装対象とする。
 - 2026-07-13 planner: T007完了と受け入れ条件・人間ゲート・行数制約を確認し、backlogからreadyへ移行
 - 2026-07-13 impl: 着手。基準行数2,736・純増上限10行。既存kind/セレクタ/破線赤を再利用しUI語を通常/要検討へ
 - 2026-07-13 impl: 完了→review。本体純増0行(2,736のまま)。7eaa14b で check/test/smoke 緑。要検討の見た目は既存の破線赤を維持
+- 2026-07-15 human: ラベル編集・既存リンク表示OK → merge/done 指示
+- 2026-07-15 human: task/T006をmerge、worktree/branch削除 → done（5c934bf）
 
 ## 差し戻し履歴（追記のみ）
