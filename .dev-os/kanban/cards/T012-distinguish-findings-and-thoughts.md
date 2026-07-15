@@ -1,13 +1,13 @@
 ---
 id: T012
 title: 発見カードと考察カードを区別する
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T012"
 template_ver: generic-0.2
 created: 2026-07-13
-updated: 2026-07-15
+updated: 2026-07-16
 ---
 
 ## 目的
@@ -28,7 +28,7 @@ T007、T006の完了後、T008のドッグフード前に行う。
 - [x] 既存Project JSONをschema version 1のまま読み込める
 - [x] 15ファイル / 3,000行のv1絶対上限を守る。超える場合は機能を圧縮せずplannerへ差し戻す
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「発見」と「自分の考察」を迷わず使い分けられるか確認する
+- [x] 人間が「発見」と「自分の考察」を迷わず使い分けられるか確認する
 
 ## 作業ログ（追記のみ）
 
@@ -42,6 +42,8 @@ T007、T006の完了後、T008のドッグフード前に行う。
 - 2026-07-15 impl: 発見ログ・ボード・インスペクタに「発見/考察」を常時表示。08f3bb3・純増67行(2,803)・check/test/smoke緑 → review
 - 2026-07-16 human: まだ見えない（main上のdevは未マージ実装を見ていた）
 - 2026-07-16 impl: task/T012をmainへmergeしdist再ビルド。localhost:8000を再起動して確認可能に
+- 2026-07-16 human: 考察カード出るようになった → merge済み確認・done
+- 2026-07-16 impl: worktree/branch削除 → done
 
 ## 差し戻し履歴（追記のみ）
 
