@@ -451,7 +451,7 @@ kbd {
   display: block;
   border: 0;
   border-bottom: 1px solid var(--line-strong);
-  padding: 14px 16px;
+  padding: 14px 72px 14px 16px;
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -465,9 +465,6 @@ kbd {
 .stream-card.is-thought {
   background: var(--accent-soft);
   box-shadow: inset 3px 0 0 var(--accent);
-}
-.stream-card.is-selected {
-  padding-right: 72px;
 }
 .stream-card.is-thought .stream-card__meta span {
   color: var(--accent);
