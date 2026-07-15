@@ -176,7 +176,6 @@ function App() {
             <Capture />
             <div class="workspace workspace--explore">
               <Stream />
-              <Inspector />
             </div>
           </>
         )

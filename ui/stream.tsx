@@ -1,4 +1,10 @@
-import { filteredCards, project, search, selectedCardId } from "./state.ts";
+import {
+  filteredCards,
+  project,
+  removeCard,
+  search,
+  selectedCardId,
+} from "./state.ts";
 import { CARD_MIME } from "./types.ts";
 
 const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
@@ -31,45 +37,60 @@ export function Stream() {
         />
       </label>
       <div class="stream__list">
-        {filteredCards.value.map((card) => (
-          <button
-            type="button"
-            class={`stream-card ${
-              selectedCardId.value === card.id ? "is-selected" : ""
-            } ${card.role === "thought" ? "is-thought" : ""} ${
-              isContemplate ? "is-draggable" : ""
-            }`}
-            data-testid="stream-card"
-            data-card-id={card.id}
-            data-role={card.role === "thought" ? "thought" : "finding"}
-            draggable={isContemplate}
-            onDragStart={(event) => {
-              if (!isContemplate) return;
-              globalThis.getSelection?.()?.removeAllRanges();
-              event.dataTransfer?.setData(CARD_MIME, card.id);
-              event.dataTransfer!.effectAllowed = "copy";
-            }}
-            onDragEnd={() => globalThis.getSelection?.()?.removeAllRanges()}
-            onClick={() => selectedCardId.value = card.id}
-          >
-            <span class="stream-card__meta">
-              <time>{timeFormatter.format(card.foundAt)}</time>
-              <span>
-                {card.role === "thought" ? "考察" : "発見"} ·{" "}
-                {boardCardIds.has(card.id) ? "ボード済" : "未配置"}
-              </span>
-            </span>
-            <strong>{card.title}</strong>
-            {card.body ? <small>{card.body}</small> : null}
-            {card.tags?.length
-              ? (
-                <span class="tags">
-                  {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
+        {filteredCards.value.map((card) => {
+          const selected = selectedCardId.value === card.id;
+          return (
+            <div class="stream-row" key={card.id}>
+              <button
+                type="button"
+                class={`stream-card ${selected ? "is-selected" : ""} ${
+                  card.role === "thought" ? "is-thought" : ""
+                } ${isContemplate ? "is-draggable" : ""}`}
+                data-testid="stream-card"
+                data-card-id={card.id}
+                data-role={card.role === "thought" ? "thought" : "finding"}
+                draggable={isContemplate}
+                onDragStart={(event) => {
+                  if (!isContemplate) return;
+                  globalThis.getSelection?.()?.removeAllRanges();
+                  event.dataTransfer?.setData(CARD_MIME, card.id);
+                  event.dataTransfer!.effectAllowed = "copy";
+                }}
+                onDragEnd={() => globalThis.getSelection?.()?.removeAllRanges()}
+                onClick={() => selectedCardId.value = card.id}
+              >
+                <span class="stream-card__meta">
+                  <time>{timeFormatter.format(card.foundAt)}</time>
+                  <span>
+                    {card.role === "thought" ? "考察" : "発見"} ·{" "}
+                    {boardCardIds.has(card.id) ? "ボード済" : "未配置"}
+                  </span>
                 </span>
-              )
-              : null}
-          </button>
-        ))}
+                <strong>{card.title}</strong>
+                {card.body ? <small>{card.body}</small> : null}
+                {card.tags?.length
+                  ? (
+                    <span class="tags">
+                      {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
+                    </span>
+                  )
+                  : null}
+              </button>
+              {selected
+                ? (
+                  <button
+                    type="button"
+                    class="inspector__danger stream-card__delete"
+                    data-testid="stream-card-delete"
+                    onClick={() => removeCard(card.id)}
+                  >
+                    削除
+                  </button>
+                )
+                : null}
+            </div>
+          );
+        })}
       </div>
     </section>
   );
