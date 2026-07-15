@@ -1,7 +1,7 @@
 ---
 id: T013
 title: カード削除・つながり表示・発見考察の見た目差
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T013"
@@ -19,7 +19,7 @@ updated: 2026-07-16
 
 - [x] `applyRemoveCard` でカード・関連糸・ボード配置を一括除去できる
 - [x] インスペクタに「このカードを削除」があり、Delete/Backspaceでも消せる（入力中は除く）
-- [ ] 探索モードでもカード選択時にインスペクタと削除が使える
+- [x] 探索モードでもカード選択時にインスペクタと削除が使える
 - [x] インスペクタで当該カードのつながりを選べ、その糸の編集に移れる
 - [x] 発見ログで考察カードが左アクセント帯＋薄い背景で判別できる
 - [x] ボードで考察カードが破線枠で発見の実線と対比できる
@@ -38,6 +38,7 @@ updated: 2026-07-16
 - 2026-07-16 impl: task/T013をmainへmergeしdist再ビルド。localhostで確認可能
 - 2026-07-16 human: 探索画面でカードが消せない → rework
 - 2026-07-16 impl: rework着手。探索にもInspector、DeleteをApp共通化
+- 2026-07-16 impl: 探索にInspector追加・DeleteをAppへ移動。純増104行(2,907)。a1215d2 merge・check/test/smoke緑 → review
 
 ## 差し戻し履歴（追記のみ）
 
