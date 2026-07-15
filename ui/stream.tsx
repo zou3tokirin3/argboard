@@ -39,6 +39,7 @@ export function Stream() {
             } ${isContemplate ? "is-draggable" : ""}`}
             data-testid="stream-card"
             data-card-id={card.id}
+            data-role={card.role === "thought" ? "thought" : "finding"}
             draggable={isContemplate}
             onDragStart={(event) => {
               if (!isContemplate) return;
@@ -51,9 +52,10 @@ export function Stream() {
           >
             <span class="stream-card__meta">
               <time>{timeFormatter.format(card.foundAt)}</time>
-              {boardCardIds.has(card.id)
-                ? <span>ボード済</span>
-                : <span>未配置</span>}
+              <span>
+                {card.role === "thought" ? "考察 · " : ""}
+                {boardCardIds.has(card.id) ? "ボード済" : "未配置"}
+              </span>
             </span>
             <strong>{card.title}</strong>
             {card.body ? <small>{card.body}</small> : null}

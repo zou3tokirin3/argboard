@@ -193,7 +193,13 @@ export async function switchProject(id: string): Promise<void> {
   activateProject(loaded);
 }
 
-export async function addCard(title: string): Promise<void> {
+export async function addCard(
+  title: string,
+  options?: {
+    role?: "finding" | "thought";
+    placeAt?: { x: number; y: number };
+  },
+): Promise<void> {
   const cleanTitle = title.trim();
   if (!cleanTitle) return;
 
@@ -206,8 +212,19 @@ export async function addCard(title: string): Promise<void> {
     id: crypto.randomUUID(),
     title: cleanTitle,
     foundAt: Date.now(),
+    ...(options?.role === "thought" ? { role: "thought" as const } : {}),
   };
-  const next = { ...current, cards: [...current.cards, card] };
+  let next: Project = { ...current, cards: [...current.cards, card] };
+  if (options?.placeAt) {
+    next = applyPlaceCardOnBoard(
+      next,
+      card.id,
+      options.placeAt.x,
+      options.placeAt.y,
+    ) ?? next;
+    selectedCardId.value = card.id;
+    selectedLinkId.value = null;
+  }
   // persist() writes project.value synchronously before any await.
   const saving = persist(next);
 

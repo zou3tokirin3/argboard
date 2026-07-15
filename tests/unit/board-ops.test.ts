@@ -97,3 +97,18 @@ Deno.test("applySetBoardViewport stores pan/zoom", () => {
     throw new Error("viewport not stored");
   }
 });
+
+Deno.test("thought cards share board placement", () => {
+  const cardId = crypto.randomUUID();
+  let project = createEmptyProject("ボード", 1);
+  project = {
+    ...project,
+    cards: [{ id: cardId, title: "仮説", role: "thought", foundAt: 1 }],
+  };
+  if (
+    !applyPlaceCardOnBoard(project, cardId, 10, 20)?.boards[0]?.cardIds
+      .includes(cardId)
+  ) {
+    throw new Error("thought must place like finding");
+  }
+});

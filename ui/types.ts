@@ -19,6 +19,7 @@ export type Project = {
 export type Card = {
   id: string;
   title: string;
+  role?: "finding" | "thought";
   body?: string;
   url?: string;
   image?: string;
