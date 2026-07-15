@@ -15,7 +15,11 @@ import {
   placeCardOnBoard,
   project,
   projectSummaries,
+  removeCard,
+  removeLink,
   saveStatus,
+  selectedCardId,
+  selectedLinkId,
   setAppMode,
   setSideOpen,
   sideOpen,
@@ -54,6 +58,32 @@ declare global {
 function App() {
   useEffect(() => {
     initialize();
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      const linkId = selectedLinkId.value;
+      if (linkId) {
+        event.preventDefault();
+        void removeLink(linkId);
+        return;
+      }
+      const cardId = selectedCardId.value;
+      if (!cardId) return;
+      event.preventDefault();
+      void removeCard(cardId);
+    }
+    globalThis.addEventListener("keydown", onKeyDown);
+    return () => globalThis.removeEventListener("keydown", onKeyDown);
   }, []);
 
   if (!project.value) {
@@ -146,6 +176,7 @@ function App() {
             <Capture />
             <div class="workspace workspace--explore">
               <Stream />
+              <Inspector />
             </div>
           </>
         )

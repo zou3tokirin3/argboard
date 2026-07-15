@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import {
   addCard,
   connectCards,
@@ -6,8 +6,6 @@ import {
   moveCardOnBoardLocal,
   placeCardOnBoard,
   project,
-  removeCard,
-  removeLink,
   selectedCardId,
   selectedLinkId,
   setBoardViewportLocal,
@@ -409,32 +407,6 @@ export function BoardView() {
     }
     | null
   >(null);
-
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Delete" && event.key !== "Backspace") return;
-      const target = event.target as HTMLElement | null;
-      if (
-        target &&
-        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-      const linkId = selectedLinkId.value;
-      if (linkId) {
-        event.preventDefault();
-        void removeLink(linkId);
-        return;
-      }
-      const cardId = selectedCardId.value;
-      if (!cardId) return;
-      event.preventDefault();
-      void removeCard(cardId);
-    }
-    globalThis.addEventListener("keydown", onKeyDown);
-    return () => globalThis.removeEventListener("keydown", onKeyDown);
-  }, []);
 
   if (!current || !board) return null;
 

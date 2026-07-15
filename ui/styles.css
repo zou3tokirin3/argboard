@@ -270,6 +270,7 @@ kbd {
 }
 .workspace--explore {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
   height: calc(100vh - 134px);
   background: var(--panel);
 }
@@ -278,6 +279,7 @@ kbd {
   max-width: 720px;
   margin: 0 auto;
   width: 100%;
+  min-height: 0;
 }
 .workspace--contemplate {
   display: flex;
@@ -851,10 +853,6 @@ kbd {
   }
   .contemplate-main {
     display: block;
-  }
-  .mode-explore .board,
-  .mode-explore .inspector {
-    display: none;
   }
   .inspector {
     border-left: 0;
