@@ -1,13 +1,13 @@
 ---
 id: T012
 title: 発見カードと考察カードを区別する
-status: backlog
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T012"
 template_ver: generic-0.2
 created: 2026-07-13
-updated: 2026-07-13
+updated: 2026-07-15
 ---
 
 ## 目的
@@ -34,5 +34,7 @@ T007、T006の完了後、T008のドッグフード前に行う。
 
 - 2026-07-13 human: ユーザー自身の考察・違和感をどう残すか掘り込む必要を指摘
 - 2026-07-13 planner: 新しい実体を増やさず、Card.roleと考察モード専用入力で起票。depends on T007, T006
+- 2026-07-15 human: T012実装を指示。T006/T007完了済みのため ready 経由で着手可
+- 2026-07-15 impl: 着手。基準行数2,736・純増上限70行。Card.roleと考察モード1行入力で既存配置・保存を共用
 
 ## 差し戻し履歴（追記のみ）
