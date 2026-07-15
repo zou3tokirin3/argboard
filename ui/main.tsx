@@ -30,7 +30,13 @@ declare global {
       getState: () => unknown;
       flushSave: () => Promise<void>;
       getPersistenceRequestCount: () => number;
-      addCard: (title: string) => Promise<void>;
+      addCard: (
+        title: string,
+        options?: {
+          role?: "finding" | "thought";
+          placeAt?: { x: number; y: number };
+        },
+      ) => Promise<void>;
       createProject: (name?: string) => Promise<unknown>;
       switchProject: (id: string) => Promise<void>;
       listProjects: () => unknown;

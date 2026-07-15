@@ -241,6 +241,16 @@ body {
 .capture input::placeholder {
   color: #8b98a5;
 }
+.board__toolbar .capture {
+  width: auto;
+  flex: 1;
+  max-width: 300px;
+  height: 34px;
+  margin: 0 12px;
+}
+.board-node.is-thought .board-node__paper {
+  fill: #eef5ff;
+}
 kbd {
   border: 1px solid var(--line-strong);
   border-radius: 4px;

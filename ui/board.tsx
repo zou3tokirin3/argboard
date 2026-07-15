@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import {
+  addCard,
   connectCards,
   flushSave,
   moveCardOnBoardLocal,
@@ -297,13 +298,15 @@ function BoardNode({
   const selected = selectedCardId.value === card.id;
   const pinX = NODE_WIDTH / 2;
   const threadY = NODE_HEIGHT / 2;
+  const thought = card.role === "thought";
   return (
     <g
       class={`board-node ${selected ? "is-selected" : ""} ${
         isDropTarget ? "is-drop-target" : ""
-      }`}
+      } ${thought ? "is-thought" : ""}`}
       data-testid="board-node"
       data-card-id={card.id}
+      data-role={thought ? "thought" : "finding"}
       transform={`translate(${x} ${y})`}
     >
       <rect
@@ -322,7 +325,7 @@ function BoardNode({
         onPointerDown={(event) => onPaperPointerDown(event, card.id)}
       />
       <text class="board-node__index" x="18" y="27">
-        {card.id.slice(0, 8)}
+        {thought ? "考察" : "発見"}
       </text>
       <foreignObject x="18" y="40" width={NODE_WIDTH - 36} height="70">
         <div class="board-node__title">{card.title}</div>
@@ -629,6 +632,24 @@ export function BoardView() {
     );
   }
 
+  async function submitThought(event: SubmitEvent) {
+    event.preventDefault();
+    const input = (event.currentTarget as HTMLFormElement)
+      .elements.namedItem("thought") as HTMLInputElement;
+    const title = input.value;
+    if (!title.trim()) return;
+    input.value = "";
+    const rect = canvasRef.current?.getBoundingClientRect();
+    const vp = defaultViewport(project.value?.boards[0]?.viewport);
+    await addCard(title, {
+      role: "thought",
+      placeAt: {
+        x: ((rect?.width ?? 640) / 2 - vp.x) / vp.zoom - NODE_WIDTH / 2,
+        y: ((rect?.height ?? 480) / 2 - vp.y) / vp.zoom - NODE_HEIGHT / 2,
+      },
+    });
+  }
+
   return (
     <section class="board" aria-label="捜査ボード">
       <div class="board__toolbar">
@@ -637,6 +658,16 @@ export function BoardView() {
           <strong>{board.name}</strong>
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
+        <form class="capture" onSubmit={submitThought}>
+          <input
+            name="thought"
+            data-testid="thought-input"
+            aria-label="考察カードを追加"
+            autocomplete="off"
+            placeholder="考察カードを追加…"
+          />
+          <kbd>↵</kbd>
+        </form>
         <span class="board__hint">
           ピンで移動 / 糸端で接続（往復すると矢印） / 紙面は選択
         </span>
