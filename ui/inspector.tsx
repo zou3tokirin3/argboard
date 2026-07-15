@@ -1,8 +1,12 @@
 import { useEffect, useState } from "preact/hooks";
 import {
+  project,
+  removeCard,
   removeLink,
   selectedCard,
+  selectedCardId,
   selectedLink,
+  selectedLinkId,
   updateCard,
   updateLink,
 } from "./state.ts";
@@ -87,6 +91,12 @@ export function Inspector() {
     await updateCard(card!.id, { title, body });
   }
 
+  const cards = project.value?.cards ?? [];
+  const cardLinks =
+    project.value?.links.filter((item) =>
+      item.from === card.id || item.to === card.id
+    ) ?? [];
+
   return (
     <aside class="inspector" aria-label="カード編集">
       <div class="section-heading">
@@ -115,6 +125,46 @@ export function Inspector() {
           onBlur={commit}
         />
       </label>
+      {cardLinks.length
+        ? (
+          <label class="inspector__field">
+            <span>つながり</span>
+            <select
+              data-testid="card-links"
+              value=""
+              onChange={(event) => {
+                const id = event.currentTarget.value;
+                if (!id) return;
+                selectedLinkId.value = id;
+                selectedCardId.value = null;
+              }}
+            >
+              <option value="">糸を選ぶ…</option>
+              {cardLinks.map((item) => {
+                const other = cards.find((c) =>
+                  c.id === (item.from === card.id ? item.to : item.from)
+                );
+                return (
+                  <option key={item.id} value={item.id}>
+                    {other?.title ?? "？"} · {item.label || "（ラベルなし）"} ·
+                    {" "}
+                    {item.kind === "contradicts" ? "要検討" : "通常"}
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+        )
+        : null}
+      <button
+        type="button"
+        class="inspector__danger"
+        data-testid="card-delete"
+        onClick={() => removeCard(card.id)}
+      >
+        このカードを削除
+      </button>
+      <p class="inspector__hint">Delete キーでも削除できます</p>
     </aside>
   );
 }

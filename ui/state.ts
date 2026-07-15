@@ -3,6 +3,7 @@ import { store } from "./db.ts";
 import {
   applyConnectCards,
   applyPlaceCardOnBoard,
+  applyRemoveCard,
   applyRemoveLink,
   applySetBoardViewport,
   applyUpdateLink,
@@ -330,6 +331,18 @@ export async function removeLink(linkId: string): Promise<void> {
   const next = applyRemoveLink(current, linkId);
   if (!next) return;
   if (selectedLinkId.value === linkId) selectedLinkId.value = null;
+  await persist(next);
+}
+
+export async function removeCard(cardId: string): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  const next = applyRemoveCard(current, cardId);
+  if (!next) return;
+  if (selectedCardId.value === cardId) selectedCardId.value = null;
+  if (!next.links.some((link) => link.id === selectedLinkId.value)) {
+    selectedLinkId.value = null;
+  }
   await persist(next);
 }
 
