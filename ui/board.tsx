@@ -325,8 +325,7 @@ function BoardNode({
         onPointerDown={(event) => onPaperPointerDown(event, card.id)}
       />
       <text class="board-node__index" x="18" y="27">
-        {thought ? "考察 · " : ""}
-        {card.id.slice(0, 8)}
+        {thought ? "考察" : "発見"}
       </text>
       <foreignObject x="18" y="40" width={NODE_WIDTH - 36} height="70">
         <div class="board-node__title">{card.title}</div>

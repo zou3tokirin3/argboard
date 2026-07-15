@@ -92,7 +92,7 @@ export function Inspector() {
       <div class="section-heading">
         <div>
           <span class="eyebrow">簡易編集</span>
-          <h2>カード</h2>
+          <h2>{card.role === "thought" ? "考察カード" : "発見カード"}</h2>
         </div>
       </div>
       <label class="inspector__field">

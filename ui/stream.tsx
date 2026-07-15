@@ -53,7 +53,7 @@ export function Stream() {
             <span class="stream-card__meta">
               <time>{timeFormatter.format(card.foundAt)}</time>
               <span>
-                {card.role === "thought" ? "考察 · " : ""}
+                {card.role === "thought" ? "考察" : "発見"} ·{" "}
                 {boardCardIds.has(card.id) ? "ボード済" : "未配置"}
               </span>
             </span>
