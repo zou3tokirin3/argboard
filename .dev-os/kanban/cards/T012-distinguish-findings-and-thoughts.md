@@ -1,7 +1,7 @@
 ---
 id: T012
 title: 発見カードと考察カードを区別する
-status: review
+status: rework
 owner: impl
 gate: human
 branch: "task/T012"
@@ -37,5 +37,9 @@ T007、T006の完了後、T008のドッグフード前に行う。
 - 2026-07-15 human: T012実装を指示。T006/T007完了済みのため ready 経由で着手可
 - 2026-07-15 impl: 着手。基準行数2,736・純増上限70行。Card.roleと考察モード1行入力で既存配置・保存を共用
 - 2026-07-15 impl: 完了→review。本体純増68行(2,736→2,804)。f107cc0 で check/test/smoke 緑。人間ゲート待ち
+- 2026-07-15 human: 「finding|thought」の分類が見当たらない → rework
+- 2026-07-15 impl: rework着手。UIに発見/考察を両方明示する
 
 ## 差し戻し履歴（追記のみ）
+
+- 2026-07-15 human: 画面上で発見/考察の分類が見えない（英語enumも印も不足）
