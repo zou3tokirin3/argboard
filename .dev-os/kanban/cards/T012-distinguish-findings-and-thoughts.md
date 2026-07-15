@@ -1,7 +1,7 @@
 ---
 id: T012
 title: 発見カードと考察カードを区別する
-status: rework
+status: doing
 owner: impl
 gate: human
 branch: "task/T012"
