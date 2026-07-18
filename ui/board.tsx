@@ -282,16 +282,14 @@ function BoardNode({
   x,
   y,
   isDropTarget,
-  onPaperPointerDown,
-  onPinPointerDown,
+  onNodePointerDown,
   onThreadPointerDown,
 }: {
   card: Card;
   x: number;
   y: number;
   isDropTarget: boolean;
-  onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
-  onPinPointerDown: (event: PointerEvent, cardId: string) => void;
+  onNodePointerDown: (event: PointerEvent, cardId: string) => void;
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
   const selected = selectedCardId.value === card.id;
@@ -307,6 +305,11 @@ function BoardNode({
       data-card-id={card.id}
       data-role={thought ? "thought" : "finding"}
       transform={`translate(${x} ${y})`}
+      onPointerDown={(event) => {
+        const target = event.target as Element;
+        if (target.closest(".board-node__thread")) return;
+        onNodePointerDown(event, card.id);
+      }}
     >
       <rect
         class="board-node__shadow"
@@ -321,23 +324,26 @@ function BoardNode({
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
         rx="3"
-        onPointerDown={(event) => onPaperPointerDown(event, card.id)}
       />
       <text class="board-node__index" x="18" y="27">
         {thought ? "考察" : "発見"}
       </text>
-      <foreignObject x="18" y="40" width={NODE_WIDTH - 36} height="70">
+      <foreignObject
+        x="18"
+        y="40"
+        width={NODE_WIDTH - 36}
+        height="70"
+        style={{ pointerEvents: "none" }}
+      >
         <div class="board-node__title">{card.title}</div>
       </foreignObject>
 
-      {/* Pin: move card. Invisible hit disc is larger than the visible head. */}
+      {/* Pin: visual affordance. Body drag moves the card. */}
       <g
         class="board-node__pin"
         data-testid="board-pin"
         transform={`translate(${pinX} 0)`}
-        onPointerDown={(event) => onPinPointerDown(event, card.id)}
-        role="button"
-        aria-label="ピンをドラッグして移動"
+        aria-hidden="true"
       >
         <circle class="board-node__pin-hit" cx="0" cy="2" r="18" />
         <circle class="board-node__pin-head" cx="0" cy="0" r="9" />
@@ -465,16 +471,7 @@ export function BoardView() {
     canvasRef.current?.setPointerCapture(event.pointerId);
   }
 
-  function onPaperPointerDown(event: PointerEvent, cardId: string) {
-    if (event.button !== 0) return;
-    event.stopPropagation();
-    event.preventDefault();
-    clearTextSelection();
-    selectedCardId.value = cardId;
-    selectedLinkId.value = null;
-  }
-
-  function onPinPointerDown(event: PointerEvent, cardId: string) {
+  function onNodePointerDown(event: PointerEvent, cardId: string) {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
@@ -648,7 +645,7 @@ export function BoardView() {
           <kbd>↵</kbd>
         </form>
         <span class="board__hint">
-          ピンで移動 / 糸端で接続（往復すると矢印） / 紙面は選択
+          紙面で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
         </span>
       </div>
       <div
@@ -704,26 +701,7 @@ export function BoardView() {
                 />
               ))}
             </g>
-            <g class="nodes">
-              {board.cardIds.map((cardId) => {
-                const card = cardMap.get(cardId);
-                const position = board.positions[cardId];
-                return card && position
-                  ? (
-                    <BoardNode
-                      key={card.id}
-                      card={card}
-                      x={position.x}
-                      y={position.y}
-                      isDropTarget={rubber?.targetId === card.id}
-                      onPaperPointerDown={onPaperPointerDown}
-                      onPinPointerDown={onPinPointerDown}
-                      onThreadPointerDown={onThreadPointerDown}
-                    />
-                  )
-                  : null;
-              })}
-            </g>
+            {/* Hits under nodes so sticky-note body drag wins over thread overlap. */}
             <g class="links links--hit">
               {current.links.map((link) => (
                 <LinkHit
@@ -736,21 +714,38 @@ export function BoardView() {
                   )}
                 />
               ))}
-              {rubber
-                ? (
-                  <line
-                    class={`link__rubber ${
-                      rubber.targetId ? "is-snapped" : ""
-                    }`}
-                    data-testid="link-rubber"
-                    x1={rubber.x1}
-                    y1={rubber.y1}
-                    x2={rubber.x2}
-                    y2={rubber.y2}
-                  />
-                )
-                : null}
             </g>
+            <g class="nodes">
+              {board.cardIds.map((cardId) => {
+                const card = cardMap.get(cardId);
+                const position = board.positions[cardId];
+                return card && position
+                  ? (
+                    <BoardNode
+                      key={card.id}
+                      card={card}
+                      x={position.x}
+                      y={position.y}
+                      isDropTarget={rubber?.targetId === card.id}
+                      onNodePointerDown={onNodePointerDown}
+                      onThreadPointerDown={onThreadPointerDown}
+                    />
+                  )
+                  : null;
+              })}
+            </g>
+            {rubber
+              ? (
+                <line
+                  class={`link__rubber ${rubber.targetId ? "is-snapped" : ""}`}
+                  data-testid="link-rubber"
+                  x1={rubber.x1}
+                  y1={rubber.y1}
+                  x2={rubber.x2}
+                  y2={rubber.y2}
+                />
+              )
+              : null}
           </g>
         </svg>
         <div class="board__legend">

@@ -581,7 +581,10 @@ kbd {
   min-height: 0;
 }
 .board-node {
-  cursor: default;
+  cursor: grab;
+}
+.board-node:active {
+  cursor: grabbing;
 }
 .board-node__shadow {
   fill: rgb(15 20 25 / 12%);
@@ -591,17 +594,13 @@ kbd {
   fill: var(--paper);
   stroke: var(--ink);
   stroke-width: 2;
-  cursor: pointer;
 }
 .board-node.is-selected .board-node__paper {
   stroke: var(--accent);
   stroke-width: 3;
 }
 .board-node__pin {
-  cursor: grab;
-}
-.board-node__pin:active {
-  cursor: grabbing;
+  pointer-events: none;
 }
 .board-node__pin-hit {
   fill: transparent;
