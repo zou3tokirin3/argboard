@@ -15,9 +15,8 @@ import { CARD_MIME } from "./types.ts";
 
 const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
-/** Sticky-note adhesive strip: wider than the pin, top of the card only. */
+/** Sticky-note adhesive strip: top band only. */
 const ADHESIVE_HEIGHT = 38;
-const ADHESIVE_OVERHANG = 10;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 const LINK_LANE_GAP = 22;
@@ -298,7 +297,6 @@ function BoardNode({
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
   const selected = selectedCardId.value === card.id;
-  const pinX = NODE_WIDTH / 2;
   const threadY = NODE_HEIGHT / 2;
   const thought = card.role === "thought";
   return (
@@ -326,14 +324,14 @@ function BoardNode({
         rx="3"
         onPointerDown={(event) => onPaperPointerDown(event, card.id)}
       />
-      {/* Sticky adhesive: top band only — wider than the pin head. */}
+      {/* Sticky adhesive: top band only. */}
       <rect
         class="board-node__adhesive"
         data-testid="board-adhesive"
         x="0"
-        y={-ADHESIVE_OVERHANG}
+        y="0"
         width={NODE_WIDTH}
-        height={ADHESIVE_HEIGHT + ADHESIVE_OVERHANG}
+        height={ADHESIVE_HEIGHT}
         rx="3"
         onPointerDown={(event) => onAdhesivePointerDown(event, card.id)}
         role="button"
@@ -352,20 +350,7 @@ function BoardNode({
         <div class="board-node__title">{card.title}</div>
       </foreignObject>
 
-      <g
-        class="board-node__pin"
-        data-testid="board-pin"
-        transform={`translate(${pinX} 0)`}
-        aria-hidden="true"
-      >
-        <circle class="board-node__pin-head" cx="0" cy="0" r="9" />
-        <polygon
-          class="board-node__pin-needle"
-          points="-3,6 3,6 0,18"
-        />
-      </g>
-
-      {/* Thread stub: draw a link. Not a pin — a short thread end. */}
+      {/* Thread stub: draw a link from the right edge. */}
       <g
         class="board-node__thread"
         data-testid="link-handle"

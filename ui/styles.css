@@ -608,17 +608,6 @@ kbd {
   cursor: grabbing;
   fill: rgb(232 196 90 / 32%);
 }
-.board-node__pin {
-  pointer-events: none;
-}
-.board-node__pin-head {
-  fill: var(--accent);
-  stroke: #fff;
-  stroke-width: 2;
-}
-.board-node__pin-needle {
-  fill: var(--muted);
-}
 .board-node__index {
   fill: var(--muted);
   font: 500 10px "IBM Plex Mono", monospace;
@@ -636,9 +625,6 @@ kbd {
   stroke: var(--link);
   stroke-width: 4;
   fill: #eef5ff;
-}
-.board-node.is-drop-target .board-node__pin-head {
-  fill: var(--link);
 }
 .board-node__thread {
   cursor: crosshair;
