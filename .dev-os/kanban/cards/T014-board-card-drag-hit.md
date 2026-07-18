@@ -1,7 +1,7 @@
 ---
 id: T014
 title: ボード上のカードを付箋ノリで動かせるようにする
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T014"
@@ -44,6 +44,7 @@ T008ドッグフードで最大の摩擦だった「カード移動」を直す�
 - 2026-07-18 impl: 完了→review。糊付け帯(幅フル×高38)で移動、hoverでgrab＋薄い帯色。紙面は選択のみ。2,923行。33503b1 で check/test/smoke 緑
 - 2026-07-18 human: 動きOK。ピン見た目は消して付箋形をスッキリさせたい → rework
 - 2026-07-18 impl: rework着手。装飾ピンを撤去
+- 2026-07-18 impl: 完了→review。ピン撤去（純減29行→2,894）。糊帯hoverはそのまま。bc49854 で check/test/smoke 緑
 
 ## 差し戻し履歴（追記のみ）
 
