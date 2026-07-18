@@ -9,6 +9,7 @@ import {
   applyUpdateLink,
   createDemoProject,
   createEmptyProject,
+  parseProjectJson,
 } from "./project.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
@@ -278,6 +279,26 @@ export function exportProject(): void {
   anchor.download = `${current.name.replaceAll(/[\\/:*?\"<>|]/g, "-")}.json`;
   anchor.click();
   URL.revokeObjectURL(anchor.href);
+}
+
+export async function importProjectFromText(text: string): Promise<Project> {
+  const next: Project = { ...parseProjectJson(text), id: crypto.randomUUID() };
+  await store.saveProject(next);
+  activateProject(next);
+  await refreshSummaries();
+  return next;
+}
+
+export function pickAndImportProject(): void {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json,.json";
+  input.onchange = () => {
+    void input.files?.[0]?.text().then(importProjectFromText).catch((e) =>
+      alert(e instanceof Error ? e.message : "読み込めませんでした")
+    );
+  };
+  input.click();
 }
 
 export async function flushSave(): Promise<void> {

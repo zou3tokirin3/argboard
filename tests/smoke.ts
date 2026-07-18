@@ -204,9 +204,64 @@ try {
       throw new Error("Switched project still showed the other project's card");
     }
 
-    // ④ エクスポートボタンが存在しクリックできる
+    // ④ export→import 往復（新規id・既存非破壊・同等復元）
     await page.waitForSelector('[data-testid="export-btn"]');
-    await page.locator('[data-testid="export-btn"]').click();
+    await page.waitForSelector('[data-testid="import-btn"]');
+    const roundtrip = await page.evaluate(async () => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          getState: () => {
+            id: string;
+            name: string;
+            cards: unknown[];
+            links: unknown[];
+            boards: unknown[];
+            ui?: unknown;
+          };
+          importProjectFromText: (text: string) => Promise<{ id: string }>;
+          listProjects: () => { id: string }[];
+          switchProject: (id: string) => Promise<void>;
+        };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      const source = api.getState();
+      const sourceId = source.id;
+      const snapshot = {
+        name: source.name,
+        cards: source.cards,
+        links: source.links,
+        boards: source.boards,
+        ui: source.ui,
+      };
+      const imported = await api.importProjectFromText(
+        JSON.stringify(source),
+      );
+      if (imported.id === sourceId) {
+        throw new Error("Import must assign a new project id");
+      }
+      const ids = api.listProjects().map((item) => item.id);
+      if (!ids.includes(sourceId) || !ids.includes(imported.id)) {
+        throw new Error(
+          "Import must keep the source project and add a new one",
+        );
+      }
+      const restored = api.getState();
+      const body = {
+        name: restored.name,
+        cards: restored.cards,
+        links: restored.links,
+        boards: restored.boards,
+        ui: restored.ui,
+      };
+      if (JSON.stringify(body) !== JSON.stringify(snapshot)) {
+        throw new Error("Import did not restore equivalent project data");
+      }
+      await api.switchProject(sourceId);
+      return { sourceId, importedId: imported.id };
+    });
+    if (!roundtrip.sourceId || !roundtrip.importedId) {
+      throw new Error("Roundtrip did not return project ids");
+    }
 
     // ② ストリーム→ボード配置（フック経由・§10-3）
     const boardCase = await page.evaluate(async (name: string) => {

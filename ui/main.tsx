@@ -11,7 +11,9 @@ import {
   createProject,
   exportProject,
   flushSave,
+  importProjectFromText,
   initialize,
+  pickAndImportProject,
   placeCardOnBoard,
   project,
   projectSummaries,
@@ -42,6 +44,7 @@ declare global {
         },
       ) => Promise<void>;
       createProject: (name?: string) => Promise<unknown>;
+      importProjectFromText: (text: string) => Promise<unknown>;
       switchProject: (id: string) => Promise<void>;
       listProjects: () => unknown;
       placeCardOnBoard: (cardId: string, x: number, y: number) => Promise<void>;
@@ -167,6 +170,13 @@ function App() {
           >
             JSONを書き出す
           </button>
+          <button
+            type="button"
+            data-testid="import-btn"
+            onClick={pickAndImportProject}
+          >
+            JSONを読み込む
+          </button>
         </div>
       </header>
 
@@ -227,6 +237,8 @@ if (new URLSearchParams(location.search).has("test")) {
     addCard,
     createProject: async (name?: string) =>
       structuredClone(await createProject(name)),
+    importProjectFromText: (text: string) =>
+      importProjectFromText(text).then(structuredClone),
     switchProject,
     listProjects: () => structuredClone(projectSummaries.value),
     placeCardOnBoard,

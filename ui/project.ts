@@ -21,6 +21,23 @@ export function createEmptyProject(
   };
 }
 
+export function parseProjectJson(text: string): Project {
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("JSONとして読めません");
+  }
+  const p = data as Partial<Project>;
+  if (
+    typeof data !== "object" || !data || p.version !== 1 ||
+    typeof p.id !== "string" || typeof p.name !== "string" ||
+    typeof p.createdAt !== "number" || !Array.isArray(p.cards) ||
+    !Array.isArray(p.links) || !Array.isArray(p.boards)
+  ) throw new Error("未対応の形式か version です");
+  return data as Project;
+}
+
 function withMainBoard(
   project: Project,
   update: (board: Board) => Board,
