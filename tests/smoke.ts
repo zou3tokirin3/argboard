@@ -227,7 +227,6 @@ try {
       const source = api.getState();
       const sourceId = source.id;
       const snapshot = {
-        name: source.name,
         cards: source.cards,
         links: source.links,
         boards: source.boards,
@@ -246,8 +245,10 @@ try {
         );
       }
       const restored = api.getState();
+      if (restored.name !== `${source.name}（取り込み）`) {
+        throw new Error("Import must mark the new project name");
+      }
       const body = {
-        name: restored.name,
         cards: restored.cards,
         links: restored.links,
         boards: restored.boards,

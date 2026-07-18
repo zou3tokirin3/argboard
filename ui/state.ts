@@ -282,7 +282,12 @@ export function exportProject(): void {
 }
 
 export async function importProjectFromText(text: string): Promise<Project> {
-  const next: Project = { ...parseProjectJson(text), id: crypto.randomUUID() };
+  const parsed = parseProjectJson(text);
+  const next: Project = {
+    ...parsed,
+    id: crypto.randomUUID(),
+    name: `${parsed.name}（取り込み）`,
+  };
   await store.saveProject(next);
   activateProject(next);
   await refreshSummaries();

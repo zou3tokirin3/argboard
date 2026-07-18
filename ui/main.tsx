@@ -122,11 +122,19 @@ function App() {
             >
               {projectSummaries.value
                 .toSorted((left, right) => right.updatedAt - left.updatedAt)
-                .map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
+                .map((item) => {
+                  const when = new Date(item.updatedAt).toLocaleString("ja", {
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                  return (
+                    <option key={item.id} value={item.id}>
+                      {item.name}（{item.cardCount}枚・{when}）
+                    </option>
+                  );
+                })}
             </select>
           </label>
           <button
