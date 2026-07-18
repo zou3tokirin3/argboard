@@ -1,10 +1,10 @@
 ---
 id: T009
 title: JSONインポートでプロジェクトを完全復元する
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: auto
-branch: ""
+branch: "task/T009"
 template_ver: generic-0.2
 created: 2026-07-13
 updated: 2026-07-18
@@ -31,5 +31,6 @@ T008で核体験が成立した後、外部利用・長期運用より前に完�
 - 2026-07-16 planner: 純増上限を100→70へ（枠をT013へ。PLAN §4）
 - 2026-07-16 planner: 純増上限を70→50へ（探索行アクション分をT013へ）
 - 2026-07-18 planner: T008/T014完了。受け入れ条件が揃っているため ready
+- 2026-07-18 impl: 取得。task/T009 worktree で JSONインポート（完全復元）を実装する
 
 ## 差し戻し履歴（追記のみ）
