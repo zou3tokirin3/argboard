@@ -1,10 +1,10 @@
 ---
 id: T014
 title: ボード上のカードを付箋ノリで動かせるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T014"
 template_ver: generic-0.2
 created: 2026-07-18
 updated: 2026-07-18
@@ -36,5 +36,6 @@ T008ドッグフードで最大の摩擦だった「カード移動」を直す�
 
 - 2026-07-18 planner: T008ドッグフードの最大摩擦として起票。depends on T008判断
 - 2026-07-18 planner: T008 done。受け入れ条件が揃っているため ready
+- 2026-07-18 impl: 取得。task/T014 worktree で紙面ドラッグ＋糸ヒット干渉を直す
 
 ## 差し戻し履歴（追記のみ）
