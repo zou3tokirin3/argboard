@@ -15,6 +15,9 @@ import { CARD_MIME } from "./types.ts";
 
 const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
+/** Sticky-note adhesive strip: wider than the pin, top of the card only. */
+const ADHESIVE_HEIGHT = 38;
+const ADHESIVE_OVERHANG = 10;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 const LINK_LANE_GAP = 22;
@@ -282,14 +285,16 @@ function BoardNode({
   x,
   y,
   isDropTarget,
-  onNodePointerDown,
+  onAdhesivePointerDown,
+  onPaperPointerDown,
   onThreadPointerDown,
 }: {
   card: Card;
   x: number;
   y: number;
   isDropTarget: boolean;
-  onNodePointerDown: (event: PointerEvent, cardId: string) => void;
+  onAdhesivePointerDown: (event: PointerEvent, cardId: string) => void;
+  onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
   const selected = selectedCardId.value === card.id;
@@ -305,11 +310,6 @@ function BoardNode({
       data-card-id={card.id}
       data-role={thought ? "thought" : "finding"}
       transform={`translate(${x} ${y})`}
-      onPointerDown={(event) => {
-        const target = event.target as Element;
-        if (target.closest(".board-node__thread")) return;
-        onNodePointerDown(event, card.id);
-      }}
     >
       <rect
         class="board-node__shadow"
@@ -324,6 +324,20 @@ function BoardNode({
         width={NODE_WIDTH}
         height={NODE_HEIGHT}
         rx="3"
+        onPointerDown={(event) => onPaperPointerDown(event, card.id)}
+      />
+      {/* Sticky adhesive: top band only — wider than the pin head. */}
+      <rect
+        class="board-node__adhesive"
+        data-testid="board-adhesive"
+        x="0"
+        y={-ADHESIVE_OVERHANG}
+        width={NODE_WIDTH}
+        height={ADHESIVE_HEIGHT + ADHESIVE_OVERHANG}
+        rx="3"
+        onPointerDown={(event) => onAdhesivePointerDown(event, card.id)}
+        role="button"
+        aria-label="糊付け部分をドラッグして移動"
       />
       <text class="board-node__index" x="18" y="27">
         {thought ? "考察" : "発見"}
@@ -338,14 +352,12 @@ function BoardNode({
         <div class="board-node__title">{card.title}</div>
       </foreignObject>
 
-      {/* Pin: visual affordance. Body drag moves the card. */}
       <g
         class="board-node__pin"
         data-testid="board-pin"
         transform={`translate(${pinX} 0)`}
         aria-hidden="true"
       >
-        <circle class="board-node__pin-hit" cx="0" cy="2" r="18" />
         <circle class="board-node__pin-head" cx="0" cy="0" r="9" />
         <polygon
           class="board-node__pin-needle"
@@ -471,7 +483,16 @@ export function BoardView() {
     canvasRef.current?.setPointerCapture(event.pointerId);
   }
 
-  function onNodePointerDown(event: PointerEvent, cardId: string) {
+  function onPaperPointerDown(event: PointerEvent, cardId: string) {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    event.preventDefault();
+    clearTextSelection();
+    selectedCardId.value = cardId;
+    selectedLinkId.value = null;
+  }
+
+  function onAdhesivePointerDown(event: PointerEvent, cardId: string) {
     if (event.button !== 0) return;
     event.stopPropagation();
     event.preventDefault();
@@ -645,7 +666,7 @@ export function BoardView() {
           <kbd>↵</kbd>
         </form>
         <span class="board__hint">
-          紙面で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
+          上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
         </span>
       </div>
       <div
@@ -727,7 +748,8 @@ export function BoardView() {
                       x={position.x}
                       y={position.y}
                       isDropTarget={rubber?.targetId === card.id}
-                      onNodePointerDown={onNodePointerDown}
+                      onAdhesivePointerDown={onAdhesivePointerDown}
+                      onPaperPointerDown={onPaperPointerDown}
                       onThreadPointerDown={onThreadPointerDown}
                     />
                   )
