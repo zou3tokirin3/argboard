@@ -1,10 +1,10 @@
 ---
 id: T019
 title: ボード上でメモ先頭をプレビューできるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T019"
 template_ver: generic-0.2
 created: 2026-07-19
 updated: 2026-07-19
@@ -35,5 +35,6 @@ updated: 2026-07-19
 
 - 2026-07-19 planner: T015整流で O7 を昇格
 - 2026-07-19 planner: 受け入れ条件が揃っているため ready（人間「実装して」）
+- 2026-07-19 impl: 取得。task/T019 worktree でボードカードに body 先頭プレビューを出す
 
 ## 差し戻し履歴（追記のみ）
