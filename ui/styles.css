@@ -578,7 +578,7 @@ kbd {
   min-height: 0;
 }
 .board__link-front .link__stroke {
-  stroke-width: 4;
+  stroke-width: 8;
 }
 .board-node {
   cursor: default;
