@@ -15,7 +15,6 @@ import { CARD_MIME } from "./types.ts";
 
 const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
-/** Sticky-note adhesive strip: top band only. */
 const ADHESIVE_HEIGHT = 38;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
@@ -121,15 +120,12 @@ function offsetSegment(
   const len = Math.hypot(dx, dy) || 1;
   const ux = dx / len;
   const uy = dy / len;
-  // Perpendicular from card-id order, not stroke direction — otherwise A→B
-  // and B→A flip the normal and cancel each other's lane offset.
   const ax = axisTo.x - axisFrom.x;
   const ay = axisTo.y - axisFrom.y;
   const alen = Math.hypot(ax, ay) || 1;
   const px = -ay / alen;
   const py = ax / alen;
   const o = lane * LINK_LANE_GAP;
-  // Pull ends in so the arrowhead clears the card edge a bit.
   const inset = Math.min(12, len / 4);
   const x1 = start.x + ux * inset + px * o;
   const y1 = start.y + uy * inset + py * o;
@@ -157,7 +153,6 @@ function linkGeometry(
   const start = rectEdge(from, to);
   const end = rectEdge(to, from);
   const siblings = pairSiblings(link, links);
-  // One thread = undirected (no arrow). Opposite/extra threads = directed lanes.
   const directed = siblings.length >= 2;
   const lane = linkLane(link, siblings);
   const [axisFromId, axisToId] = link.from < link.to
@@ -170,8 +165,6 @@ function linkGeometry(
     nodeCenter(axisFromId, positions),
     nodeCenter(axisToId, positions),
   );
-  // Directed: park the label near the arrow tip so reciprocal labels split apart.
-  // Undirected: keep the midpoint, nudged slightly off the stroke.
   const along = directed ? 0.78 : 0.5;
   const side = lane === 0 ? 1 : Math.sign(lane);
   const labelX = segment.x1 + (segment.x2 - segment.x1) * along +
@@ -352,7 +345,6 @@ function BoardNode({
         rx="3"
         onPointerDown={(event) => onPaperPointerDown(event, card.id)}
       />
-      {/* Sticky adhesive: top band only. */}
       <rect
         class="board-node__adhesive"
         data-testid="board-adhesive"
@@ -372,13 +364,20 @@ function BoardNode({
         x="18"
         y="40"
         width={NODE_WIDTH - 36}
-        height="70"
+        height="78"
         style={{ pointerEvents: "none" }}
       >
-        <div class="board-node__title">{card.title}</div>
+        <div class="board-node__content">
+          <div class="board-node__title">{card.title}</div>
+          {card.body?.trim()
+            ? (
+              <div class="board-node__preview" data-testid="board-node-preview">
+                {card.body.trim()}
+              </div>
+            )
+            : null}
+        </div>
       </foreignObject>
-
-      {/* Thread stub: draw a link from the right edge. */}
       <g
         class="board-node__thread"
         data-testid="link-handle"
@@ -703,7 +702,6 @@ export function BoardView() {
                 "v",
               )}
             </g>
-            {/* Hits under nodes so sticky-note body drag wins over thread overlap. */}
             <g class="links links--hit">
               {current.links.map((link) => (
                 <LinkHit
