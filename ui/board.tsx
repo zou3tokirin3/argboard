@@ -296,14 +296,20 @@ function BoardNode({
   onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
-  const selected = selectedCardId.value === card.id;
+  const sid = selectedCardId.value;
+  const selected = sid === card.id;
+  const related = !!sid && !selected &&
+    !!project.value?.links.some((link) =>
+      (link.from === sid && link.to === card.id) ||
+      (link.to === sid && link.from === card.id)
+    );
   const threadY = NODE_HEIGHT / 2;
   const thought = card.role === "thought";
   return (
     <g
       class={`board-node ${selected ? "is-selected" : ""} ${
         isDropTarget ? "is-drop-target" : ""
-      } ${thought ? "is-thought" : ""}`}
+      } ${thought ? "is-thought" : ""} ${related ? "is-related" : ""}`}
       data-testid="board-node"
       data-card-id={card.id}
       data-role={thought ? "thought" : "finding"}

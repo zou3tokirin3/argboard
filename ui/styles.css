@@ -621,7 +621,8 @@ kbd {
   user-select: none;
   -webkit-user-select: none;
 }
-.board-node.is-drop-target .board-node__paper {
+.board-node.is-drop-target .board-node__paper,
+.board-node.is-related .board-node__paper {
   stroke: var(--link);
   stroke-width: 4;
   fill: #eef5ff;
