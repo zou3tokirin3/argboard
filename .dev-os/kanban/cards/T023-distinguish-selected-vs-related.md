@@ -1,7 +1,7 @@
 ---
 id: T023
 title: 選択中カードと関係強調を見た目で区別できるようにする
-status: backlog
+status: ready
 owner: none
 gate: human
 branch: ""
@@ -37,5 +37,6 @@ updated: 2026-07-19
 ## 作業ログ（追記のみ）
 
 - 2026-07-19 planner: 人間観察で起票。T017の関係強調は残しつつ、選択との差を付ける
+- 2026-07-19 human: 実装指示 → ready
 
 ## 差し戻し履歴（追記のみ）
