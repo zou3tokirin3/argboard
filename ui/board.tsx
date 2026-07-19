@@ -421,6 +421,11 @@ export function BoardView() {
 
   const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
+  const sel = selectedCardId.value;
+  const linkVisuals = current.links.toSorted((a, b) =>
+    Number(!!sel && (a.from === sel || a.to === sel)) -
+    Number(!!sel && (b.from === sel || b.to === sel))
+  );
 
   function clientToWorld(clientX: number, clientY: number) {
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -674,45 +679,26 @@ export function BoardView() {
       >
         <svg aria-label="手がかりの関係図">
           <defs>
-            <marker
-              id="arrow-connects"
-              viewBox="0 0 10 10"
-              refX="9"
-              refY="5"
-              markerWidth="5"
-              markerHeight="5"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--link)" />
-            </marker>
-            <marker
-              id="arrow-contradicts"
-              viewBox="0 0 10 10"
-              refX="9"
-              refY="5"
-              markerWidth="5"
-              markerHeight="5"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--danger)" />
-            </marker>
+            {([["arrow-connects", "var(--link)"], [
+              "arrow-contradicts",
+              "var(--danger)",
+            ]] as const).map(([id, fill]) => (
+              <marker
+                id={id}
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="5"
+                markerHeight="5"
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill={fill} />
+              </marker>
+            ))}
           </defs>
           <g
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
           >
-            <g class="links links--visual" aria-hidden="true">
-              {current.links.map((link) => (
-                <LinkVisual
-                  key={`v-${link.id}`}
-                  link={link}
-                  geometry={linkGeometry(
-                    link,
-                    current.links,
-                    board.positions,
-                  )}
-                />
-              ))}
-            </g>
             {/* Hits under nodes so sticky-note body drag wins over thread overlap. */}
             <g class="links links--hit">
               {current.links.map((link) => (
@@ -746,6 +732,19 @@ export function BoardView() {
                   )
                   : null;
               })}
+            </g>
+            <g class="links links--visual" aria-hidden="true">
+              {linkVisuals.map((link) => (
+                <LinkVisual
+                  key={`v-${link.id}`}
+                  link={link}
+                  geometry={linkGeometry(
+                    link,
+                    current.links,
+                    board.positions,
+                  )}
+                />
+              ))}
             </g>
             {rubber
               ? (
