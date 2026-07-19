@@ -1,7 +1,7 @@
 ---
 id: T019
 title: ボード上でメモ先頭をプレビューできるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T019"
@@ -24,7 +24,7 @@ updated: 2026-07-19
 - [x] インスペクタでの本文編集は維持する
 - [x] 行数警告基準（15ファイル / 3,000行）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「ボード上で中身の当たりがつく」と確認する
+- [x] 人間が「ボード上で中身の当たりがつく」と確認する
 
 ## このカードでやらない
 
@@ -37,5 +37,6 @@ updated: 2026-07-19
 - 2026-07-19 planner: 受け入れ条件が揃っているため ready（人間「実装して」）
 - 2026-07-19 impl: 取得。task/T019 worktree でボードカードに body 先頭プレビューを出す
 - 2026-07-19 impl: 完了→review。タイトル2行clamp＋body先頭2行プレビュー（空bodyは非表示）。本体3,000行ちょうど。1d950fb で check/test/smoke 緑。人間ゲート待ち
+- 2026-07-19 human: 確認OK → done。worktree/branch削除
 
 ## 差し戻し履歴（追記のみ）
