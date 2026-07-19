@@ -44,7 +44,6 @@ type LinkGeometry = {
   my: number;
   labelX: number;
   labelY: number;
-  /** True when the pair has 2+ threads (e.g. A→B and B→A). */
   directed: boolean;
 };
 
@@ -696,6 +695,14 @@ export function BoardView() {
           <g
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
           >
+            <g class="links links--visual" aria-hidden="true">
+              {mapLinkVisuals(
+                current.links,
+                current.links,
+                board.positions,
+                "v",
+              )}
+            </g>
             {/* Hits under nodes so sticky-note body drag wins over thread overlap. */}
             <g class="links links--hit">
               {current.links.map((link) => (
@@ -731,17 +738,6 @@ export function BoardView() {
                   : null;
               })}
             </g>
-            <g class="links links--visual" aria-hidden="true">
-              {mapLinkVisuals(
-                current.links,
-                current.links,
-                board.positions,
-                "v",
-              )}
-            </g>
-            <g class="links links--visual links--related" aria-hidden="true">
-              {mapLinkVisuals(front, current.links, board.positions, "f")}
-            </g>
             {rubber
               ? (
                 <line
@@ -754,6 +750,16 @@ export function BoardView() {
                 />
               )
               : null}
+          </g>
+        </svg>
+        <svg
+          class="board__link-front"
+          style="position:absolute;inset:0;pointer-events:none"
+        >
+          <g
+            transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
+          >
+            {mapLinkVisuals(front, current.links, board.positions, "f")}
           </g>
         </svg>
         <div class="board__legend">
