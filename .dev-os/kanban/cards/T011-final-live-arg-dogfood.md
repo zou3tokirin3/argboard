@@ -1,13 +1,13 @@
 ---
 id: T011
 title: 実ARG一本で探索から復元までを確認する
-status: backlog
+status: dropped
 owner: none
 gate: human
 branch: ""
 template_ver: generic-0.2
 created: 2026-07-13
-updated: 2026-07-13
+updated: 2026-07-19
 ---
 
 ## 目的
@@ -26,5 +26,6 @@ v1の最終ゲートとして、実ARG一本を通しで使い、探索・考察
 ## 作業ログ（追記のみ）
 
 - 2026-07-13 planner: v1最終ドッグフードとして起票。depends on T010
+- 2026-07-19 human: 省略→dropped。T008以降の実質追加はimport中心で、核体験はT008済み・復元はT009で確認済み。T010延期のためオフライン観点も未成立。同種摩擦の再プレイコストに見合わない
 
 ## 差し戻し履歴（追記のみ）
