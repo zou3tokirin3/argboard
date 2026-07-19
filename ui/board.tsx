@@ -23,6 +23,18 @@ const LINK_LANE_GAP = 22;
 
 type Viewport = { x: number; y: number; zoom: number };
 type Point = { x: number; y: number };
+type Rubber = {
+  fromId: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  targetId: string | null;
+};
+type Drag =
+  | { type: "pan"; startX: number; startY: number; origin: Viewport }
+  | { type: "node"; cardId: string; offsetX: number; offsetY: number }
+  | { type: "link"; fromId: string; targetId: string | null };
 type LinkGeometry = {
   x1: number;
   y1: number;
@@ -194,6 +206,21 @@ function selectLink(linkId: string): void {
   selectedCardId.value = null;
 }
 
+function mapLinkVisuals(
+  links: Link[],
+  all: Link[],
+  positions: Record<string, { x: number; y: number }>,
+  prefix: string,
+) {
+  return links.map((link) => (
+    <LinkVisual
+      key={`${prefix}-${link.id}`}
+      link={link}
+      geometry={linkGeometry(link, all, positions)}
+    />
+  ));
+}
+
 function LinkVisual(
   { link, geometry }: {
     link: Link;
@@ -284,6 +311,7 @@ function BoardNode({
   x,
   y,
   isDropTarget,
+  isRelated,
   onAdhesivePointerDown,
   onPaperPointerDown,
   onThreadPointerDown,
@@ -292,24 +320,19 @@ function BoardNode({
   x: number;
   y: number;
   isDropTarget: boolean;
+  isRelated: boolean;
   onAdhesivePointerDown: (event: PointerEvent, cardId: string) => void;
   onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
-  const sid = selectedCardId.value;
-  const selected = sid === card.id;
-  const related = !!sid && !selected &&
-    !!project.value?.links.some((link) =>
-      (link.from === sid && link.to === card.id) ||
-      (link.to === sid && link.from === card.id)
-    );
+  const selected = selectedCardId.value === card.id;
   const threadY = NODE_HEIGHT / 2;
   const thought = card.role === "thought";
   return (
     <g
       class={`board-node ${selected ? "is-selected" : ""} ${
         isDropTarget ? "is-drop-target" : ""
-      } ${thought ? "is-thought" : ""} ${related ? "is-related" : ""}`}
+      } ${thought ? "is-thought" : ""} ${isRelated ? "is-related" : ""}`}
       data-testid="board-node"
       data-card-id={card.id}
       data-role={thought ? "thought" : "finding"}
@@ -384,47 +407,21 @@ function BoardNode({
 
 export function BoardView() {
   const current = project.value;
+  const sel = selectedCardId.value;
   const board = current?.boards[0];
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [rubber, setRubber] = useState<
-    {
-      fromId: string;
-      x1: number;
-      y1: number;
-      x2: number;
-      y2: number;
-      targetId: string | null;
-    } | null
-  >(null);
-  const dragRef = useRef<
-    | {
-      type: "pan";
-      startX: number;
-      startY: number;
-      origin: Viewport;
-    }
-    | {
-      type: "node";
-      cardId: string;
-      offsetX: number;
-      offsetY: number;
-    }
-    | {
-      type: "link";
-      fromId: string;
-      targetId: string | null;
-    }
-    | null
-  >(null);
+  const [rubber, setRubber] = useState<Rubber | null>(null);
+  const dragRef = useRef<Drag | null>(null);
 
   if (!current || !board) return null;
 
   const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
-  const sel = selectedCardId.value;
-  const linkVisuals = current.links.toSorted((a, b) =>
-    Number(!!sel && (a.from === sel || a.to === sel)) -
-    Number(!!sel && (b.from === sel || b.to === sel))
+  const front = sel
+    ? current.links.filter((link) => link.from === sel || link.to === sel)
+    : [];
+  const relatedIds = new Set(
+    front.flatMap((link) => [link.from, link.to].filter((id) => id !== sel)),
   );
 
   function clientToWorld(clientX: number, clientY: number) {
@@ -725,6 +722,7 @@ export function BoardView() {
                       x={position.x}
                       y={position.y}
                       isDropTarget={rubber?.targetId === card.id}
+                      isRelated={relatedIds.has(card.id)}
                       onAdhesivePointerDown={onAdhesivePointerDown}
                       onPaperPointerDown={onPaperPointerDown}
                       onThreadPointerDown={onThreadPointerDown}
@@ -734,17 +732,15 @@ export function BoardView() {
               })}
             </g>
             <g class="links links--visual" aria-hidden="true">
-              {linkVisuals.map((link) => (
-                <LinkVisual
-                  key={`v-${link.id}`}
-                  link={link}
-                  geometry={linkGeometry(
-                    link,
-                    current.links,
-                    board.positions,
-                  )}
-                />
-              ))}
+              {mapLinkVisuals(
+                current.links,
+                current.links,
+                board.positions,
+                "v",
+              )}
+            </g>
+            <g class="links links--visual links--related" aria-hidden="true">
+              {mapLinkVisuals(front, current.links, board.positions, "f")}
             </g>
             {rubber
               ? (

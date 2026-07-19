@@ -674,7 +674,8 @@ kbd {
   stroke: var(--danger);
   stroke-dasharray: 7 4;
 }
-.link.is-selected .link__stroke {
+.link.is-selected .link__stroke,
+.links--related .link__stroke {
   stroke-width: 3.5;
 }
 .link__knob-hit {
