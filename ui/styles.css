@@ -595,7 +595,11 @@ kbd {
 }
 .board-node.is-selected .board-node__paper {
   stroke: var(--accent);
-  stroke-width: 3;
+  stroke-width: 4;
+  fill: var(--accent-soft);
+}
+.board-node.is-selected .board-node__shadow {
+  fill: rgb(29 155 240 / 24%);
 }
 .board-node__adhesive {
   fill: transparent;
@@ -637,11 +641,14 @@ kbd {
   white-space: pre-wrap;
   word-break: break-word;
 }
-.board-node.is-drop-target .board-node__paper,
-.board-node.is-related .board-node__paper {
+.board-node.is-drop-target .board-node__paper {
   stroke: var(--link);
   stroke-width: 4;
   fill: #eef5ff;
+}
+.board-node.is-related .board-node__paper {
+  stroke: var(--link);
+  stroke-width: 3;
 }
 .board-node__thread {
   cursor: crosshair;
