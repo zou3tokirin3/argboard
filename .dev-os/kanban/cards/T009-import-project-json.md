@@ -1,13 +1,13 @@
 ---
 id: T009
 title: JSONインポートでプロジェクトを完全復元する
-status: review
+status: done
 owner: impl
 gate: auto
 branch: "task/T009"
 template_ver: generic-0.2
 created: 2026-07-13
-updated: 2026-07-18
+updated: 2026-07-19
 ---
 
 ## 目的
@@ -36,5 +36,6 @@ T008で核体験が成立した後、外部利用・長期運用より前に完�
 - 2026-07-18 impl: 完了→review。純増50行(2,929→2,979)。3be2536 で check/test/smoke 緑
 - 2026-07-18 human: 同名プロジェクトが多く切替で何を見ているか分からない
 - 2026-07-18 impl: 取り込み名に（取り込み）付与、セレクトに枚数・時刻を表示。本体2,992行（T009累計+63/上限50超・review指摘対応）
+- 2026-07-19 human: 読み込み確認OK → done。worktree/branch削除
 
 ## 差し戻し履歴（追記のみ）
