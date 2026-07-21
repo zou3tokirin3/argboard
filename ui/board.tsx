@@ -21,6 +21,14 @@ const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 const LINK_LANE_GAP = 22;
 
+function sourceHost(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "") || url;
+  } catch {
+    return url;
+  }
+}
+
 type Viewport = { x: number; y: number; zoom: number };
 type Point = { x: number; y: number };
 type Rubber = {
@@ -368,6 +376,37 @@ function BoardNode({
       <text class="board-node__index" x="18" y="27">
         {thought ? "考察" : "発見"}
       </text>
+      {card.url
+        ? (
+          <a
+            class="board-node__source"
+            href={card.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="board-node-source"
+            aria-label="出典を開く"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <title>{sourceHost(card.url)}</title>
+            <rect
+              class="board-node__source-hit"
+              x={NODE_WIDTH - 34}
+              y="8"
+              width="26"
+              height="22"
+              rx="4"
+            />
+            <text
+              class="board-node__source-mark"
+              x={NODE_WIDTH - 21}
+              y="24"
+              text-anchor="middle"
+            >
+              ↗
+            </text>
+          </a>
+        )
+        : null}
       <foreignObject
         x="18"
         y="40"

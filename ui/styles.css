@@ -655,6 +655,23 @@ kbd {
   letter-spacing: .04em;
   pointer-events: none;
 }
+.board-node__source {
+  cursor: pointer;
+}
+.board-node__source-hit {
+  fill: transparent;
+}
+.board-node__source:hover .board-node__source-hit {
+  fill: var(--accent-soft);
+}
+.board-node__source-mark {
+  fill: var(--link);
+  font: 700 14px/1 "IBM Plex Sans JP", sans-serif;
+  pointer-events: none;
+}
+.board-node__source:hover .board-node__source-mark {
+  fill: var(--accent);
+}
 .board-node__content {
   pointer-events: none;
   user-select: none;
