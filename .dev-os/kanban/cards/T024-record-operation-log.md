@@ -1,7 +1,7 @@
 ---
 id: T024
 title: 操作ログの記録だけ始める
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T024"
@@ -55,5 +55,6 @@ updated: 2026-07-21
 - 2026-07-21 human: 評価パケット GO
 - 2026-07-21 impl: 取得。task/T024 worktree で操作ログ記録を実装する
 - 2026-07-21 impl: 完了→review。`Project.events` 追記（開く/カード/糸/配置、削除はスナップショット、ドラッグ中は非記録）。本体 2,986→3,126（見込み超え・GO済み）。87dbcf1 で check/test/smoke 緑。人間ゲート待ち
+- 2026-07-21 human: 確認OK → done。worktree/branch削除
 
 ## 差し戻し履歴（追記のみ）
