@@ -258,12 +258,20 @@ body {
   color: var(--ink);
   font: 500 12px/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
-.board__toolbar .capture {
+.board__toolbar .board__thought {
   width: auto;
   flex: 1;
-  max-width: 300px;
-  height: 34px;
+  max-width: 320px;
   margin: 0 12px;
+}
+.board__toolbar .capture {
+  width: 100%;
+  height: 34px;
+  margin: 0;
+}
+.board__toolbar .capture-hint {
+  margin-top: 4px;
+  font-size: 11px;
 }
 .board-node.is-thought .board-node__paper {
   fill: var(--accent-soft);
@@ -568,11 +576,12 @@ kbd {
   background: var(--bg-soft);
 }
 .board__toolbar {
-  height: 48px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  gap: 8px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--line-strong);
   background: var(--panel);
 }

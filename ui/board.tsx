@@ -11,6 +11,7 @@ import {
   selectedLinkId,
   setBoardViewportLocal,
 } from "./state.ts";
+import { parseCaptureLine } from "./capture-notation.ts";
 import type { Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
 
@@ -684,13 +685,15 @@ export function BoardView() {
     event.preventDefault();
     const input = (event.currentTarget as HTMLFormElement)
       .elements.namedItem("thought") as HTMLInputElement;
-    const title = input.value;
-    if (!title.trim()) return;
+    const parsed = parseCaptureLine(input.value);
+    if (!parsed) return;
     input.value = "";
     const rect = canvasRef.current?.getBoundingClientRect();
     const vp = defaultViewport(project.value?.boards[0]?.viewport);
-    await addCard(title, {
+    await addCard(parsed.title, {
       role: "thought",
+      body: parsed.body,
+      url: parsed.url,
       placeAt: {
         x: ((rect?.width ?? 640) / 2 - vp.x) / vp.zoom - NODE_WIDTH / 2,
         y: ((rect?.height ?? 480) / 2 - vp.y) / vp.zoom - NODE_HEIGHT / 2,
@@ -706,16 +709,22 @@ export function BoardView() {
           <strong>{board.name}</strong>
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
-        <form class="capture" onSubmit={submitThought}>
-          <input
-            name="thought"
-            data-testid="thought-input"
-            aria-label="考察カードを追加"
-            autocomplete="off"
-            placeholder="考察カードを追加…"
-          />
-          <kbd>↵</kbd>
-        </form>
+        <div class="capture-block board__thought">
+          <form class="capture" onSubmit={submitThought}>
+            <input
+              name="thought"
+              data-testid="thought-input"
+              aria-label="考察カードを追加"
+              aria-describedby="thought-hint"
+              autocomplete="off"
+              placeholder="考察を1行で…"
+            />
+            <kbd>↵</kbd>
+          </form>
+          <p class="capture-hint" id="thought-hint">
+            <code>題 // ひとこと</code> · URLはそのまま貼ると出典に
+          </p>
+        </div>
         <span class="board__hint">
           上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
         </span>
