@@ -1,6 +1,7 @@
 import { computed, signal } from "@preact/signals";
 import { store } from "./db.ts";
 import {
+  appendEvent,
   applyConnectCards,
   applyPlaceCardOnBoard,
   applyRemoveCard,
@@ -145,12 +146,15 @@ function withUi(
   };
 }
 
-function activateProject(next: Project): void {
+async function activateProject(next: Project): Promise<void> {
   writeActiveProjectId(next.id);
   selectedCardId.value = null;
   selectedLinkId.value = null;
   search.value = "";
-  project.value = next;
+  const opened = appendEvent(next, { type: "project_opened", at: Date.now() });
+  project.value = opened;
+  saveStatus.value = "saving";
+  await store.saveProject(opened);
   saveStatus.value = "saved";
 }
 
@@ -174,7 +178,7 @@ export async function initialize(): Promise<void> {
     initial = createEmptyProject("新しいケース");
     await store.saveProject(initial);
   }
-  activateProject(initial);
+  await activateProject(initial);
   projectSummaries.value = await store.listProjects();
 }
 
@@ -183,16 +187,16 @@ export async function createProject(
 ): Promise<Project> {
   const next = createEmptyProject(name);
   await store.saveProject(next);
-  activateProject(next);
+  await activateProject(next);
   await refreshSummaries();
-  return next;
+  return project.value ?? next;
 }
 
 export async function switchProject(id: string): Promise<void> {
   if (project.value?.id === id) return;
   const loaded = await store.loadProject(id);
   if (!loaded) return;
-  activateProject(loaded);
+  await activateProject(loaded);
 }
 
 export async function addCard(
@@ -216,7 +220,10 @@ export async function addCard(
     foundAt: Date.now(),
     ...(options?.role === "thought" ? { role: "thought" as const } : {}),
   };
-  let next: Project = { ...current, cards: [...current.cards, card] };
+  let next = appendEvent(
+    { ...current, cards: [...current.cards, card] },
+    { type: "card_added", at: card.foundAt, card },
+  );
   if (options?.placeAt) {
     next = applyPlaceCardOnBoard(
       next,
@@ -224,6 +231,13 @@ export async function addCard(
       options.placeAt.x,
       options.placeAt.y,
     ) ?? next;
+    next = appendEvent(next, {
+      type: "card_placed",
+      at: Date.now(),
+      cardId: card.id,
+      x: options.placeAt.x,
+      y: options.placeAt.y,
+    });
     selectedCardId.value = card.id;
     selectedLinkId.value = null;
   }
@@ -260,12 +274,19 @@ export async function updateCard(
   const title = patch.title.trim();
   if (!title) return;
   const body = patch.body?.trim() ? patch.body.trim() : undefined;
-  await persist({
+  const next = {
     ...current,
     cards: current.cards.map((card) =>
       card.id === id ? { ...card, title, body } : card
     ),
-  });
+  };
+  await persist(appendEvent(next, {
+    type: "card_updated",
+    at: Date.now(),
+    cardId: id,
+    title,
+    body,
+  }));
 }
 
 export function exportProject(): void {
@@ -289,9 +310,9 @@ export async function importProjectFromText(text: string): Promise<Project> {
     name: `${parsed.name}（取り込み）`,
   };
   await store.saveProject(next);
-  activateProject(next);
+  await activateProject(next);
   await refreshSummaries();
-  return next;
+  return project.value ?? next;
 }
 
 export function pickAndImportProject(): void {
@@ -322,7 +343,31 @@ export async function placeCardOnBoard(
   if (!next) return;
   selectedCardId.value = cardId;
   selectedLinkId.value = null;
-  await persist(next);
+  await persist(appendEvent(next, {
+    type: "card_placed",
+    at: Date.now(),
+    cardId,
+    x,
+    y,
+  }));
+}
+
+/** Persist a finished board drag (final position only). */
+export async function commitCardPlacement(cardId: string): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  const pos = current.boards[0]?.positions[cardId];
+  if (!pos) {
+    await flushSave();
+    return;
+  }
+  await persist(appendEvent(current, {
+    type: "card_placed",
+    at: Date.now(),
+    cardId,
+    x: pos.x,
+    y: pos.y,
+  }));
 }
 
 export async function connectCards(
@@ -334,10 +379,19 @@ export async function connectCards(
   if (!current) return;
   const next = applyConnectCards(current, fromId, toId, kind);
   if (!next) return;
+  const link = next.links.find((item) =>
+    !current.links.some((known) => known.id === item.id)
+  );
   // Keep the board quiet after drawing — edit later via link click + inspector.
   selectedLinkId.value = null;
   selectedCardId.value = null;
-  await persist(next);
+  if (!link) {
+    await persist(next);
+    return;
+  }
+  await persist(
+    appendEvent(next, { type: "link_added", at: Date.now(), link }),
+  );
 }
 
 export async function updateLink(
@@ -348,28 +402,56 @@ export async function updateLink(
   if (!current) return;
   const next = applyUpdateLink(current, linkId, patch);
   if (!next) return;
-  await persist(next);
+  const link = next.links.find((item) => item.id === linkId);
+  if (!link) {
+    await persist(next);
+    return;
+  }
+  await persist(appendEvent(next, {
+    type: "link_updated",
+    at: Date.now(),
+    linkId,
+    label: link.label,
+    kind: link.kind,
+  }));
 }
 
 export async function removeLink(linkId: string): Promise<void> {
   const current = project.value;
   if (!current) return;
+  const link = current.links.find((item) => item.id === linkId);
   const next = applyRemoveLink(current, linkId);
-  if (!next) return;
+  if (!next || !link) return;
   if (selectedLinkId.value === linkId) selectedLinkId.value = null;
-  await persist(next);
+  await persist(appendEvent(next, {
+    type: "link_removed",
+    at: Date.now(),
+    link,
+  }));
 }
 
 export async function removeCard(cardId: string): Promise<void> {
   const current = project.value;
   if (!current) return;
+  const card = current.cards.find((item) => item.id === cardId);
+  if (!card) return;
+  const links = current.links.filter((l) =>
+    l.from === cardId || l.to === cardId
+  );
+  const position = current.boards[0]?.positions[cardId];
   const next = applyRemoveCard(current, cardId);
   if (!next) return;
   if (selectedCardId.value === cardId) selectedCardId.value = null;
   if (!next.links.some((link) => link.id === selectedLinkId.value)) {
     selectedLinkId.value = null;
   }
-  await persist(next);
+  await persist(appendEvent(next, {
+    type: "card_removed",
+    at: Date.now(),
+    card,
+    links,
+    ...(position ? { position } : {}),
+  }));
 }
 
 export async function setBoardViewport(
