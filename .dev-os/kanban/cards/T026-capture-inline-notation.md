@@ -61,5 +61,9 @@ updated: 2026-07-21
 - 2026-07-21 human: 評価パケット GO
 - 2026-07-21 impl: 取得。task/T026 worktree で行内記法を実装する
 - 2026-07-21 impl: 完了→review。`parseCaptureLine`（//・URL・URLのみ仮題）、placeholderヒント、発見ログ出典リンク、インスペクタurl欄。本体 3,126→3,253（見込み内・GO済み）。65f5baa で check/test/smoke 緑。人間ゲート待ち
+- 2026-07-21 impl: review→rework→doing。入力近くに記法ヒントを常時表示する
+- 2026-07-21 impl: 入力直下に `題 // ひとこと` · URL出典の常時ヒントを追加→review。人間ゲート待ち
 
 ## 差し戻し履歴（追記のみ）
+
+- 2026-07-21 human: 入力の近くにヒントを出してほしい（文法を忘れる）
