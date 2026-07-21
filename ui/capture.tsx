@@ -15,16 +15,22 @@ export function Capture() {
   }
 
   return (
-    <form class="capture" onSubmit={submit}>
-      <span class="capture__plus" aria-hidden="true">＋</span>
-      <input
-        ref={input}
-        data-testid="capture-input"
-        aria-label="新しい手がかり"
-        autocomplete="off"
-        placeholder="見つけたことを1行で…（// でひとこと添え）"
-      />
-      <kbd>↵</kbd>
-    </form>
+    <div class="capture-block">
+      <form class="capture" onSubmit={submit}>
+        <span class="capture__plus" aria-hidden="true">＋</span>
+        <input
+          ref={input}
+          data-testid="capture-input"
+          aria-label="新しい手がかり"
+          aria-describedby="capture-hint"
+          autocomplete="off"
+          placeholder="見つけたことを1行で…"
+        />
+        <kbd>↵</kbd>
+      </form>
+      <p class="capture-hint" id="capture-hint">
+        <code>題 // ひとこと</code> · URLはそのまま貼ると出典に
+      </p>
+    </div>
   );
 }

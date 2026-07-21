@@ -208,13 +208,17 @@ body {
   color: var(--danger);
 }
 
-.capture {
+.capture-block {
   width: min(680px, calc(100% - 48px));
+  margin: 14px auto 8px;
+}
+.capture {
+  width: 100%;
   height: 48px;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 14px auto;
+  margin: 0;
   padding: 0 14px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -240,6 +244,19 @@ body {
 }
 .capture input::placeholder {
   color: #8b98a5;
+}
+.capture-hint {
+  margin: 6px 2px 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.capture-hint code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bg-soft);
+  color: var(--ink);
+  font: 500 12px/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
 .board__toolbar .capture {
   width: auto;
@@ -322,9 +339,9 @@ kbd {
   background: var(--accent-soft);
   color: var(--ink);
 }
-.side-panel .capture {
+.side-panel .capture-block {
   width: calc(100% - 24px);
-  margin: 10px auto;
+  margin: 10px auto 4px;
 }
 .side-panel .stream {
   flex: 1;
@@ -865,9 +882,9 @@ kbd {
   .topbar__actions {
     flex-wrap: wrap;
   }
-  .capture {
+  .capture-block {
     width: calc(100% - 24px);
-    margin: 10px auto;
+    margin: 10px auto 4px;
   }
   .workspace--explore,
   .workspace--contemplate {
