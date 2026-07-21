@@ -448,15 +448,8 @@ kbd {
 }
 .stream-card {
   width: 100%;
-  display: block;
-  border: 0;
   border-bottom: 1px solid var(--line-strong);
-  padding: 14px 72px 14px 16px;
   background: transparent;
-  text-align: left;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
 }
 .stream-card:hover {
   background: var(--bg-soft);
@@ -467,6 +460,33 @@ kbd {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 .stream-card.is-thought .stream-card__meta span {
+  color: var(--accent);
+}
+.stream-card__main {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 14px 72px 10px 16px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.stream-card__url {
+  display: inline-block;
+  max-width: calc(100% - 88px);
+  margin: 0 72px 12px 16px;
+  overflow: hidden;
+  color: var(--link);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stream-card__url:hover {
   color: var(--accent);
 }
 .stream-row {
@@ -777,10 +797,10 @@ kbd {
   color: var(--ink);
   background: #fff;
 }
-.stream-card.is-draggable {
+.stream-card.is-draggable .stream-card__main {
   cursor: grab;
 }
-.stream-card.is-draggable:active {
+.stream-card.is-draggable .stream-card__main:active {
   cursor: grabbing;
 }
 .board__canvas:active {

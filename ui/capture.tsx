@@ -1,4 +1,5 @@
 import { useRef } from "preact/hooks";
+import { parseCaptureLine } from "./capture-notation.ts";
 import { addCard } from "./state.ts";
 
 export function Capture() {
@@ -6,11 +7,11 @@ export function Capture() {
 
   async function submit(event: SubmitEvent) {
     event.preventDefault();
-    const title = input.current?.value ?? "";
-    if (!title.trim()) return;
+    const parsed = parseCaptureLine(input.current?.value ?? "");
+    if (!parsed) return;
     // Clear first so the next capture can start while save drains.
     if (input.current) input.current.value = "";
-    await addCard(title);
+    await addCard(parsed.title, { body: parsed.body, url: parsed.url });
   }
 
   return (
@@ -21,7 +22,7 @@ export function Capture() {
         data-testid="capture-input"
         aria-label="新しい手がかり"
         autocomplete="off"
-        placeholder="見つけたことを1行で…"
+        placeholder="見つけたことを1行で…（// でひとこと添え）"
       />
       <kbd>↵</kbd>
     </form>
