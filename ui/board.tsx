@@ -709,22 +709,16 @@ export function BoardView() {
           <strong>{board.name}</strong>
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
-        <div class="capture-block board__thought">
-          <form class="capture" onSubmit={submitThought}>
-            <input
-              name="thought"
-              data-testid="thought-input"
-              aria-label="考察カードを追加"
-              aria-describedby="thought-hint"
-              autocomplete="off"
-              placeholder="考察を1行で…"
-            />
-            <kbd>↵</kbd>
-          </form>
-          <p class="capture-hint" id="thought-hint">
-            <code>題 // ひとこと</code> · URLはそのまま貼ると出典に
-          </p>
-        </div>
+        <form class="capture board__thought" onSubmit={submitThought}>
+          <input
+            name="thought"
+            data-testid="thought-input"
+            aria-label="考察カードを追加"
+            autocomplete="off"
+            placeholder="考察を1行で…（// 可）"
+          />
+          <kbd>↵</kbd>
+        </form>
         <span class="board__hint">
           上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
         </span>
