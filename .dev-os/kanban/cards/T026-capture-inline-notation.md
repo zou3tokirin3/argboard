@@ -1,7 +1,7 @@
 ---
 id: T026
 title: キャプチャの行内記法でひとことと出典URLを添えられるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T026"
@@ -45,7 +45,7 @@ updated: 2026-07-21
 - [x] 作られるカードのroleはfindingのまま。新しいroleや印象種別を作らない
 - [x] 行数警告基準（15ファイル / 3,000行）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「リズムを崩さずひとことと出典を残せる」と確認する
+- [x] 人間が「リズムを崩さずひとことと出典を残せる」と確認する
 
 ## このカードでやらない
 
@@ -68,6 +68,7 @@ updated: 2026-07-21
 - 2026-07-21 impl: review→rework→doing。考察カード追加にも同じ行内記法を通す（人間方針）
 - 2026-07-21 impl: 考察入力も `parseCaptureLine`＋同じヒント→review
 - 2026-07-21 impl: 考察ツールバーの常時ヒントが崩すので削除。placeholderに `（// 可）` のみ残す
+- 2026-07-21 human: 確認OK → done。worktree/branch削除
 
 ## 差し戻し履歴（追記のみ）
 
