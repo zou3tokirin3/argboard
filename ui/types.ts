@@ -14,6 +14,7 @@ export type ProjectEvent =
     cardId: string;
     title: string;
     body?: string;
+    url?: string;
   }
   | {
     type: "card_removed";

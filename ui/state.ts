@@ -204,10 +204,14 @@ export async function addCard(
   options?: {
     role?: "finding" | "thought";
     placeAt?: { x: number; y: number };
+    body?: string;
+    url?: string;
   },
 ): Promise<void> {
   const cleanTitle = title.trim();
   if (!cleanTitle) return;
+  const body = options?.body?.trim() ? options.body.trim() : undefined;
+  const url = options?.url?.trim() ? options.url.trim() : undefined;
 
   // Read + write memory must stay synchronous so overlapping captures
   // cannot both snapshot the same Project and drop a later card.
@@ -219,6 +223,8 @@ export async function addCard(
     title: cleanTitle,
     foundAt: Date.now(),
     ...(options?.role === "thought" ? { role: "thought" as const } : {}),
+    ...(body ? { body } : {}),
+    ...(url ? { url } : {}),
   };
   let next = appendEvent(
     { ...current, cards: [...current.cards, card] },
@@ -267,17 +273,18 @@ export async function setSideOpen(open: boolean): Promise<void> {
 
 export async function updateCard(
   id: string,
-  patch: Pick<Card, "title" | "body">,
+  patch: Pick<Card, "title" | "body" | "url">,
 ): Promise<void> {
   const current = project.value;
   if (!current) return;
   const title = patch.title.trim();
   if (!title) return;
   const body = patch.body?.trim() ? patch.body.trim() : undefined;
+  const url = patch.url?.trim() ? patch.url.trim() : undefined;
   const next = {
     ...current,
     cards: current.cards.map((card) =>
-      card.id === id ? { ...card, title, body } : card
+      card.id === id ? { ...card, title, body, url } : card
     ),
   };
   await persist(appendEvent(next, {
@@ -286,6 +293,7 @@ export async function updateCard(
     cardId: id,
     title,
     body,
+    url,
   }));
 }
 

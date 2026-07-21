@@ -16,12 +16,14 @@ export function Inspector() {
   const link = selectedLink.value;
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
 
   useEffect(() => {
     setTitle(card?.title ?? "");
     setBody(card?.body ?? "");
-  }, [card?.id, card?.title, card?.body]);
+    setUrl(card?.url ?? "");
+  }, [card?.id, card?.title, card?.body, card?.url]);
 
   useEffect(() => {
     setLabel(link?.label ?? "");
@@ -88,7 +90,7 @@ export function Inspector() {
   }
 
   async function commit() {
-    await updateCard(card!.id, { title, body });
+    await updateCard(card!.id, { title, body, url });
   }
 
   const cards = project.value?.cards ?? [];
@@ -112,6 +114,17 @@ export function Inspector() {
           data-testid="inspector-title"
           value={title}
           onInput={(event) => setTitle(event.currentTarget.value)}
+          onBlur={commit}
+        />
+      </label>
+      <label class="inspector__field">
+        <span>出典URL</span>
+        <input
+          type="url"
+          data-testid="inspector-url"
+          value={url}
+          placeholder="https://"
+          onInput={(event) => setUrl(event.currentTarget.value)}
           onBlur={commit}
         />
       </label>

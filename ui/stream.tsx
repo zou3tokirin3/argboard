@@ -12,6 +12,14 @@ const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
   minute: "2-digit",
 });
 
+function sourceLabel(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "") || url;
+  } catch {
+    return url;
+  }
+}
+
 export function Stream() {
   const boardCardIds = new Set(project.value?.boards[0]?.cardIds ?? []);
   const isContemplate = (project.value?.ui?.mode ?? "explore") ===
@@ -41,41 +49,59 @@ export function Stream() {
           const selected = selectedCardId.value === card.id;
           return (
             <div class="stream-row" key={card.id}>
-              <button
-                type="button"
+              <div
                 class={`stream-card ${selected ? "is-selected" : ""} ${
                   card.role === "thought" ? "is-thought" : ""
                 } ${isContemplate ? "is-draggable" : ""}`}
                 data-testid="stream-card"
                 data-card-id={card.id}
                 data-role={card.role === "thought" ? "thought" : "finding"}
-                draggable={isContemplate}
-                onDragStart={(event) => {
-                  if (!isContemplate) return;
-                  globalThis.getSelection?.()?.removeAllRanges();
-                  event.dataTransfer?.setData(CARD_MIME, card.id);
-                  event.dataTransfer!.effectAllowed = "copy";
-                }}
-                onDragEnd={() => globalThis.getSelection?.()?.removeAllRanges()}
-                onClick={() => selectedCardId.value = card.id}
               >
-                <span class="stream-card__meta">
-                  <time>{timeFormatter.format(card.foundAt)}</time>
-                  <span>
-                    {card.role === "thought" ? "考察" : "発見"} ·{" "}
-                    {boardCardIds.has(card.id) ? "ボード済" : "未配置"}
-                  </span>
-                </span>
-                <strong>{card.title}</strong>
-                {card.body ? <small>{card.body}</small> : null}
-                {card.tags?.length
-                  ? (
-                    <span class="tags">
-                      {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
+                <button
+                  type="button"
+                  class="stream-card__main"
+                  draggable={isContemplate}
+                  onDragStart={(event) => {
+                    if (!isContemplate) return;
+                    globalThis.getSelection?.()?.removeAllRanges();
+                    event.dataTransfer?.setData(CARD_MIME, card.id);
+                    event.dataTransfer!.effectAllowed = "copy";
+                  }}
+                  onDragEnd={() =>
+                    globalThis.getSelection?.()?.removeAllRanges()}
+                  onClick={() => selectedCardId.value = card.id}
+                >
+                  <span class="stream-card__meta">
+                    <time>{timeFormatter.format(card.foundAt)}</time>
+                    <span>
+                      {card.role === "thought" ? "考察" : "発見"} ·{" "}
+                      {boardCardIds.has(card.id) ? "ボード済" : "未配置"}
                     </span>
+                  </span>
+                  <strong>{card.title}</strong>
+                  {card.body ? <small>{card.body}</small> : null}
+                  {card.tags?.length
+                    ? (
+                      <span class="tags">
+                        {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
+                      </span>
+                    )
+                    : null}
+                </button>
+                {card.url
+                  ? (
+                    <a
+                      class="stream-card__url"
+                      data-testid="stream-card-url"
+                      href={card.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {sourceLabel(card.url)}
+                    </a>
                   )
                   : null}
-              </button>
+              </div>
               {selected
                 ? (
                   <button
