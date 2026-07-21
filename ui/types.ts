@@ -5,6 +5,34 @@ export type ProjectUi = {
   sideOpen?: boolean;
 };
 
+export type ProjectEvent =
+  | { type: "project_opened"; at: number }
+  | { type: "card_added"; at: number; card: Card }
+  | {
+    type: "card_updated";
+    at: number;
+    cardId: string;
+    title: string;
+    body?: string;
+  }
+  | {
+    type: "card_removed";
+    at: number;
+    card: Card;
+    links: Link[];
+    position?: { x: number; y: number };
+  }
+  | { type: "link_added"; at: number; link: Link }
+  | {
+    type: "link_updated";
+    at: number;
+    linkId: string;
+    label?: string;
+    kind: Link["kind"];
+  }
+  | { type: "link_removed"; at: number; link: Link }
+  | { type: "card_placed"; at: number; cardId: string; x: number; y: number };
+
 export type Project = {
   version: 1;
   id: string;
@@ -14,6 +42,8 @@ export type Project = {
   links: Link[];
   boards: Board[];
   ui?: ProjectUi;
+  /** Append-only operation log (T024). Absent on older projects. */
+  events?: ProjectEvent[];
 };
 
 export type Card = {

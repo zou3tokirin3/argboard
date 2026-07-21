@@ -1,6 +1,7 @@
 import { useRef, useState } from "preact/hooks";
 import {
   addCard,
+  commitCardPlacement,
   connectCards,
   flushSave,
   moveCardOnBoardLocal,
@@ -32,7 +33,14 @@ type Rubber = {
 };
 type Drag =
   | { type: "pan"; startX: number; startY: number; origin: Viewport }
-  | { type: "node"; cardId: string; offsetX: number; offsetY: number }
+  | {
+    type: "node";
+    cardId: string;
+    offsetX: number;
+    offsetY: number;
+    originX: number;
+    originY: number;
+  }
   | { type: "link"; fromId: string; targetId: string | null };
 type LinkGeometry = {
   x1: number;
@@ -498,6 +506,8 @@ export function BoardView() {
       cardId,
       offsetX: world.x - position.x,
       offsetY: world.y - position.y,
+      originX: position.x,
+      originY: position.y,
     };
     canvasRef.current?.setPointerCapture(event.pointerId);
   }
@@ -572,8 +582,19 @@ export function BoardView() {
     dragRef.current = null;
     setRubber(null);
     if (!drag) return;
-    if (drag.type === "pan" || drag.type === "node") {
+    if (drag.type === "pan") {
       await flushSave();
+      return;
+    }
+    if (drag.type === "node") {
+      const pos = project.value?.boards[0]?.positions[drag.cardId];
+      if (
+        pos && (pos.x !== drag.originX || pos.y !== drag.originY)
+      ) {
+        await commitCardPlacement(drag.cardId);
+      } else {
+        await flushSave();
+      }
       return;
     }
     const world = clientToWorld(event.clientX, event.clientY);

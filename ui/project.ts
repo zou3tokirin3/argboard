@@ -1,4 +1,11 @@
-import type { Board, Card, Link, Project } from "./types.ts";
+import type { Board, Card, Link, Project, ProjectEvent } from "./types.ts";
+
+export function appendEvent(
+  project: Project,
+  event: ProjectEvent,
+): Project {
+  return { ...project, events: [...(project.events ?? []), event] };
+}
 
 export function createEmptyProject(
   name: string,
