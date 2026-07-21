@@ -1,13 +1,13 @@
 ---
 id: T023
 title: 選択中カードと関係強調を見た目で区別できるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T023"
 template_ver: generic-0.2
 created: 2026-07-19
-updated: 2026-07-19
+updated: 2026-07-21
 ---
 
 ## 目的
@@ -26,7 +26,7 @@ updated: 2026-07-19
 - [x] 糸の選択・ラベル編集・要検討切替と干渉しない
 - [x] 行数警告基準（15ファイル / 3,000行）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「選んでいるカードと関係カードを取り違えない」と確認する
+- [x] 人間が「選んでいるカードと関係カードを取り違えない」と確認する
 
 ## このカードでやらない
 
@@ -40,5 +40,6 @@ updated: 2026-07-19
 - 2026-07-19 human: 実装指示 → ready
 - 2026-07-19 impl: 取得。task/T023 worktree で選択と関係強調の見た目差を付ける
 - 2026-07-19 impl: 完了→review。選択=accent塗り+太枠+影、関係=navy細枠のみ（drop-targetは旧強調を維持）。純増7行(2,979→2,986)。735adaf で check/test/smoke 緑。人間ゲート待ち
+- 2026-07-21 human: 確認OK → done。worktree/branch削除
 
 ## 差し戻し履歴（追記のみ）
