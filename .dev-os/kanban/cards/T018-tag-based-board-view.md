@@ -1,10 +1,10 @@
 ---
 id: T018
 title: 関係ベースの動的ビューでボードの見方を切り替えられるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T018"
 template_ver: generic-0.2
 created: 2026-07-19
 updated: 2026-07-24
@@ -135,5 +135,8 @@ O項目と同じ作法で**新規backlogカードへ昇格**する。この節�
 - 2026-07-24 planner: T028/T029/T020 done を前提に ready。本体 3,367/3,000 のため実装前に
   評価パケット `.dev-os/kanban/packets/T018.md` を作成（見込み +120〜180・中央 +150）。
   **人間GO待ち。GOなしでは実装しない**
+
+- 2026-07-24 human: 評価パケット T018.md に **GO**
+- 2026-07-24 impl: 着手（doing）。worktree `.worktrees/T018` / branch `task/T018`。基準行数 3,367・見込み +120〜180
 
 ## 差し戻し履歴（追記のみ）
