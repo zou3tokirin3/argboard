@@ -1,10 +1,10 @@
 ---
 id: T030
 title: デモから意味分類タグを外す
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T030"
 template_ver: generic-0.2
 created: 2026-07-23
 updated: 2026-07-24
@@ -56,6 +56,7 @@ T012/T013 で作った「発見と考察の区別」が、デモでは実演さ�
 
 ## 作業ログ（追記のみ）
 
+- 2026-07-24 impl: 取得。行数見積もり=純減〜±0（tags削除・role追加のみ）。worktree=.worktrees/T030
 - 2026-07-24 planner: 受け入れ条件済みのため ready へ
 - 2026-07-23 planner: 改訂13の宿題（デモ作り直し）を起票。`ui/project.ts` を実地確認し、仮説が role でなく
   タグで表現され、矛盾がタグと要検討糸で二重管理されていることを確認。テスト（project/import）は
