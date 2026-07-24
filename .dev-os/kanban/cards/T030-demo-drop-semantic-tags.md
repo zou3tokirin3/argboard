@@ -1,7 +1,7 @@
 ---
 id: T030
 title: デモから意味分類タグを外す
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T030"
@@ -32,20 +32,20 @@ T012/T013 で作った「発見と考察の区別」が、デモでは実演さ�
 
 ## やること
 
-- [ ] `seventeen-theory` に `role: "thought"` を付ける（意味をタグから role へ移す）
-- [ ] `tags: ["仮説"]` と `tags: ["矛盾"]` を削除（role と要検討の糸が既に背負っている）
-- [ ] `tags: ["音声","時刻"]`・`tags: ["場所"]` を削除（意味分類をタグで教えない）
-- [ ] `Card.tags` は**スキーマから消さない**（schema v1互換・T020の検証結果待ち）
+- [x] `seventeen-theory` に `role: "thought"` を付ける（意味をタグから role へ移す）
+- [x] `tags: ["仮説"]` と `tags: ["矛盾"]` を削除（role と要検討の糸が既に背負っている）
+- [x] `tags: ["音声","時刻"]`・`tags: ["場所"]` を削除（意味分類をタグで教えない）
+- [x] `Card.tags` は**スキーマから消さない**（schema v1互換・T020の検証結果待ち）
 
 ## 受け入れ条件
 
-- [ ] デモに意味分類タグが1つも残っていない
-- [ ] デモの考察カードが `role:"thought"` で、発見と見た目で区別される（T012/T013の実演になる）
-- [ ] 矛盾は要検討の糸（`kind:"contradicts"` ＋ラベル）だけで表現されている
-- [ ] 既存テストが緑（`project.test.ts`＝件数と foundAt 順／`import.test.ts`＝JSON往復。
+- [x] デモに意味分類タグが1つも残っていない
+- [x] デモの考察カードが `role:"thought"` で、発見と見た目で区別される（T012/T013の実演になる）
+- [x] 矛盾は要検討の糸（`kind:"contradicts"` ＋ラベル）だけで表現されている
+- [x] 既存テストが緑（`project.test.ts`＝件数と foundAt 順／`import.test.ts`＝JSON往復。
       **いずれも tags に依存していないことを起票時に確認済み**）
-- [ ] 行数見積もりを作業ログに記録（**純減〜±0見込み**。純増するなら評価パケット→人間GO）
-- [ ] 最新コミットで check / test / smoke が緑
+- [x] 行数見積もりを作業ログに記録（**純減〜±0見込み**。純増するなら評価パケット→人間GO）
+- [x] 最新コミットで check / test / smoke が緑
 - [ ] 人間がデモを開いて「考察カードが区別され、矛盾が要検討線で見える」と確認する
 
 ## このカードでやらない
@@ -56,6 +56,7 @@ T012/T013 で作った「発見と考察の区別」が、デモでは実演さ�
 
 ## 作業ログ（追記のみ）
 
+- 2026-07-24 impl: 実装完了。デモ tags 全削除・seventeen-theory に role:thought。純増 -3 行。check/test/smoke 緑。review へ
 - 2026-07-24 impl: 取得。行数見積もり=純減〜±0（tags削除・role追加のみ）。worktree=.worktrees/T030
 - 2026-07-24 planner: 受け入れ条件済みのため ready へ
 - 2026-07-23 planner: 改訂13の宿題（デモ作り直し）を起票。`ui/project.ts` を実地確認し、仮説が role でなく
