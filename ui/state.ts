@@ -58,9 +58,27 @@ export const projectSummaries = signal<ProjectSummary[]>([]);
 export const search = signal("");
 export const selectedCardId = signal<string | null>(null);
 export const selectedLinkId = signal<string | null>(null);
+/** Session-only focus view (T018). Not persisted. */
+export const focusCardId = signal<string | null>(null);
+export const focusHops = signal(1);
 export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(
   "loading",
 );
+
+export function setFocusView(cardId: string): void {
+  focusCardId.value = cardId;
+  focusHops.value = 1;
+}
+
+export function expandFocusHops(): void {
+  if (!focusCardId.value) return;
+  focusHops.value += 1;
+}
+
+export function clearFocusView(): void {
+  focusCardId.value = null;
+  focusHops.value = 1;
+}
 
 export const appMode = computed<AppMode>(() =>
   project.value?.ui?.mode ?? "explore"
@@ -150,6 +168,7 @@ async function activateProject(next: Project): Promise<void> {
   writeActiveProjectId(next.id);
   selectedCardId.value = null;
   selectedLinkId.value = null;
+  clearFocusView();
   search.value = "";
   const opened = appendEvent(next, { type: "project_opened", at: Date.now() });
   project.value = opened;
@@ -450,6 +469,7 @@ export async function removeCard(cardId: string): Promise<void> {
   const next = applyRemoveCard(current, cardId);
   if (!next) return;
   if (selectedCardId.value === cardId) selectedCardId.value = null;
+  if (focusCardId.value === cardId) clearFocusView();
   if (!next.links.some((link) => link.id === selectedLinkId.value)) {
     selectedLinkId.value = null;
   }

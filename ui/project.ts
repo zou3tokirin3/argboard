@@ -28,6 +28,39 @@ export function createEmptyProject(
   };
 }
 
+/** Undirected BFS from startId up to `hops` link steps (includes start). */
+export function reachableCardIds(
+  links: readonly Pick<Link, "from" | "to">[],
+  startId: string,
+  hops: number,
+): Set<string> {
+  const reached = new Set<string>([startId]);
+  if (hops <= 0) return reached;
+  const adj = new Map<string, string[]>();
+  for (const link of links) {
+    const from = adj.get(link.from) ?? [];
+    from.push(link.to);
+    adj.set(link.from, from);
+    const to = adj.get(link.to) ?? [];
+    to.push(link.from);
+    adj.set(link.to, to);
+  }
+  let frontier = [startId];
+  for (let depth = 0; depth < hops; depth += 1) {
+    const next: string[] = [];
+    for (const id of frontier) {
+      for (const neighbor of adj.get(id) ?? []) {
+        if (reached.has(neighbor)) continue;
+        reached.add(neighbor);
+        next.push(neighbor);
+      }
+    }
+    if (next.length === 0) break;
+    frontier = next;
+  }
+  return reached;
+}
+
 export function parseProjectJson(text: string): Project {
   let data: unknown;
   try {

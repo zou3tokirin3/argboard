@@ -1,4 +1,8 @@
-import { createDemoProject, createEmptyProject } from "../../ui/project.ts";
+import {
+  createDemoProject,
+  createEmptyProject,
+  reachableCardIds,
+} from "../../ui/project.ts";
 
 Deno.test("createEmptyProject starts with no cards and one board", () => {
   const project = createEmptyProject("テストケース", 1_700_000_000_000);
@@ -33,5 +37,37 @@ Deno.test("createDemoProject keeps sample cards sorted by discovery", () => {
   );
   if (newestFirst[0].foundAt < newestFirst[1].foundAt) {
     throw new Error("Demo foundAt values must allow newest-first ordering");
+  }
+});
+
+Deno.test("reachableCardIds includes start at 0 hops", () => {
+  const set = reachableCardIds([{ from: "a", to: "b" }], "a", 0);
+  if (set.size !== 1 || !set.has("a")) {
+    throw new Error("0 hops must be start only");
+  }
+});
+
+Deno.test("reachableCardIds walks undirected hops", () => {
+  const links = [
+    { from: "a", to: "b" },
+    { from: "b", to: "c" },
+    { from: "c", to: "d" },
+  ];
+  const one = [...reachableCardIds(links, "a", 1)].toSorted().join(",");
+  if (one !== "a,b") throw new Error(`1 hop from a expected a,b got ${one}`);
+  const two = [...reachableCardIds(links, "a", 2)].toSorted().join(",");
+  if (two !== "a,b,c") {
+    throw new Error(`2 hops from a expected a,b,c got ${two}`);
+  }
+});
+
+Deno.test("reachableCardIds includes thought neighbors the same way", () => {
+  const links = [
+    { from: "finding", to: "thought" },
+    { from: "thought", to: "other" },
+  ];
+  const set = [...reachableCardIds(links, "thought", 1)].toSorted().join(",");
+  if (set !== "finding,other,thought") {
+    throw new Error(`thought 1 hop mismatch: ${set}`);
   }
 });

@@ -1,17 +1,23 @@
 import { useRef, useState } from "preact/hooks";
 import {
   addCard,
+  clearFocusView,
   commitCardPlacement,
   connectCards,
+  expandFocusHops,
   flushSave,
+  focusCardId,
+  focusHops,
   moveCardOnBoardLocal,
   placeCardOnBoard,
   project,
   selectedCardId,
   selectedLinkId,
   setBoardViewportLocal,
+  setFocusView,
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
+import { reachableCardIds } from "./project.ts";
 import type { Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
 
@@ -321,6 +327,7 @@ function BoardNode({
   y,
   isDropTarget,
   isRelated,
+  isDimmed,
   onAdhesivePointerDown,
   onPaperPointerDown,
   onThreadPointerDown,
@@ -330,6 +337,7 @@ function BoardNode({
   y: number;
   isDropTarget: boolean;
   isRelated: boolean;
+  isDimmed: boolean;
   onAdhesivePointerDown: (event: PointerEvent, cardId: string) => void;
   onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
@@ -341,10 +349,13 @@ function BoardNode({
     <g
       class={`board-node ${selected ? "is-selected" : ""} ${
         isDropTarget ? "is-drop-target" : ""
-      } ${thought ? "is-thought" : ""} ${isRelated ? "is-related" : ""}`}
+      } ${thought ? "is-thought" : ""} ${isRelated ? "is-related" : ""} ${
+        isDimmed ? "is-dimmed" : ""
+      }`}
       data-testid="board-node"
       data-card-id={card.id}
       data-role={thought ? "thought" : "finding"}
+      data-dimmed={isDimmed ? "true" : undefined}
       transform={`translate(${x} ${y})`}
     >
       <rect
@@ -454,6 +465,8 @@ function BoardNode({
 export function BoardView() {
   const current = project.value;
   const sel = selectedCardId.value;
+  const focusId = focusCardId.value;
+  const hops = focusHops.value;
   const board = current?.boards[0];
   const canvasRef = useRef<HTMLDivElement>(null);
   const [rubber, setRubber] = useState<Rubber | null>(null);
@@ -463,8 +476,16 @@ export function BoardView() {
 
   const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
+  const focusSet = focusId
+    ? reachableCardIds(current.links, focusId, hops)
+    : null;
+  const visibleLinks = focusSet
+    ? current.links.filter((link) =>
+      focusSet.has(link.from) && focusSet.has(link.to)
+    )
+    : current.links;
   const front = sel
-    ? current.links.filter((link) => link.from === sel || link.to === sel)
+    ? visibleLinks.filter((link) => link.from === sel || link.to === sel)
     : [];
   const relatedIds = new Set(
     front.flatMap((link) => [link.from, link.to].filter((id) => id !== sel)),
@@ -487,9 +508,17 @@ export function BoardView() {
     const positions = project.value?.boards[0]?.positions ?? {};
     const ids = project.value?.boards[0]?.cardIds ?? [];
     const pad = 12;
+    const focused = focusCardId.value
+      ? reachableCardIds(
+        project.value?.links ?? [],
+        focusCardId.value,
+        focusHops.value,
+      )
+      : null;
     for (let index = ids.length - 1; index >= 0; index -= 1) {
       const cardId = ids[index]!;
       if (cardId === exceptId) continue;
+      if (focused && !focused.has(cardId)) continue;
       const position = positions[cardId];
       if (!position) continue;
       if (
@@ -719,6 +748,38 @@ export function BoardView() {
           />
           <kbd>↵</kbd>
         </form>
+        <div class="board__focus" data-testid="board-focus">
+          {focusId
+            ? (
+              <>
+                <small>{hops}周目</small>
+                <button
+                  type="button"
+                  data-testid="focus-expand"
+                  onClick={() => expandFocusHops()}
+                >
+                  もう一周
+                </button>
+                <button
+                  type="button"
+                  data-testid="focus-clear"
+                  onClick={() => clearFocusView()}
+                >
+                  全部見る
+                </button>
+              </>
+            )
+            : (
+              <button
+                type="button"
+                data-testid="focus-set"
+                disabled={!sel}
+                onClick={() => sel && setFocusView(sel)}
+              >
+                この視点で見る
+              </button>
+            )}
+        </div>
         <span class="board__hint">
           上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
         </span>
@@ -759,20 +820,20 @@ export function BoardView() {
           >
             <g class="links links--visual" aria-hidden="true">
               {mapLinkVisuals(
-                current.links,
-                current.links,
+                visibleLinks,
+                visibleLinks,
                 board.positions,
                 "v",
               )}
             </g>
             <g class="links links--hit">
-              {current.links.map((link) => (
+              {visibleLinks.map((link) => (
                 <LinkHit
                   key={`h-${link.id}`}
                   link={link}
                   geometry={linkGeometry(
                     link,
-                    current.links,
+                    visibleLinks,
                     board.positions,
                   )}
                 />
@@ -782,6 +843,7 @@ export function BoardView() {
               {board.cardIds.map((cardId) => {
                 const card = cardMap.get(cardId);
                 const position = board.positions[cardId];
+                const dimmed = focusSet ? !focusSet.has(cardId) : false;
                 return card && position
                   ? (
                     <BoardNode
@@ -789,8 +851,9 @@ export function BoardView() {
                       card={card}
                       x={position.x}
                       y={position.y}
-                      isDropTarget={rubber?.targetId === card.id}
-                      isRelated={relatedIds.has(card.id)}
+                      isDropTarget={!dimmed && rubber?.targetId === card.id}
+                      isRelated={!dimmed && relatedIds.has(card.id)}
+                      isDimmed={dimmed}
                       onAdhesivePointerDown={onAdhesivePointerDown}
                       onPaperPointerDown={onPaperPointerDown}
                       onThreadPointerDown={onThreadPointerDown}
@@ -820,7 +883,7 @@ export function BoardView() {
           <g
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
           >
-            {mapLinkVisuals(front, current.links, board.positions, "f")}
+            {mapLinkVisuals(front, visibleLinks, board.positions, "f")}
           </g>
         </svg>
         <div class="board__legend">

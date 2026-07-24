@@ -704,6 +704,33 @@ kbd {
   stroke: var(--link);
   stroke-width: 3;
 }
+.board-node.is-dimmed {
+  opacity: 0.22;
+  pointer-events: none;
+}
+.board__focus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.board__focus button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+}
+.board__focus button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.board__focus button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .board-node__thread {
   cursor: crosshair;
 }
