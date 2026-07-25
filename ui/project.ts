@@ -7,6 +7,372 @@ export function appendEvent(
   return { ...project, events: [...(project.events ?? []), event] };
 }
 
+/** Board/stream slice at a point in time (T025). Does not mutate `project`. */
+export type ProjectSlice = {
+  cards: Card[];
+  links: Link[];
+  cardIds: string[];
+  positions: Record<string, { x: number; y: number }>;
+};
+
+/** Split "connect" from "label": link_added never carries a label. */
+function linkWithoutLabel(link: Link): Link {
+  const next = structuredClone(link);
+  delete next.label;
+  return next;
+}
+
+/**
+ * Normalize + fill birth events so replay can separate add / place / connect / label.
+ * Idempotent. May rewrite labeled link_added into add + update.
+ */
+export function withBirthEvents(project: Project): Project {
+  const raw = project.events ?? [];
+  // Pass 1: split labeled link_added (common in older synthetic births / demo).
+  const split: ProjectEvent[] = [];
+  for (const event of raw) {
+    if (event.type === "link_added" && event.link.label?.trim()) {
+      const label = event.link.label;
+      split.push({
+        ...event,
+        link: linkWithoutLabel(event.link),
+      });
+      split.push({
+        type: "link_updated",
+        at: event.at,
+        linkId: event.link.id,
+        label,
+        kind: event.link.kind,
+      });
+      continue;
+    }
+    split.push(event);
+  }
+
+  const cardsWithAdded = new Set<string>();
+  const linksWithAdded = new Set<string>();
+  const cardsPlaced = new Set<string>();
+  const linksWithUpdates = new Set<string>();
+  for (const event of split) {
+    if (event.type === "card_added") cardsWithAdded.add(event.card.id);
+    if (event.type === "link_added") linksWithAdded.add(event.link.id);
+    if (event.type === "card_placed") cardsPlaced.add(event.cardId);
+    if (event.type === "link_updated") linksWithUpdates.add(event.linkId);
+  }
+
+  const births: ProjectEvent[] = [];
+  for (const card of project.cards) {
+    if (cardsWithAdded.has(card.id)) continue;
+    births.push({
+      type: "card_added",
+      at: card.foundAt,
+      card: structuredClone(card),
+    });
+    cardsWithAdded.add(card.id);
+  }
+
+  const board = project.boards[0];
+  if (board) {
+    for (const cardId of board.cardIds) {
+      if (cardsPlaced.has(cardId)) continue;
+      const pos = board.positions[cardId];
+      const card = project.cards.find((item) => item.id === cardId);
+      if (!pos || !card) continue;
+      births.push({
+        type: "card_placed",
+        at: card.foundAt,
+        cardId,
+        x: pos.x,
+        y: pos.y,
+      });
+      cardsPlaced.add(cardId);
+    }
+  }
+
+  for (const link of project.links) {
+    if (linksWithAdded.has(link.id)) continue;
+    births.push({
+      type: "link_added",
+      at: link.createdAt,
+      link: linkWithoutLabel(link),
+    });
+    linksWithAdded.add(link.id);
+    if (link.label?.trim() && !linksWithUpdates.has(link.id)) {
+      births.push({
+        type: "link_updated",
+        at: link.createdAt,
+        linkId: link.id,
+        label: link.label,
+        kind: link.kind,
+      });
+      linksWithUpdates.add(link.id);
+    }
+  }
+
+  // Deleted pre-log entities: birth from removal snapshots.
+  for (const event of split) {
+    if (event.type === "card_removed" && !cardsWithAdded.has(event.card.id)) {
+      births.push({
+        type: "card_added",
+        at: event.card.foundAt,
+        card: structuredClone(event.card),
+      });
+      if (event.position && !cardsPlaced.has(event.card.id)) {
+        births.push({
+          type: "card_placed",
+          at: event.card.foundAt,
+          cardId: event.card.id,
+          x: event.position.x,
+          y: event.position.y,
+        });
+        cardsPlaced.add(event.card.id);
+      }
+      cardsWithAdded.add(event.card.id);
+      for (const link of event.links) {
+        if (linksWithAdded.has(link.id)) continue;
+        births.push({
+          type: "link_added",
+          at: link.createdAt,
+          link: linkWithoutLabel(link),
+        });
+        linksWithAdded.add(link.id);
+        if (link.label?.trim() && !linksWithUpdates.has(link.id)) {
+          births.push({
+            type: "link_updated",
+            at: link.createdAt,
+            linkId: link.id,
+            label: link.label,
+            kind: link.kind,
+          });
+          linksWithUpdates.add(link.id);
+        }
+      }
+    }
+    if (event.type === "link_removed" && !linksWithAdded.has(event.link.id)) {
+      births.push({
+        type: "link_added",
+        at: event.link.createdAt,
+        link: linkWithoutLabel(event.link),
+      });
+      linksWithAdded.add(event.link.id);
+      if (event.link.label?.trim() && !linksWithUpdates.has(event.link.id)) {
+        births.push({
+          type: "link_updated",
+          at: event.link.createdAt,
+          linkId: event.link.id,
+          label: event.link.label,
+          kind: event.link.kind,
+        });
+        linksWithUpdates.add(event.link.id);
+      }
+    }
+  }
+
+  const tagged = [
+    ...births.map((event, index) => ({ event, seq: index })),
+    ...split.map((event, index) => ({
+      event,
+      seq: births.length + index,
+    })),
+  ];
+  tagged.sort((left, right) =>
+    left.event.at - right.event.at || left.seq - right.seq
+  );
+  const ordered = tagged.map((item) => item.event);
+  const unchanged = births.length === 0 &&
+    ordered.length === raw.length &&
+    ordered.every((event, index) => {
+      const prev = raw[index];
+      return prev !== undefined &&
+        JSON.stringify(event) === JSON.stringify(prev);
+    });
+  if (unchanged) return project;
+  return {
+    ...project,
+    events: ordered,
+  };
+}
+
+function applyEvent(
+  event: ProjectEvent,
+  cards: Map<string, Card>,
+  links: Map<string, Link>,
+  positions: Record<string, { x: number; y: number }>,
+  cardIds: Set<string>,
+): void {
+  switch (event.type) {
+    case "project_opened":
+      break;
+    case "card_added":
+      cards.set(event.card.id, structuredClone(event.card));
+      break;
+    case "card_updated": {
+      const prev = cards.get(event.cardId);
+      if (!prev) break;
+      cards.set(event.cardId, {
+        ...prev,
+        title: event.title,
+        body: event.body,
+        url: event.url,
+      });
+      break;
+    }
+    case "card_removed":
+      cards.delete(event.card.id);
+      cardIds.delete(event.card.id);
+      delete positions[event.card.id];
+      for (const link of event.links) links.delete(link.id);
+      for (const [linkId, link] of links) {
+        if (link.from === event.card.id || link.to === event.card.id) {
+          links.delete(linkId);
+        }
+      }
+      break;
+    case "link_added":
+      links.set(event.link.id, structuredClone(event.link));
+      break;
+    case "link_updated": {
+      const prev = links.get(event.linkId);
+      if (!prev) break;
+      links.set(event.linkId, {
+        ...prev,
+        label: event.label,
+        kind: event.kind,
+      });
+      break;
+    }
+    case "link_removed":
+      links.delete(event.link.id);
+      break;
+    case "card_placed":
+      if (!cards.has(event.cardId)) break;
+      positions[event.cardId] = { x: event.x, y: event.y };
+      cardIds.add(event.cardId);
+      break;
+  }
+}
+
+/**
+ * Replay by inclusive event index (not timestamp). Same-ms steps stay ordered.
+ */
+export function viewThrough(
+  project: Project,
+  through: number,
+): ProjectSlice {
+  const sourced = withBirthEvents(project);
+  const events = sourced.events ?? [];
+  const cards = new Map<string, Card>();
+  const links = new Map<string, Link>();
+  const positions: Record<string, { x: number; y: number }> = {};
+  const cardIds = new Set<string>();
+  const board = sourced.boards[0];
+  if (through < 0 || events.length === 0) {
+    return { cards: [], links: [], cardIds: [], positions: {} };
+  }
+  const last = Math.min(through, events.length - 1);
+
+  for (let index = 0; index <= last; index += 1) {
+    applyEvent(events[index]!, cards, links, positions, cardIds);
+  }
+
+  // Placement fallback for cards that never got card_placed (e.g. demo births).
+  if (board) {
+    for (const [id, pos] of Object.entries(board.positions)) {
+      if (!cards.has(id) || positions[id]) continue;
+      positions[id] = pos;
+      cardIds.add(id);
+    }
+  }
+
+  for (const [linkId, link] of [...links]) {
+    if (!cards.has(link.from) || !cards.has(link.to)) links.delete(linkId);
+  }
+  for (const id of [...cardIds]) {
+    if (!cards.has(id) || !positions[id]) cardIds.delete(id);
+  }
+
+  return {
+    cards: [...cards.values()],
+    links: [...links.values()],
+    cardIds: [...cardIds],
+    positions,
+  };
+}
+
+/** Timestamp cutoff helper (tests / coarse callers). Prefers last event at `at`. */
+export function viewAt(project: Project, at: number): ProjectSlice {
+  const events = withBirthEvents(project).events ?? [];
+  let through = -1;
+  for (let index = 0; index < events.length; index += 1) {
+    if (events[index]!.at <= at) through = index;
+  }
+  if (through < 0) {
+    return { cards: [], links: [], cardIds: [], positions: {} };
+  }
+  return viewThrough(project, through);
+}
+
+/** One discrete growth beat for step replay (T025). */
+export type ReplayStep = {
+  at: number;
+  label: string;
+  /** Inclusive index into withBirthEvents(project).events */
+  through: number;
+};
+
+function titleForCard(project: Project, cardId: string): string {
+  const living = project.cards.find((card) => card.id === cardId);
+  if (living) return living.title;
+  for (const event of project.events ?? []) {
+    if (event.type === "card_added" && event.card.id === cardId) {
+      return event.card.title;
+    }
+    if (event.type === "card_removed" && event.card.id === cardId) {
+      return event.card.title;
+    }
+  }
+  return "カード";
+}
+
+function labelForEvent(project: Project, event: ProjectEvent): string | null {
+  switch (event.type) {
+    case "project_opened":
+      return null;
+    case "card_added":
+      return `追加 · ${event.card.title}`;
+    case "card_updated":
+      return `編集 · ${event.title}`;
+    case "card_removed":
+      return `削除 · ${event.card.title}`;
+    case "card_placed":
+      return `配置 · ${titleForCard(project, event.cardId)}`;
+    case "link_added":
+      return event.link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続";
+    case "link_updated": {
+      const tip = event.label?.trim();
+      if (tip) return `ラベル · ${tip}`;
+      return event.kind === "contradicts" ? "糸 · 要検討に" : "糸 · 通常に";
+    }
+    case "link_removed":
+      return "糸 · 削除";
+  }
+}
+
+/**
+ * Discrete execution units for the replay bar.
+ * One step per meaningful event; `through` is the event-list index to apply.
+ */
+export function replaySteps(project: Project): ReplayStep[] {
+  const sourced = withBirthEvents(project);
+  const steps: ReplayStep[] = [];
+  for (const [index, event] of (sourced.events ?? []).entries()) {
+    const label = labelForEvent(sourced, event);
+    if (!label) continue;
+    steps.push({ at: event.at, label, through: index });
+  }
+  return steps;
+}
+
 export function createEmptyProject(
   name: string,
   now = Date.now(),

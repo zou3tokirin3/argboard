@@ -1,9 +1,10 @@
 import {
   filteredCards,
-  project,
+  isReplaying,
   removeCard,
   search,
   selectedCardId,
+  viewProject,
 } from "./state.ts";
 import { CARD_MIME } from "./types.ts";
 
@@ -21,9 +22,11 @@ function sourceLabel(url: string): string {
 }
 
 export function Stream() {
-  const boardCardIds = new Set(project.value?.boards[0]?.cardIds ?? []);
-  const isContemplate = (project.value?.ui?.mode ?? "explore") ===
-    "contemplate";
+  const current = viewProject.value;
+  const replaying = isReplaying.value;
+  const boardCardIds = new Set(current?.boards[0]?.cardIds ?? []);
+  const isContemplate = (current?.ui?.mode ?? "explore") === "contemplate";
+  const canDrag = isContemplate && !replaying;
 
   return (
     <section class="stream" aria-label="発見ログ">
@@ -32,7 +35,7 @@ export function Stream() {
           <span class="eyebrow">タイムライン</span>
           <h2>発見ログ</h2>
         </div>
-        <span class="count">{project.value?.cards.length ?? 0}</span>
+        <span class="count">{current?.cards.length ?? 0}</span>
       </div>
       <label class="search">
         <span aria-hidden="true">⌕</span>
@@ -52,7 +55,7 @@ export function Stream() {
               <div
                 class={`stream-card ${selected ? "is-selected" : ""} ${
                   card.role === "thought" ? "is-thought" : ""
-                } ${isContemplate ? "is-draggable" : ""}`}
+                } ${canDrag ? "is-draggable" : ""}`}
                 data-testid="stream-card"
                 data-card-id={card.id}
                 data-role={card.role === "thought" ? "thought" : "finding"}
@@ -60,9 +63,9 @@ export function Stream() {
                 <button
                   type="button"
                   class="stream-card__main"
-                  draggable={isContemplate}
+                  draggable={canDrag}
                   onDragStart={(event) => {
-                    if (!isContemplate) return;
+                    if (!canDrag) return;
                     globalThis.getSelection?.()?.removeAllRanges();
                     event.dataTransfer?.setData(CARD_MIME, card.id);
                     event.dataTransfer!.effectAllowed = "copy";
@@ -102,7 +105,7 @@ export function Stream() {
                   )
                   : null}
               </div>
-              {selected
+              {selected && !replaying
                 ? (
                   <button
                     type="button"
