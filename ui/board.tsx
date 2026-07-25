@@ -5,7 +5,6 @@ import {
   clearReplay,
   commitCardPlacement,
   connectCards,
-  enterReplay,
   expandFocusHops,
   flushSave,
   focusCardId,
@@ -776,7 +775,7 @@ export function BoardView() {
         {replaying
           ? (
             <span class="board__replay-badge" data-testid="replay-badge">
-              再生中（読み取り専用）
+              経緯（読み取り専用）
             </span>
           )
           : (
@@ -791,72 +790,91 @@ export function BoardView() {
               <kbd>↵</kbd>
             </form>
           )}
-        <div class="board__toolbar-end">
-          {replaying ? null : (
-            <button
-              type="button"
-              data-testid="replay-enter"
-              class="board__replay-enter"
-              disabled={steps.length === 0}
-              onClick={() => enterReplay()}
-            >
-              育ちを再生
-            </button>
-          )}
-          <span class="board__hint">
-            {replaying
-              ? "専用バーでステップ移動"
-              : "上部の糊で移動 / 糸端で接続"}
-          </span>
-        </div>
+        <span class="board__hint">
+          {replaying ? "下のバーでステップ移動" : "上部の糊で移動 / 糸端で接続"}
+        </span>
       </div>
       {replaying && currentStep && stepIndex != null
         ? (
           <div class="board__replay-bar" data-testid="replay-bar">
-            <div class="board__replay-steps">
+            <div class="board__replay-bar-main">
               <button
                 type="button"
+                class="board__replay-icon"
                 data-testid="replay-prev"
                 disabled={stepIndex <= 0}
                 onClick={() => stepReplay(-1)}
                 aria-label="前のステップ"
+                title="前のステップ"
               >
-                前
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M10 3L5 8l5 5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </button>
               <button
                 type="button"
+                class="board__replay-icon"
                 data-testid="replay-next"
                 disabled={stepIndex >= steps.length - 1}
                 onClick={() => stepReplay(1)}
                 aria-label="次のステップ"
+                title="次のステップ"
               >
-                次
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M6 3l5 5-5 5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </button>
-            </div>
-            <label class="board__replay-scrub">
-              <span class="board__replay-count">
-                {stepIndex + 1}/{steps.length}
-              </span>
               <input
                 type="range"
+                class="board__replay-slider"
                 data-testid="replay-slider"
                 min={0}
                 max={Math.max(0, steps.length - 1)}
                 step={1}
                 value={stepIndex}
-                aria-label="育ちのステップ"
+                aria-label="経緯のステップ"
                 onInput={(event) =>
                   setReplayIndex(Number(event.currentTarget.value))}
               />
-              <span class="board__replay-label">{currentStep.label}</span>
-            </label>
-            <button
-              type="button"
-              data-testid="replay-now"
-              onClick={() => clearReplay()}
-            >
-              いまに戻る
-            </button>
+              <span class="board__replay-count">
+                {stepIndex + 1}/{steps.length}
+              </span>
+              <button
+                type="button"
+                class="board__replay-icon"
+                data-testid="replay-now"
+                onClick={() => clearReplay()}
+                aria-label="いまに戻る"
+                title="いまに戻る"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M4 4l8 8M12 4l-8 8"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div class="board__replay-label" title={currentStep.label}>
+              {currentStep.label}
+            </div>
           </div>
         )
         : null}

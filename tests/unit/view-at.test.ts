@@ -171,13 +171,49 @@ Deno.test("replaySteps are discrete execution units, not a time continuum", () =
   });
 
   const steps = replaySteps(project);
-  if (steps.length !== 3) {
-    throw new Error(`expected 3 growth steps, got ${steps.length}`);
+  if (steps.length !== 4) {
+    throw new Error(`expected 4 growth steps, got ${steps.length}`);
   }
   if (
     steps[0]?.label !== "追加 · A" || steps[1]?.label !== "配置 · A" ||
-    steps[2]?.label !== "追加 · B"
+    steps[2]?.label !== "編集 · A'" || steps[3]?.label !== "追加 · B"
   ) {
     throw new Error(`unexpected step labels: ${steps.map((s) => s.label)}`);
+  }
+});
+
+Deno.test("replaySteps include link connect and label edits", () => {
+  const a = "a";
+  const b = "b";
+  let project = createEmptyProject("糸", 1);
+  const cardA = { id: a, title: "A", foundAt: 1 };
+  const cardB = { id: b, title: "B", foundAt: 2 };
+  project = { ...project, cards: [cardA, cardB] };
+  project = appendEvent(project, { type: "card_added", at: 1, card: cardA });
+  project = appendEvent(project, { type: "card_added", at: 2, card: cardB });
+  project = applyPlaceCardOnBoard(project, a, 0, 0)!;
+  project = applyPlaceCardOnBoard(project, b, 40, 0)!;
+  project = applyConnectCards(project, a, b)!;
+  const link = project.links[0]!;
+  project = appendEvent(project, {
+    type: "link_added",
+    at: 3,
+    link: { ...link, createdAt: 3 },
+  });
+  project = appendEvent(project, {
+    type: "link_updated",
+    at: 4,
+    linkId: link.id,
+    label: "同一人物？",
+    kind: "connects",
+  });
+
+  const steps = replaySteps(project);
+  const labels = steps.map((step) => step.label);
+  if (!labels.includes("糸 · 接続")) {
+    throw new Error(`missing link connect step: ${labels}`);
+  }
+  if (!labels.includes("糸 · 同一人物？")) {
+    throw new Error(`missing link label step: ${labels}`);
   }
 });

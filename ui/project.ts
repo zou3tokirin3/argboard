@@ -172,18 +172,25 @@ function titleForCard(project: Project, cardId: string): string {
 function labelForEvent(project: Project, event: ProjectEvent): string | null {
   switch (event.type) {
     case "project_opened":
-    case "card_updated":
       return null;
     case "card_added":
       return `追加 · ${event.card.title}`;
+    case "card_updated":
+      return `編集 · ${event.title}`;
     case "card_removed":
       return `削除 · ${event.card.title}`;
     case "card_placed":
       return `配置 · ${titleForCard(project, event.cardId)}`;
-    case "link_added":
+    case "link_added": {
+      const tip = event.link.label?.trim();
+      if (tip) return `糸 · ${tip}`;
       return event.link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続";
-    case "link_updated":
-      return event.kind === "contradicts" ? "糸 · 要検討に" : "糸 · 通常に";
+    }
+    case "link_updated": {
+      const tip = event.label?.trim();
+      if (tip) return `糸 · ${tip}`;
+      return event.kind === "contradicts" ? "糸 · 要検討" : "糸 · 通常";
+    }
     case "link_removed":
       return "糸 · 削除";
   }
