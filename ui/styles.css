@@ -708,28 +708,57 @@ kbd {
   opacity: 0.22;
   pointer-events: none;
 }
-.board__focus {
+.board__focus-bar {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  z-index: 2;
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
+  gap: 8px;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 4px 16px rgb(15 20 25 / 12%);
+  pointer-events: auto;
 }
-.board__focus button {
-  height: 30px;
+.board__focus-bar strong {
+  padding: 0 4px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.board__focus-bar button {
+  height: 28px;
   padding: 0 10px;
   border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  border-radius: var(--radius-box);
   background: var(--panel);
   color: var(--ink);
   font-size: 12px;
 }
-.board__focus button:hover:not(:disabled) {
+.board__focus-bar button:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
 }
-.board__focus button:disabled {
-  opacity: 0.45;
+.board__focus-bar button:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
+}
+.inspector__action {
+  margin: 8px 16px 0;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-box);
+  padding: 8px 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: 600 13px "IBM Plex Sans JP", sans-serif;
+  cursor: pointer;
+}
+.inspector__action:hover {
+  background: color-mix(in srgb, var(--accent-soft) 70%, #fff);
 }
 .board-node__thread {
   cursor: crosshair;

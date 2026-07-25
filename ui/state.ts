@@ -75,6 +75,11 @@ export function expandFocusHops(): void {
   focusHops.value += 1;
 }
 
+export function shrinkFocusHops(): void {
+  if (!focusCardId.value || focusHops.value <= 1) return;
+  focusHops.value -= 1;
+}
+
 export function clearFocusView(): void {
   focusCardId.value = null;
   focusHops.value = 1;

@@ -14,7 +14,7 @@ import {
   selectedCardId,
   selectedLinkId,
   setBoardViewportLocal,
-  setFocusView,
+  shrinkFocusHops,
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
 import { reachableCardIds } from "./project.ts";
@@ -748,38 +748,6 @@ export function BoardView() {
           />
           <kbd>↵</kbd>
         </form>
-        <div class="board__focus" data-testid="board-focus">
-          {focusId
-            ? (
-              <>
-                <small>{hops}周目</small>
-                <button
-                  type="button"
-                  data-testid="focus-expand"
-                  onClick={() => expandFocusHops()}
-                >
-                  もう一周
-                </button>
-                <button
-                  type="button"
-                  data-testid="focus-clear"
-                  onClick={() => clearFocusView()}
-                >
-                  全部見る
-                </button>
-              </>
-            )
-            : (
-              <button
-                type="button"
-                data-testid="focus-set"
-                disabled={!sel}
-                onClick={() => sel && setFocusView(sel)}
-              >
-                この視点で見る
-              </button>
-            )}
-        </div>
         <span class="board__hint">
           上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
         </span>
@@ -796,6 +764,35 @@ export function BoardView() {
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
+        {focusId
+          ? (
+            <div class="board__focus-bar" data-testid="board-focus">
+              <strong>{hops}周目</strong>
+              <button
+                type="button"
+                data-testid="focus-shrink"
+                disabled={hops <= 1}
+                onClick={() => shrinkFocusHops()}
+              >
+                一周戻す
+              </button>
+              <button
+                type="button"
+                data-testid="focus-expand"
+                onClick={() => expandFocusHops()}
+              >
+                もう一周
+              </button>
+              <button
+                type="button"
+                data-testid="focus-clear"
+                onClick={() => clearFocusView()}
+              >
+                全部見る
+              </button>
+            </div>
+          )
+          : null}
         <svg aria-label="手がかりの関係図">
           <defs>
             {([["arrow-connects", "var(--link)"], [
