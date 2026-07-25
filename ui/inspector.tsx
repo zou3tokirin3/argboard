@@ -177,7 +177,7 @@ export function Inspector() {
             class="inspector__hint inspector__hint--focus"
             data-testid="focus-active-hint"
           >
-            視点中。上の − ＋ × で広さの調整と解除
+            視点中。カード近くの − ＋ × で広さの調整と解除
           </p>
         )
         : (

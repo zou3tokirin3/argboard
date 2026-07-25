@@ -730,6 +730,21 @@ export function BoardView() {
     });
   }
 
+  const focusAnchorId = focusId
+    ? (sel && focusSet?.has(sel) ? sel : focusId)
+    : null;
+  const focusAnchorPos = focusAnchorId
+    ? board.positions[focusAnchorId]
+    : undefined;
+  const focusBarStyle = focusAnchorPos
+    ? {
+      left: `${
+        viewport.x + (focusAnchorPos.x + NODE_WIDTH / 2) * viewport.zoom
+      }px`,
+      top: `${viewport.y + focusAnchorPos.y * viewport.zoom - 10}px`,
+    }
+    : undefined;
+
   return (
     <section class="board" aria-label="捜査ボード">
       <div class="board__toolbar">
@@ -748,12 +763,30 @@ export function BoardView() {
           />
           <kbd>↵</kbd>
         </form>
-        {focusId
+        <span class="board__hint">
+          上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
+        </span>
+      </div>
+      <div
+        class={`board__canvas ${rubber ? "is-linking" : ""}`}
+        ref={canvasRef}
+        data-testid="board-canvas"
+        onPointerDown={onCanvasPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onWheel={onWheel}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+      >
+        {focusBarStyle
           ? (
             <div
-              class="board__focus"
+              class="board__focus-float"
               data-testid="board-focus"
               title="視点中：糸で届くカードだけを表示"
+              style={focusBarStyle}
+              onPointerDown={(event) => event.stopPropagation()}
             >
               <span class="board__focus-meta" aria-live="polite">
                 視点 · {hops}
@@ -815,24 +848,7 @@ export function BoardView() {
               </button>
             </div>
           )
-          : (
-            <span class="board__hint">
-              上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
-            </span>
-          )}
-      </div>
-      <div
-        class={`board__canvas ${rubber ? "is-linking" : ""}`}
-        ref={canvasRef}
-        data-testid="board-canvas"
-        onPointerDown={onCanvasPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onWheel={onWheel}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-      >
+          : null}
         <svg aria-label="手がかりの関係図">
           <defs>
             {([["arrow-connects", "var(--link)"], [
