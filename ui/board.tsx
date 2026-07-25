@@ -778,7 +778,7 @@ export function BoardView() {
         {replaying
           ? (
             <span class="board__replay-badge" data-testid="replay-badge">
-              経緯（読み取り専用）
+              タイムライン（読み取り専用）
             </span>
           )
           : (
@@ -841,6 +841,26 @@ export function BoardView() {
                   />
                 </svg>
               </button>
+              <button
+                type="button"
+                class="board__replay-icon"
+                data-testid="replay-end"
+                disabled={stepIndex >= steps.length - 1}
+                onClick={() => setReplayIndex(steps.length - 1)}
+                aria-label="最後のステップへ"
+                title="最後のステップへ"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M4 3l5 5-5 5M12 3v10"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
               <input
                 type="range"
                 class="board__replay-slider"
@@ -849,7 +869,7 @@ export function BoardView() {
                 max={Math.max(0, steps.length - 1)}
                 step={1}
                 value={stepIndex}
-                aria-label="経緯のステップ"
+                aria-label="タイムラインのステップ"
                 onInput={(event) =>
                   setReplayIndex(Number(event.currentTarget.value))}
               />

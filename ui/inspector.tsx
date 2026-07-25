@@ -20,7 +20,7 @@ function HistoryEntry() {
   const steps = replayStepList.value;
   if (replaying) {
     return (
-      <p class="inspector__history">
+      <div class="inspector__history">
         <button
           type="button"
           data-testid="replay-exit"
@@ -29,11 +29,11 @@ function HistoryEntry() {
         >
           いまに戻る
         </button>
-      </p>
+      </div>
     );
   }
   return (
-    <p class="inspector__history">
+    <div class="inspector__history">
       <button
         type="button"
         data-testid="replay-enter"
@@ -42,9 +42,9 @@ function HistoryEntry() {
         title="ボードが育った手順をステップでたどる"
         onClick={() => enterReplay()}
       >
-        経緯
+        タイムライン
       </button>
-    </p>
+    </div>
   );
 }
 
@@ -106,19 +106,21 @@ export function Inspector() {
             <option value="contradicts">要検討</option>
           </select>
         </label>
-        {replaying ? <p class="inspector__hint">経緯の表示中は読めます</p> : (
-          <>
-            <button
-              type="button"
-              class="inspector__danger"
-              data-testid="link-delete"
-              onClick={() => removeLink(link.id)}
-            >
-              この糸を削除
-            </button>
-            <p class="inspector__hint">Delete キーでも削除できます</p>
-          </>
-        )}
+        {replaying
+          ? <p class="inspector__hint">タイムライン表示中は読めます</p>
+          : (
+            <>
+              <button
+                type="button"
+                class="inspector__danger"
+                data-testid="link-delete"
+                onClick={() => removeLink(link.id)}
+              >
+                この糸を削除
+              </button>
+              <p class="inspector__hint">Delete キーでも削除できます</p>
+            </>
+          )}
         <HistoryEntry />
       </aside>
     );
@@ -150,7 +152,7 @@ export function Inspector() {
     <aside class="inspector" aria-label="カード編集">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">{replaying ? "経緯" : "簡易編集"}</span>
+          <span class="eyebrow">{replaying ? "タイムライン" : "簡易編集"}</span>
           <h2>{card.role === "thought" ? "考察カード" : "発見カード"}</h2>
         </div>
       </div>
@@ -219,19 +221,21 @@ export function Inspector() {
           </label>
         )
         : null}
-      {replaying ? <p class="inspector__hint">経緯の表示中は読めます</p> : (
-        <>
-          <button
-            type="button"
-            class="inspector__danger"
-            data-testid="card-delete"
-            onClick={() => removeCard(card.id)}
-          >
-            このカードを削除
-          </button>
-          <p class="inspector__hint">Delete キーでも削除できます</p>
-        </>
-      )}
+      {replaying
+        ? <p class="inspector__hint">タイムライン表示中は読めます</p>
+        : (
+          <>
+            <button
+              type="button"
+              class="inspector__danger"
+              data-testid="card-delete"
+              onClick={() => removeCard(card.id)}
+            >
+              このカードを削除
+            </button>
+            <p class="inspector__hint">Delete キーでも削除できます</p>
+          </>
+        )}
       <HistoryEntry />
     </aside>
   );

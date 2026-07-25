@@ -671,22 +671,27 @@ kbd {
   border-top: 1px solid var(--line);
 }
 .inspector__history-btn {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--muted);
-  font-size: 12px;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--panel);
+  color: var(--ink);
+  font: 600 13px "IBM Plex Sans JP", sans-serif;
   cursor: pointer;
 }
 .inspector__history-btn:hover {
-  color: var(--ink);
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 .inspector__history-btn:disabled {
-  text-decoration: none;
   opacity: 0.45;
   cursor: default;
+}
+.inspector__history-btn:disabled:hover {
+  border-color: var(--line-strong);
+  background: var(--panel);
 }
 .status-dot {
   width: 8px;
