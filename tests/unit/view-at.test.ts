@@ -5,6 +5,7 @@ import {
   applyRemoveCard,
   applyUpdateLink,
   createEmptyProject,
+  replaySteps,
   viewAt,
 } from "../../ui/project.ts";
 
@@ -138,5 +139,45 @@ Deno.test("viewAt stage2 replays place, kind, and removal snapshots", () => {
     afterRemove.links.length !== 0
   ) {
     throw new Error("removal at must hide card and cascaded links");
+  }
+});
+
+Deno.test("replaySteps are discrete execution units, not a time continuum", () => {
+  const a = "a";
+  const b = "b";
+  let project = createEmptyProject("ステップ", 1);
+  const cardA = { id: a, title: "A", foundAt: 10 };
+  const cardB = { id: b, title: "B", foundAt: 20 };
+  project = { ...project, cards: [cardA, cardB] };
+  project = appendEvent(project, { type: "card_added", at: 10, card: cardA });
+  project = appendEvent(project, { type: "card_added", at: 20, card: cardB });
+  project = applyPlaceCardOnBoard(project, a, 0, 0)!;
+  project = appendEvent(project, {
+    type: "card_placed",
+    at: 11,
+    cardId: a,
+    x: 0,
+    y: 0,
+  });
+  project = appendEvent(project, {
+    type: "project_opened",
+    at: 5,
+  });
+  project = appendEvent(project, {
+    type: "card_updated",
+    at: 15,
+    cardId: a,
+    title: "A'",
+  });
+
+  const steps = replaySteps(project);
+  if (steps.length !== 3) {
+    throw new Error(`expected 3 growth steps, got ${steps.length}`);
+  }
+  if (
+    steps[0]?.label !== "追加 · A" || steps[1]?.label !== "配置 · A" ||
+    steps[2]?.label !== "追加 · B"
+  ) {
+    throw new Error(`unexpected step labels: ${steps.map((s) => s.label)}`);
   }
 });

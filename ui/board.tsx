@@ -5,6 +5,7 @@ import {
   clearReplay,
   commitCardPlacement,
   connectCards,
+  enterReplay,
   expandFocusHops,
   flushSave,
   focusCardId,
@@ -13,27 +14,21 @@ import {
   moveCardOnBoardLocal,
   placeCardOnBoard,
   project,
-  replayAt,
-  replayBounds,
+  replayIndex,
+  replayStepList,
   selectedCardId,
   selectedLinkId,
   setBoardViewportLocal,
   setFocusView,
-  setReplayAt,
+  setReplayIndex,
   shrinkFocusHops,
+  stepReplay,
   viewProject,
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
 import { reachableCardIds } from "./project.ts";
 import type { Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
-
-const replayTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
-  month: "short",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
 
 const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
@@ -480,6 +475,8 @@ export function BoardView() {
   const live = project.value;
   const current = viewProject.value;
   const replaying = isReplaying.value;
+  const steps = replayStepList.value;
+  const stepIndex = replayIndex.value;
   const sel = selectedCardId.value;
   const focusId = focusCardId.value;
   const hops = focusHops.value;
@@ -490,8 +487,7 @@ export function BoardView() {
 
   if (!live || !current || !board) return null;
 
-  const bounds = replayBounds(live);
-  const sliderValue = replayAt.value ?? bounds.max;
+  const currentStep = stepIndex == null ? null : steps[stepIndex] ?? null;
   const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
   const focusSet = focusId
@@ -795,41 +791,75 @@ export function BoardView() {
               <kbd>↵</kbd>
             </form>
           )}
-        <label class="board__replay" data-testid="replay-controls">
-          <span class="board__replay-time">
-            {replaying ? replayTimeFormatter.format(sliderValue) : "いま"}
+        <div class="board__toolbar-end">
+          {replaying ? null : (
+            <button
+              type="button"
+              data-testid="replay-enter"
+              class="board__replay-enter"
+              disabled={steps.length === 0}
+              onClick={() => enterReplay()}
+            >
+              育ちを再生
+            </button>
+          )}
+          <span class="board__hint">
+            {replaying
+              ? "専用バーでステップ移動"
+              : "上部の糊で移動 / 糸端で接続"}
           </span>
-          <input
-            type="range"
-            data-testid="replay-slider"
-            min={bounds.min}
-            max={bounds.max}
-            step={Math.max(1, Math.round((bounds.max - bounds.min) / 200))}
-            value={sliderValue}
-            aria-label="育ちの再生位置"
-            onInput={(event) => {
-              const value = Number(event.currentTarget.value);
-              if (value >= bounds.max) clearReplay();
-              else setReplayAt(value);
-            }}
-          />
-          {replaying
-            ? (
+        </div>
+      </div>
+      {replaying && currentStep && stepIndex != null
+        ? (
+          <div class="board__replay-bar" data-testid="replay-bar">
+            <div class="board__replay-steps">
               <button
                 type="button"
-                data-testid="replay-now"
-                onClick={() => clearReplay()}
+                data-testid="replay-prev"
+                disabled={stepIndex <= 0}
+                onClick={() => stepReplay(-1)}
+                aria-label="前のステップ"
               >
-                いまに戻る
+                前
               </button>
-            )
-            : (
-              <span class="board__hint">
-                上部の糊で移動 / 糸端で接続
+              <button
+                type="button"
+                data-testid="replay-next"
+                disabled={stepIndex >= steps.length - 1}
+                onClick={() => stepReplay(1)}
+                aria-label="次のステップ"
+              >
+                次
+              </button>
+            </div>
+            <label class="board__replay-scrub">
+              <span class="board__replay-count">
+                {stepIndex + 1}/{steps.length}
               </span>
-            )}
-        </label>
-      </div>
+              <input
+                type="range"
+                data-testid="replay-slider"
+                min={0}
+                max={Math.max(0, steps.length - 1)}
+                step={1}
+                value={stepIndex}
+                aria-label="育ちのステップ"
+                onInput={(event) =>
+                  setReplayIndex(Number(event.currentTarget.value))}
+              />
+              <span class="board__replay-label">{currentStep.label}</span>
+            </label>
+            <button
+              type="button"
+              data-testid="replay-now"
+              onClick={() => clearReplay()}
+            >
+              いまに戻る
+            </button>
+          </div>
+        )
+        : null}
       <div
         class={`board__canvas ${rubber ? "is-linking" : ""}`}
         ref={canvasRef}

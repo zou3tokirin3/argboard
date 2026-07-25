@@ -149,23 +149,96 @@ export function viewAt(project: Project, at: number): ProjectSlice {
   };
 }
 
-/** Inclusive time range for the replay slider. */
-export function replayBounds(
-  project: Project,
-  now = Date.now(),
-): { min: number; max: number } {
-  let min = project.createdAt;
+/** One discrete growth beat for step replay (T025). */
+export type ReplayStep = {
+  at: number;
+  label: string;
+};
+
+function titleForCard(project: Project, cardId: string): string {
+  const living = project.cards.find((card) => card.id === cardId);
+  if (living) return living.title;
+  for (const event of project.events ?? []) {
+    if (event.type === "card_added" && event.card.id === cardId) {
+      return event.card.title;
+    }
+    if (event.type === "card_removed" && event.card.id === cardId) {
+      return event.card.title;
+    }
+  }
+  return "カード";
+}
+
+function labelForEvent(project: Project, event: ProjectEvent): string | null {
+  switch (event.type) {
+    case "project_opened":
+    case "card_updated":
+      return null;
+    case "card_added":
+      return `追加 · ${event.card.title}`;
+    case "card_removed":
+      return `削除 · ${event.card.title}`;
+    case "card_placed":
+      return `配置 · ${titleForCard(project, event.cardId)}`;
+    case "link_added":
+      return event.link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続";
+    case "link_updated":
+      return event.kind === "contradicts" ? "糸 · 要検討に" : "糸 · 通常に";
+    case "link_removed":
+      return "糸 · 削除";
+  }
+}
+
+/**
+ * Discrete execution units for the replay bar.
+ * Prefers T024 events; falls back to foundAt/createdAt for pre-log entities.
+ */
+export function replaySteps(project: Project): ReplayStep[] {
+  const events = project.events ?? [];
+  const cardsWithAdded = new Set<string>();
+  const linksWithAdded = new Set<string>();
+  for (const event of events) {
+    if (event.type === "card_added") cardsWithAdded.add(event.card.id);
+    if (event.type === "link_added") linksWithAdded.add(event.link.id);
+  }
+
+  const steps: ReplayStep[] = [];
+  for (const event of events) {
+    const label = labelForEvent(project, event);
+    if (label) steps.push({ at: event.at, label });
+  }
+
   for (const card of project.cards) {
-    if (card.foundAt < min) min = card.foundAt;
+    if (cardsWithAdded.has(card.id)) continue;
+    steps.push({ at: card.foundAt, label: `発見 · ${card.title}` });
+  }
+  for (const event of events) {
+    if (event.type !== "card_removed" || cardsWithAdded.has(event.card.id)) {
+      continue;
+    }
+    steps.push({
+      at: event.card.foundAt,
+      label: `発見 · ${event.card.title}`,
+    });
   }
   for (const link of project.links) {
-    if (link.createdAt < min) min = link.createdAt;
+    if (linksWithAdded.has(link.id)) continue;
+    steps.push({
+      at: link.createdAt,
+      label: link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続",
+    });
   }
-  for (const event of project.events ?? []) {
-    if (event.at < min) min = event.at;
+  for (const event of events) {
+    if (event.type !== "link_removed" || linksWithAdded.has(event.link.id)) {
+      continue;
+    }
+    steps.push({
+      at: event.link.createdAt,
+      label: event.link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続",
+    });
   }
-  const max = Math.max(now, min);
-  return { min, max };
+
+  return steps.toSorted((left, right) => left.at - right.at);
 }
 
 export function createEmptyProject(

@@ -588,24 +588,13 @@ kbd {
   color: var(--muted);
   font-size: 12px;
 }
-.board__replay {
+.board__toolbar-end {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  gap: 10px;
   margin-left: auto;
 }
-.board__replay-time {
-  color: var(--muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.board__replay input[type="range"] {
-  width: min(180px, 22vw);
-  accent-color: var(--accent);
-}
-.board__replay button {
+.board__replay-enter {
   height: 28px;
   padding: 0 10px;
   border: 1px solid var(--line-strong);
@@ -615,11 +604,71 @@ kbd {
   font-size: 12px;
   cursor: pointer;
 }
+.board__replay-enter:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 .board__replay-badge {
   margin: 0 12px;
   color: var(--accent);
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+}
+.board__replay-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--panel));
+}
+.board__replay-steps {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.board__replay-steps button,
+.board__replay-bar > button {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+.board__replay-steps button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.board__replay-scrub {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.board__replay-count {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.board__replay-scrub input[type="range"] {
+  flex: 1;
+  min-width: 80px;
+  accent-color: var(--accent);
+}
+.board__replay-label {
+  max-width: 28vw;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .board.is-replaying .board-node__adhesive,

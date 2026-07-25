@@ -11,12 +11,13 @@ import {
   createDemoProject,
   createEmptyProject,
   parseProjectJson,
+  replaySteps,
   viewAt,
 } from "./project.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
-export { replayBounds } from "./project.ts";
+export { replaySteps } from "./project.ts";
 
 const ACTIVE_PROJECT_KEY = "argboard.activeProjectId";
 let persistenceRequested = false;
@@ -63,20 +64,47 @@ export const selectedLinkId = signal<string | null>(null);
 /** Session-only focus view (T018). Not persisted. */
 export const focusCardId = signal<string | null>(null);
 export const focusHops = signal(1);
-/** Session-only growth replay (T025). Not persisted. null = live. */
-export const replayAt = signal<number | null>(null);
+/** Session-only growth replay index (T025). Not persisted. null = live. */
+export const replayIndex = signal<number | null>(null);
 export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(
   "loading",
 );
 
-export const isReplaying = computed(() => replayAt.value != null);
+export const isReplaying = computed(() => replayIndex.value != null);
 
-export function setReplayAt(at: number | null): void {
-  replayAt.value = at;
+export const replayStepList = computed(() => {
+  const current = project.value;
+  return current ? replaySteps(current) : [];
+});
+
+export const replayAt = computed(() => {
+  const index = replayIndex.value;
+  if (index == null) return null;
+  return replayStepList.value[index]?.at ?? null;
+});
+
+export function enterReplay(): void {
+  const steps = replayStepList.value;
+  if (steps.length === 0) return;
+  replayIndex.value = 0;
+}
+
+export function setReplayIndex(index: number): void {
+  const steps = replayStepList.value;
+  if (steps.length === 0) {
+    replayIndex.value = null;
+    return;
+  }
+  replayIndex.value = Math.min(Math.max(0, index), steps.length - 1);
+}
+
+export function stepReplay(delta: number): void {
+  if (replayIndex.value == null) return;
+  setReplayIndex(replayIndex.value + delta);
 }
 
 export function clearReplay(): void {
-  replayAt.value = null;
+  replayIndex.value = null;
 }
 
 export function setFocusView(cardId: string): void {
@@ -219,7 +247,7 @@ async function activateProject(next: Project): Promise<void> {
 }
 
 function assertWritable(): Project | null {
-  if (replayAt.value != null) return null;
+  if (replayIndex.value != null) return null;
   return project.value;
 }
 
