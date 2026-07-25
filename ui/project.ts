@@ -22,6 +22,31 @@ function linkWithoutLabel(link: Link): Link {
   return next;
 }
 
+/** Push link_added (+ link_updated when labeled) and register the Sets. */
+function pushLinkBirth(
+  births: ProjectEvent[],
+  link: Link,
+  linksWithAdded: Set<string>,
+  linksWithUpdates: Set<string>,
+) {
+  births.push({
+    type: "link_added",
+    at: link.createdAt,
+    link: linkWithoutLabel(link),
+  });
+  linksWithAdded.add(link.id);
+  if (link.label?.trim() && !linksWithUpdates.has(link.id)) {
+    births.push({
+      type: "link_updated",
+      at: link.createdAt,
+      linkId: link.id,
+      label: link.label,
+      kind: link.kind,
+    });
+    linksWithUpdates.add(link.id);
+  }
+}
+
 /**
  * Normalize + fill birth events so replay can separate add / place / connect / label.
  * Idempotent. May rewrite labeled link_added into add + update.
@@ -91,22 +116,7 @@ export function withBirthEvents(project: Project): Project {
 
   for (const link of project.links) {
     if (linksWithAdded.has(link.id)) continue;
-    births.push({
-      type: "link_added",
-      at: link.createdAt,
-      link: linkWithoutLabel(link),
-    });
-    linksWithAdded.add(link.id);
-    if (link.label?.trim() && !linksWithUpdates.has(link.id)) {
-      births.push({
-        type: "link_updated",
-        at: link.createdAt,
-        linkId: link.id,
-        label: link.label,
-        kind: link.kind,
-      });
-      linksWithUpdates.add(link.id);
-    }
+    pushLinkBirth(births, link, linksWithAdded, linksWithUpdates);
   }
 
   // Deleted pre-log entities: birth from removal snapshots.
@@ -130,41 +140,11 @@ export function withBirthEvents(project: Project): Project {
       cardsWithAdded.add(event.card.id);
       for (const link of event.links) {
         if (linksWithAdded.has(link.id)) continue;
-        births.push({
-          type: "link_added",
-          at: link.createdAt,
-          link: linkWithoutLabel(link),
-        });
-        linksWithAdded.add(link.id);
-        if (link.label?.trim() && !linksWithUpdates.has(link.id)) {
-          births.push({
-            type: "link_updated",
-            at: link.createdAt,
-            linkId: link.id,
-            label: link.label,
-            kind: link.kind,
-          });
-          linksWithUpdates.add(link.id);
-        }
+        pushLinkBirth(births, link, linksWithAdded, linksWithUpdates);
       }
     }
     if (event.type === "link_removed" && !linksWithAdded.has(event.link.id)) {
-      births.push({
-        type: "link_added",
-        at: event.link.createdAt,
-        link: linkWithoutLabel(event.link),
-      });
-      linksWithAdded.add(event.link.id);
-      if (event.link.label?.trim() && !linksWithUpdates.has(event.link.id)) {
-        births.push({
-          type: "link_updated",
-          at: event.link.createdAt,
-          linkId: event.link.id,
-          label: event.link.label,
-          kind: event.link.kind,
-        });
-        linksWithUpdates.add(event.link.id);
-      }
+      pushLinkBirth(births, event.link, linksWithAdded, linksWithUpdates);
     }
   }
 

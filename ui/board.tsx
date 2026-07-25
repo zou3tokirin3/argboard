@@ -26,7 +26,7 @@ import {
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
 import { reachableCardIds } from "./project.ts";
-import type { Card, Link } from "./types.ts";
+import type { Board, Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
 
 const NODE_WIDTH = 235;
@@ -79,6 +79,47 @@ type LinkGeometry = {
 
 function defaultViewport(boardViewport?: Viewport): Viewport {
   return boardViewport ?? { x: 0, y: 0, zoom: 1 };
+}
+
+function primaryBoard(
+  p: { boards: Board[] } | null | undefined,
+): Board | undefined {
+  return p?.boards[0];
+}
+
+type IconButtonProps = {
+  class: string;
+  testId: string;
+  label: string;
+  path: string;
+  onClick: () => void;
+  disabled?: boolean;
+  title?: string;
+};
+
+function IconButton(props: IconButtonProps) {
+  return (
+    <button
+      type="button"
+      class={props.class}
+      data-testid={props.testId}
+      disabled={props.disabled}
+      onClick={props.onClick}
+      aria-label={props.label}
+      title={props.title ?? props.label}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path
+          d={props.path}
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  );
 }
 
 function nodeCenter(
@@ -479,7 +520,7 @@ export function BoardView() {
   const sel = selectedCardId.value;
   const focusId = focusCardId.value;
   const hops = focusHops.value;
-  const board = current?.boards[0];
+  const board = primaryBoard(current);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [rubber, setRubber] = useState<Rubber | null>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -509,7 +550,7 @@ export function BoardView() {
 
   function clientToWorld(clientX: number, clientY: number) {
     const rect = canvasRef.current!.getBoundingClientRect();
-    const vp = defaultViewport(viewProject.value?.boards[0]?.viewport);
+    const vp = defaultViewport(primaryBoard(viewProject.value)?.viewport);
     return {
       x: (clientX - rect.left - vp.x) / vp.zoom,
       y: (clientY - rect.top - vp.y) / vp.zoom,
@@ -521,8 +562,9 @@ export function BoardView() {
     worldY: number,
     exceptId?: string,
   ): string | null {
-    const positions = viewProject.value?.boards[0]?.positions ?? {};
-    const ids = viewProject.value?.boards[0]?.cardIds ?? [];
+    const viewBoard = primaryBoard(viewProject.value);
+    const positions = viewBoard?.positions ?? {};
+    const ids = viewBoard?.cardIds ?? [];
     const pad = 12;
     const focused = focusCardId.value
       ? reachableCardIds(
@@ -557,7 +599,7 @@ export function BoardView() {
     clearTextSelection();
     selectedCardId.value = null;
     selectedLinkId.value = null;
-    const vp = defaultViewport(viewProject.value?.boards[0]?.viewport);
+    const vp = defaultViewport(primaryBoard(viewProject.value)?.viewport);
     dragRef.current = {
       type: "pan",
       startX: event.clientX,
@@ -585,7 +627,7 @@ export function BoardView() {
     selectedLinkId.value = null;
     if (isReplaying.value) return;
     const world = clientToWorld(event.clientX, event.clientY);
-    const position = viewProject.value?.boards[0]?.positions[cardId] ??
+    const position = primaryBoard(viewProject.value)?.positions[cardId] ??
       { x: 0, y: 0 };
     dragRef.current = {
       type: "node",
@@ -607,7 +649,7 @@ export function BoardView() {
     selectedCardId.value = null;
     const start = threadAnchor(
       cardId,
-      viewProject.value?.boards[0]?.positions ?? {},
+      primaryBoard(viewProject.value)?.positions ?? {},
     );
     dragRef.current = { type: "link", fromId: cardId, targetId: null };
     setRubber({
@@ -644,15 +686,11 @@ export function BoardView() {
       return;
     }
     const world = clientToWorld(event.clientX, event.clientY);
-    const start = threadAnchor(
-      drag.fromId,
-      viewProject.value?.boards[0]?.positions ?? {},
-    );
+    const positions = primaryBoard(viewProject.value)?.positions ?? {};
+    const start = threadAnchor(drag.fromId, positions);
     const targetId = hitNode(world.x, world.y, drag.fromId);
     drag.targetId = targetId;
-    const tip = targetId
-      ? nodeCenter(targetId, viewProject.value?.boards[0]?.positions ?? {})
-      : world;
+    const tip = targetId ? nodeCenter(targetId, positions) : world;
     setRubber({
       fromId: drag.fromId,
       x1: start.x,
@@ -673,7 +711,7 @@ export function BoardView() {
       return;
     }
     if (drag.type === "node") {
-      const pos = project.value?.boards[0]?.positions[drag.cardId];
+      const pos = primaryBoard(project.value)?.positions[drag.cardId];
       if (
         pos && (pos.x !== drag.originX || pos.y !== drag.originY)
       ) {
@@ -695,7 +733,7 @@ export function BoardView() {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
     const rect = canvasRef.current!.getBoundingClientRect();
-    const vp = defaultViewport(viewProject.value?.boards[0]?.viewport);
+    const vp = defaultViewport(primaryBoard(viewProject.value)?.viewport);
     const nextZoom = clampZoom(vp.zoom * (event.deltaY < 0 ? 1.08 : 0.92));
     const cursorX = event.clientX - rect.left;
     const cursorY = event.clientY - rect.top;
@@ -739,7 +777,7 @@ export function BoardView() {
     if (!parsed) return;
     input.value = "";
     const rect = canvasRef.current?.getBoundingClientRect();
-    const vp = defaultViewport(viewProject.value?.boards[0]?.viewport);
+    const vp = defaultViewport(primaryBoard(viewProject.value)?.viewport);
     await addCard(parsed.title, {
       role: "thought",
       body: parsed.body,
@@ -801,66 +839,30 @@ export function BoardView() {
         ? (
           <div class="board__replay-bar" data-testid="replay-bar">
             <div class="board__replay-bar-main">
-              <button
-                type="button"
+              <IconButton
                 class="board__replay-icon"
-                data-testid="replay-prev"
+                testId="replay-prev"
                 disabled={stepIndex <= 0}
                 onClick={() => stepReplay(-1)}
-                aria-label="前のステップ"
-                title="前のステップ"
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M10 3L5 8l5 5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
+                label="前のステップ"
+                path="M10 3L5 8l5 5"
+              />
+              <IconButton
                 class="board__replay-icon"
-                data-testid="replay-next"
+                testId="replay-next"
                 disabled={stepIndex >= steps.length - 1}
                 onClick={() => stepReplay(1)}
-                aria-label="次のステップ"
-                title="次のステップ"
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M6 3l5 5-5 5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
+                label="次のステップ"
+                path="M6 3l5 5-5 5"
+              />
+              <IconButton
                 class="board__replay-icon"
-                data-testid="replay-end"
+                testId="replay-end"
                 disabled={stepIndex >= steps.length - 1}
                 onClick={() => setReplayIndex(steps.length - 1)}
-                aria-label="最後のステップへ"
-                title="最後のステップへ"
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M4 3l5 5-5 5M12 3v10"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
+                label="最後のステップへ"
+                path="M4 3l5 5-5 5M12 3v10"
+              />
               <input
                 type="range"
                 class="board__replay-slider"
@@ -876,24 +878,13 @@ export function BoardView() {
               <span class="board__replay-count">
                 {stepIndex + 1}/{steps.length}
               </span>
-              <button
-                type="button"
+              <IconButton
                 class="board__replay-icon"
-                data-testid="replay-now"
+                testId="replay-now"
                 onClick={() => clearReplay()}
-                aria-label="いまに戻る"
-                title="いまに戻る"
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M4 4l8 8M12 4l-8 8"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
+                label="いまに戻る"
+                path="M4 4l8 8M12 4l-8 8"
+              />
             </div>
             <div class="board__replay-label" title={currentStep.label}>
               {currentStep.label}
@@ -930,61 +921,28 @@ export function BoardView() {
                     <span class="board__focus-meta" aria-live="polite">
                       視点 · {hops}
                     </span>
-                    <button
-                      type="button"
+                    <IconButton
                       class="board__focus-icon"
-                      data-testid="focus-shrink"
+                      testId="focus-shrink"
                       disabled={hops <= 1}
-                      aria-label="一周戻す"
-                      title="一周戻す"
+                      label="一周戻す"
                       onClick={() => shrinkFocusHops()}
-                    >
-                      <svg viewBox="0 0 16 16" aria-hidden="true">
-                        <path
-                          d="M3 8h10"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.8"
-                          stroke-linecap="round"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
+                      path="M3 8h10"
+                    />
+                    <IconButton
                       class="board__focus-icon"
-                      data-testid="focus-expand"
-                      aria-label="もう一周広げる"
-                      title="もう一周広げる"
+                      testId="focus-expand"
+                      label="もう一周広げる"
                       onClick={() => expandFocusHops()}
-                    >
-                      <svg viewBox="0 0 16 16" aria-hidden="true">
-                        <path
-                          d="M8 3v10M3 8h10"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.8"
-                          stroke-linecap="round"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
+                      path="M8 3v10M3 8h10"
+                    />
+                    <IconButton
                       class="board__focus-icon"
-                      data-testid="focus-clear"
-                      aria-label="視点をやめる"
-                      title="視点をやめる"
+                      testId="focus-clear"
+                      label="視点をやめる"
                       onClick={() => clearFocusView()}
-                    >
-                      <svg viewBox="0 0 16 16" aria-hidden="true">
-                        <path
-                          d="M4 4l8 8M12 4l-8 8"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="1.8"
-                          stroke-linecap="round"
-                        />
-                      </svg>
-                    </button>
+                      path="M4 4l8 8M12 4l-8 8"
+                    />
                   </>
                 )
                 : (
