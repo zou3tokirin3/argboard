@@ -40,6 +40,7 @@ export function withBirthEvents(project: Project): Project {
       at: card.foundAt,
       card: structuredClone(card),
     });
+    cardsWithAdded.add(card.id);
   }
   for (const link of project.links) {
     if (linksWithAdded.has(link.id) || linksWithUpdates.has(link.id)) continue;
@@ -48,21 +49,142 @@ export function withBirthEvents(project: Project): Project {
       at: link.createdAt,
       link: structuredClone(link),
     });
+    linksWithAdded.add(link.id);
   }
-  if (births.length === 0) return project;
+  // Deleted pre-log entities: birth from removal snapshots so earlier steps work.
+  for (const event of events) {
+    if (
+      event.type === "card_removed" && !cardsWithAdded.has(event.card.id) &&
+      !cardsWithUpdates.has(event.card.id)
+    ) {
+      births.push({
+        type: "card_added",
+        at: event.card.foundAt,
+        card: structuredClone(event.card),
+      });
+      if (event.position) {
+        births.push({
+          type: "card_placed",
+          at: event.card.foundAt,
+          cardId: event.card.id,
+          x: event.position.x,
+          y: event.position.y,
+        });
+      }
+      cardsWithAdded.add(event.card.id);
+      for (const link of event.links) {
+        if (linksWithAdded.has(link.id) || linksWithUpdates.has(link.id)) {
+          continue;
+        }
+        births.push({
+          type: "link_added",
+          at: link.createdAt,
+          link: structuredClone(link),
+        });
+        linksWithAdded.add(link.id);
+      }
+    }
+    if (
+      event.type === "link_removed" && !linksWithAdded.has(event.link.id) &&
+      !linksWithUpdates.has(event.link.id)
+    ) {
+      births.push({
+        type: "link_added",
+        at: event.link.createdAt,
+        link: structuredClone(event.link),
+      });
+      linksWithAdded.add(event.link.id);
+    }
+  }
+  const tagged = [
+    ...births.map((event, index) => ({ event, seq: index })),
+    ...events.map((event, index) => ({
+      event,
+      seq: births.length + index,
+    })),
+  ];
+  tagged.sort((left, right) =>
+    left.event.at - right.event.at || left.seq - right.seq
+  );
+  const ordered = tagged.map((item) => item.event);
+  if (
+    births.length === 0 &&
+    ordered.every((event, index) => event === events[index])
+  ) {
+    return project;
+  }
   return {
     ...project,
-    events: [...births, ...events].toSorted((left, right) =>
-      left.at - right.at
-    ),
+    events: ordered,
   };
 }
 
+function applyEvent(
+  event: ProjectEvent,
+  cards: Map<string, Card>,
+  links: Map<string, Link>,
+  positions: Record<string, { x: number; y: number }>,
+  cardIds: Set<string>,
+): void {
+  switch (event.type) {
+    case "project_opened":
+      break;
+    case "card_added":
+      cards.set(event.card.id, structuredClone(event.card));
+      break;
+    case "card_updated": {
+      const prev = cards.get(event.cardId);
+      if (!prev) break;
+      cards.set(event.cardId, {
+        ...prev,
+        title: event.title,
+        body: event.body,
+        url: event.url,
+      });
+      break;
+    }
+    case "card_removed":
+      cards.delete(event.card.id);
+      cardIds.delete(event.card.id);
+      delete positions[event.card.id];
+      for (const link of event.links) links.delete(link.id);
+      for (const [linkId, link] of links) {
+        if (link.from === event.card.id || link.to === event.card.id) {
+          links.delete(linkId);
+        }
+      }
+      break;
+    case "link_added":
+      links.set(event.link.id, structuredClone(event.link));
+      break;
+    case "link_updated": {
+      const prev = links.get(event.linkId);
+      if (!prev) break;
+      links.set(event.linkId, {
+        ...prev,
+        label: event.label,
+        kind: event.kind,
+      });
+      break;
+    }
+    case "link_removed":
+      links.delete(event.link.id);
+      break;
+    case "card_placed":
+      if (!cards.has(event.cardId)) break;
+      positions[event.cardId] = { x: event.x, y: event.y };
+      cardIds.add(event.cardId);
+      break;
+  }
+}
+
 /**
- * Hybrid replay: birth/update events restore text; placement/removal too.
- * Pre-log entities get synthetic births via withBirthEvents.
+ * Replay by inclusive event index (not timestamp). Same-ms steps stay ordered.
  */
-export function viewAt(project: Project, at: number): ProjectSlice {
+export function viewThrough(
+  project: Project,
+  through: number,
+): ProjectSlice {
   const sourced = withBirthEvents(project);
   const events = sourced.events ?? [];
   const cards = new Map<string, Card>();
@@ -70,104 +192,21 @@ export function viewAt(project: Project, at: number): ProjectSlice {
   const positions: Record<string, { x: number; y: number }> = {};
   const cardIds = new Set<string>();
   const board = sourced.boards[0];
+  if (through < 0 || events.length === 0) {
+    return { cards: [], links: [], cardIds: [], positions: {} };
+  }
+  const last = Math.min(through, events.length - 1);
 
-  // Resurrect entities removed after `at` (snapshot is birth-accurate enough).
-  for (const event of events) {
-    if (
-      event.type === "card_removed" && event.at > at && event.card.foundAt <= at
-    ) {
-      cards.set(event.card.id, event.card);
-      if (event.position) {
-        positions[event.card.id] = event.position;
-        cardIds.add(event.card.id);
-      }
-      for (const link of event.links) {
-        if (link.createdAt <= at) links.set(link.id, link);
-      }
-    }
-    if (
-      event.type === "link_removed" && event.at > at &&
-      event.link.createdAt <= at
-    ) {
-      links.set(event.link.id, event.link);
-    }
+  for (let index = 0; index <= last; index += 1) {
+    applyEvent(events[index]!, cards, links, positions, cardIds);
   }
 
-  // Current board positions as fallback before placement events apply.
-  if (board) {
-    for (const id of board.cardIds) {
-      if (!cards.has(id)) continue;
-      cardIds.add(id);
-      const pos = board.positions[id];
-      if (pos) positions[id] = pos;
-    }
-  }
-
-  const chron = events
-    .filter((event) => event.at <= at)
-    .toSorted((left, right) => left.at - right.at);
-  for (const event of chron) {
-    switch (event.type) {
-      case "project_opened":
-        break;
-      case "card_added":
-        cards.set(event.card.id, structuredClone(event.card));
-        break;
-      case "card_updated": {
-        const prev = cards.get(event.cardId);
-        if (!prev) break;
-        cards.set(event.cardId, {
-          ...prev,
-          title: event.title,
-          body: event.body,
-          url: event.url,
-        });
-        break;
-      }
-      case "card_removed":
-        cards.delete(event.card.id);
-        cardIds.delete(event.card.id);
-        delete positions[event.card.id];
-        for (const link of event.links) links.delete(link.id);
-        for (const [linkId, link] of links) {
-          if (link.from === event.card.id || link.to === event.card.id) {
-            links.delete(linkId);
-          }
-        }
-        break;
-      case "link_added":
-        links.set(event.link.id, structuredClone(event.link));
-        break;
-      case "link_updated": {
-        const prev = links.get(event.linkId);
-        if (!prev) break;
-        links.set(event.linkId, {
-          ...prev,
-          label: event.label,
-          kind: event.kind,
-        });
-        break;
-      }
-      case "link_removed":
-        links.delete(event.link.id);
-        break;
-      case "card_placed":
-        if (!cards.has(event.cardId)) break;
-        positions[event.cardId] = { x: event.x, y: event.y };
-        cardIds.add(event.cardId);
-        break;
-    }
-  }
-
-  // Pre-log placement fallback for cards that never got card_placed events.
+  // Placement fallback for cards that never got card_placed (e.g. demo births).
   if (board) {
     for (const [id, pos] of Object.entries(board.positions)) {
       if (!cards.has(id) || positions[id]) continue;
       positions[id] = pos;
       cardIds.add(id);
-    }
-    for (const id of board.cardIds) {
-      if (cards.has(id)) cardIds.add(id);
     }
   }
 
@@ -175,7 +214,7 @@ export function viewAt(project: Project, at: number): ProjectSlice {
     if (!cards.has(link.from) || !cards.has(link.to)) links.delete(linkId);
   }
   for (const id of [...cardIds]) {
-    if (!cards.has(id)) cardIds.delete(id);
+    if (!cards.has(id) || !positions[id]) cardIds.delete(id);
   }
 
   return {
@@ -186,10 +225,25 @@ export function viewAt(project: Project, at: number): ProjectSlice {
   };
 }
 
+/** Timestamp cutoff helper (tests / coarse callers). Prefers last event at `at`. */
+export function viewAt(project: Project, at: number): ProjectSlice {
+  const events = withBirthEvents(project).events ?? [];
+  let through = -1;
+  for (let index = 0; index < events.length; index += 1) {
+    if (events[index]!.at <= at) through = index;
+  }
+  if (through < 0) {
+    return { cards: [], links: [], cardIds: [], positions: {} };
+  }
+  return viewThrough(project, through);
+}
+
 /** One discrete growth beat for step replay (T025). */
 export type ReplayStep = {
   at: number;
   label: string;
+  /** Inclusive index into withBirthEvents(project).events */
+  through: number;
 };
 
 function titleForCard(project: Project, cardId: string): string {
@@ -235,16 +289,17 @@ function labelForEvent(project: Project, event: ProjectEvent): string | null {
 
 /**
  * Discrete execution units for the replay bar.
- * Uses birth events (real or synthetic) plus later edits/placements.
+ * One step per meaningful event; `through` is the event-list index to apply.
  */
 export function replaySteps(project: Project): ReplayStep[] {
   const sourced = withBirthEvents(project);
   const steps: ReplayStep[] = [];
-  for (const event of sourced.events ?? []) {
+  for (const [index, event] of (sourced.events ?? []).entries()) {
     const label = labelForEvent(sourced, event);
-    if (label) steps.push({ at: event.at, label });
+    if (!label) continue;
+    steps.push({ at: event.at, label, through: index });
   }
-  return steps.toSorted((left, right) => left.at - right.at);
+  return steps;
 }
 
 export function createEmptyProject(

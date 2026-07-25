@@ -492,11 +492,14 @@ export function BoardView() {
   const focusSet = focusId
     ? reachableCardIds(current.links, focusId, hops)
     : null;
+  const placedLinks = current.links.filter((link) =>
+    board.positions[link.from] && board.positions[link.to]
+  );
   const visibleLinks = focusSet
-    ? current.links.filter((link) =>
+    ? placedLinks.filter((link) =>
       focusSet.has(link.from) && focusSet.has(link.to)
     )
-    : current.links;
+    : placedLinks;
   const front = sel
     ? visibleLinks.filter((link) => link.from === sel || link.to === sel)
     : [];

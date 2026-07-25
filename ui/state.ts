@@ -12,7 +12,7 @@ import {
   createEmptyProject,
   parseProjectJson,
   replaySteps,
-  viewAt,
+  viewThrough,
   withBirthEvents,
 } from "./project.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
@@ -78,10 +78,10 @@ export const replayStepList = computed(() => {
   return current ? replaySteps(current) : [];
 });
 
-export const replayAt = computed(() => {
+export const replayThrough = computed(() => {
   const index = replayIndex.value;
   if (index == null) return null;
-  return replayStepList.value[index]?.at ?? null;
+  return replayStepList.value[index]?.through ?? null;
 });
 
 export function enterReplay(): void {
@@ -93,6 +93,7 @@ export function enterReplay(): void {
     project.value = birthed;
     void persist(birthed);
   }
+  clearFocusView();
   const steps = replaySteps(birthed);
   if (steps.length === 0) return;
   replayIndex.value = 0;
@@ -145,9 +146,9 @@ export const sideOpen = computed(() => project.value?.ui?.sideOpen ?? false);
 export const viewProject = computed<Project | null>(() => {
   const current = project.value;
   if (!current) return null;
-  const at = replayAt.value;
-  if (at == null) return current;
-  const slice = viewAt(current, at);
+  const through = replayThrough.value;
+  if (through == null) return current;
+  const slice = viewThrough(current, through);
   const board = current.boards[0];
   if (!board) return current;
   return {

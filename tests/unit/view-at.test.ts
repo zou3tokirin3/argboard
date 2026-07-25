@@ -4,9 +4,12 @@ import {
   applyPlaceCardOnBoard,
   applyRemoveCard,
   applyUpdateLink,
+  createDemoProject,
   createEmptyProject,
   replaySteps,
   viewAt,
+  viewThrough,
+  withBirthEvents,
 } from "../../ui/project.ts";
 
 Deno.test("viewAt stage1 filters by foundAt/createdAt with current positions", () => {
@@ -316,5 +319,30 @@ Deno.test("viewAt rewinds card body and link label via birth+update events", () 
   }
   if (linkAfter?.label !== "新ラベル") {
     throw new Error(`link label not advanced: ${JSON.stringify(linkAfter)}`);
+  }
+});
+
+Deno.test("same-ms link steps appear one at a time via through index", () => {
+  const demo = withBirthEvents(createDemoProject(1_000_000));
+  const steps = replaySteps(demo);
+  const linkSteps = steps.filter((step) => step.label.startsWith("糸 ·"));
+  if (linkSteps.length !== 3) {
+    throw new Error(`expected 3 link steps, got ${linkSteps.length}`);
+  }
+  const counts = linkSteps.map((step) =>
+    viewThrough(demo, step.through).links.length
+  );
+  if (counts[0] !== 1 || counts[1] !== 2 || counts[2] !== 3) {
+    throw new Error(`links should accumulate 1,2,3 got ${counts}`);
+  }
+  const labels = linkSteps.map((step) => {
+    const links = viewThrough(demo, step.through).links;
+    return links.map((link) => link.label).filter(Boolean);
+  });
+  if (
+    labels[0]?.length !== 1 || labels[1]?.length !== 2 ||
+    labels[2]?.length !== 3
+  ) {
+    throw new Error(`labels should accumulate, got ${JSON.stringify(labels)}`);
   }
 });
