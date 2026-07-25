@@ -217,3 +217,104 @@ Deno.test("replaySteps include link connect and label edits", () => {
     throw new Error(`missing link label step: ${labels}`);
   }
 });
+
+Deno.test("viewAt rewinds card body and link label via birth+update events", () => {
+  const a = "a";
+  const b = "b";
+  let project = createEmptyProject("本文", 1);
+  // Pre-log style (no events yet) — births are synthesized from current snapshots.
+  project = {
+    ...project,
+    cards: [
+      { id: a, title: "旧題", body: "旧メモ", foundAt: 10 },
+      { id: b, title: "B", foundAt: 11 },
+    ],
+  };
+  project = applyPlaceCardOnBoard(project, a, 0, 0)!;
+  project = applyPlaceCardOnBoard(project, b, 40, 0)!;
+  project = applyConnectCards(project, a, b)!;
+  project = {
+    ...project,
+    links: project.links.map((link) => ({
+      ...link,
+      createdAt: 12,
+      label: "旧ラベル",
+    })),
+  };
+  const linkId = project.links[0]!.id;
+
+  // After births would be taken, user edits (events only — as T024 records).
+  project = {
+    ...project,
+    cards: project.cards.map((card) =>
+      card.id === a ? { ...card, title: "新題", body: "新メモ" } : card
+    ),
+    links: project.links.map((link) =>
+      link.id === linkId ? { ...link, label: "新ラベル" } : link
+    ),
+  };
+  project = appendEvent(project, {
+    type: "card_updated",
+    at: 20,
+    cardId: a,
+    title: "新題",
+    body: "新メモ",
+  });
+  project = appendEvent(project, {
+    type: "link_updated",
+    at: 21,
+    linkId,
+    label: "新ラベル",
+    kind: "connects",
+  });
+
+  // Birth snapshots must reflect pre-edit content (as activateProject would persist).
+  project = {
+    ...project,
+    events: [
+      {
+        type: "card_added" as const,
+        at: 10,
+        card: { id: a, title: "旧題", body: "旧メモ", foundAt: 10 },
+      },
+      {
+        type: "card_added" as const,
+        at: 11,
+        card: { id: b, title: "B", foundAt: 11 },
+      },
+      {
+        type: "link_added" as const,
+        at: 12,
+        link: {
+          id: linkId,
+          from: a,
+          to: b,
+          createdAt: 12,
+          kind: "connects" as const,
+          label: "旧ラベル",
+        },
+      },
+      ...(project.events ?? []),
+    ],
+  };
+
+  const before = viewAt(project, 15);
+  const card = before.cards.find((item) => item.id === a);
+  const link = before.links.find((item) => item.id === linkId);
+  if (card?.title !== "旧題" || card?.body !== "旧メモ") {
+    throw new Error(`card text not rewound: ${JSON.stringify(card)}`);
+  }
+  if (link?.label !== "旧ラベル") {
+    throw new Error(`link label not rewound: ${JSON.stringify(link)}`);
+  }
+
+  const after = viewAt(project, 25);
+  const cardAfter = after.cards.find((item) => item.id === a);
+  const linkAfter = after.links.find((item) => item.id === linkId);
+  if (cardAfter?.title !== "新題" || cardAfter?.body !== "新メモ") {
+    throw new Error(`card text not advanced: ${JSON.stringify(cardAfter)}`);
+  }
+  if (linkAfter?.label !== "新ラベル") {
+    throw new Error(`link label not advanced: ${JSON.stringify(linkAfter)}`);
+  }
+});

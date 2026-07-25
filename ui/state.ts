@@ -13,6 +13,7 @@ import {
   parseProjectJson,
   replaySteps,
   viewAt,
+  withBirthEvents,
 } from "./project.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
@@ -84,7 +85,15 @@ export const replayAt = computed(() => {
 });
 
 export function enterReplay(): void {
-  const steps = replayStepList.value;
+  const current = project.value;
+  if (!current) return;
+  const birthed = withBirthEvents(current);
+  if (birthed.events !== current.events) {
+    // Persist synthetic births once so this session's later edits can rewind.
+    project.value = birthed;
+    void persist(birthed);
+  }
+  const steps = replaySteps(birthed);
   if (steps.length === 0) return;
   replayIndex.value = 0;
 }
@@ -239,7 +248,12 @@ async function activateProject(next: Project): Promise<void> {
   clearFocusView();
   clearReplay();
   search.value = "";
-  const opened = appendEvent(next, { type: "project_opened", at: Date.now() });
+  // Snapshot missing births before open so later edits can rewind text/labels.
+  const birthed = withBirthEvents(next);
+  const opened = appendEvent(birthed, {
+    type: "project_opened",
+    at: Date.now(),
+  });
   project.value = opened;
   saveStatus.value = "saving";
   await store.saveProject(opened);

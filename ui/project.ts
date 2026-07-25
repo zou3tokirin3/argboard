@@ -16,65 +16,90 @@ export type ProjectSlice = {
 };
 
 /**
- * Hybrid replay: pre-log entities via foundAt/createdAt (current positions);
- * events period replays add/update/remove/place/kind.
+ * Ensure unedited living cards/links have a birth event so later edits can rewind.
+ * Skips entities that already have updates (current content would be contaminated).
+ * Idempotent.
  */
-export function viewAt(project: Project, at: number): ProjectSlice {
+export function withBirthEvents(project: Project): Project {
   const events = project.events ?? [];
   const cardsWithAdded = new Set<string>();
   const linksWithAdded = new Set<string>();
+  const cardsWithUpdates = new Set<string>();
+  const linksWithUpdates = new Set<string>();
   for (const event of events) {
     if (event.type === "card_added") cardsWithAdded.add(event.card.id);
     if (event.type === "link_added") linksWithAdded.add(event.link.id);
+    if (event.type === "card_updated") cardsWithUpdates.add(event.cardId);
+    if (event.type === "link_updated") linksWithUpdates.add(event.linkId);
   }
+  const births: ProjectEvent[] = [];
+  for (const card of project.cards) {
+    if (cardsWithAdded.has(card.id) || cardsWithUpdates.has(card.id)) continue;
+    births.push({
+      type: "card_added",
+      at: card.foundAt,
+      card: structuredClone(card),
+    });
+  }
+  for (const link of project.links) {
+    if (linksWithAdded.has(link.id) || linksWithUpdates.has(link.id)) continue;
+    births.push({
+      type: "link_added",
+      at: link.createdAt,
+      link: structuredClone(link),
+    });
+  }
+  if (births.length === 0) return project;
+  return {
+    ...project,
+    events: [...births, ...events].toSorted((left, right) =>
+      left.at - right.at
+    ),
+  };
+}
 
+/**
+ * Hybrid replay: birth/update events restore text; placement/removal too.
+ * Pre-log entities get synthetic births via withBirthEvents.
+ */
+export function viewAt(project: Project, at: number): ProjectSlice {
+  const sourced = withBirthEvents(project);
+  const events = sourced.events ?? [];
   const cards = new Map<string, Card>();
   const links = new Map<string, Link>();
   const positions: Record<string, { x: number; y: number }> = {};
   const cardIds = new Set<string>();
-  const board = project.boards[0];
+  const board = sourced.boards[0];
 
-  for (const card of project.cards) {
-    if (card.foundAt <= at && !cardsWithAdded.has(card.id)) {
-      cards.set(card.id, card);
-    }
-  }
-  for (const link of project.links) {
-    if (link.createdAt <= at && !linksWithAdded.has(link.id)) {
-      links.set(link.id, link);
-    }
-  }
+  // Resurrect entities removed after `at` (snapshot is birth-accurate enough).
   for (const event of events) {
-    if (event.type === "card_removed" && event.at > at) {
-      if (event.card.foundAt <= at && !cardsWithAdded.has(event.card.id)) {
-        cards.set(event.card.id, event.card);
-        if (event.position) {
-          positions[event.card.id] = event.position;
-          cardIds.add(event.card.id);
-        }
+    if (
+      event.type === "card_removed" && event.at > at && event.card.foundAt <= at
+    ) {
+      cards.set(event.card.id, event.card);
+      if (event.position) {
+        positions[event.card.id] = event.position;
+        cardIds.add(event.card.id);
       }
       for (const link of event.links) {
-        if (link.createdAt <= at && !linksWithAdded.has(link.id)) {
-          links.set(link.id, link);
-        }
+        if (link.createdAt <= at) links.set(link.id, link);
       }
     }
     if (
       event.type === "link_removed" && event.at > at &&
-      event.link.createdAt <= at && !linksWithAdded.has(event.link.id)
+      event.link.createdAt <= at
     ) {
       links.set(event.link.id, event.link);
     }
   }
+
+  // Current board positions as fallback before placement events apply.
   if (board) {
     for (const id of board.cardIds) {
       if (!cards.has(id)) continue;
       cardIds.add(id);
       const pos = board.positions[id];
       if (pos) positions[id] = pos;
-    }
-    for (const [id, pos] of Object.entries(board.positions)) {
-      if (cards.has(id)) positions[id] = pos;
     }
   }
 
@@ -86,7 +111,7 @@ export function viewAt(project: Project, at: number): ProjectSlice {
       case "project_opened":
         break;
       case "card_added":
-        cards.set(event.card.id, event.card);
+        cards.set(event.card.id, structuredClone(event.card));
         break;
       case "card_updated": {
         const prev = cards.get(event.cardId);
@@ -111,7 +136,7 @@ export function viewAt(project: Project, at: number): ProjectSlice {
         }
         break;
       case "link_added":
-        links.set(event.link.id, event.link);
+        links.set(event.link.id, structuredClone(event.link));
         break;
       case "link_updated": {
         const prev = links.get(event.linkId);
@@ -131,6 +156,18 @@ export function viewAt(project: Project, at: number): ProjectSlice {
         positions[event.cardId] = { x: event.x, y: event.y };
         cardIds.add(event.cardId);
         break;
+    }
+  }
+
+  // Pre-log placement fallback for cards that never got card_placed events.
+  if (board) {
+    for (const [id, pos] of Object.entries(board.positions)) {
+      if (!cards.has(id) || positions[id]) continue;
+      positions[id] = pos;
+      cardIds.add(id);
+    }
+    for (const id of board.cardIds) {
+      if (cards.has(id)) cardIds.add(id);
     }
   }
 
@@ -198,53 +235,15 @@ function labelForEvent(project: Project, event: ProjectEvent): string | null {
 
 /**
  * Discrete execution units for the replay bar.
- * Prefers T024 events; falls back to foundAt/createdAt for pre-log entities.
+ * Uses birth events (real or synthetic) plus later edits/placements.
  */
 export function replaySteps(project: Project): ReplayStep[] {
-  const events = project.events ?? [];
-  const cardsWithAdded = new Set<string>();
-  const linksWithAdded = new Set<string>();
-  for (const event of events) {
-    if (event.type === "card_added") cardsWithAdded.add(event.card.id);
-    if (event.type === "link_added") linksWithAdded.add(event.link.id);
-  }
-
+  const sourced = withBirthEvents(project);
   const steps: ReplayStep[] = [];
-  for (const event of events) {
-    const label = labelForEvent(project, event);
+  for (const event of sourced.events ?? []) {
+    const label = labelForEvent(sourced, event);
     if (label) steps.push({ at: event.at, label });
   }
-
-  for (const card of project.cards) {
-    if (cardsWithAdded.has(card.id)) continue;
-    steps.push({ at: card.foundAt, label: `発見 · ${card.title}` });
-  }
-  for (const event of events) {
-    if (event.type !== "card_removed" || cardsWithAdded.has(event.card.id)) {
-      continue;
-    }
-    steps.push({
-      at: event.card.foundAt,
-      label: `発見 · ${event.card.title}`,
-    });
-  }
-  for (const link of project.links) {
-    if (linksWithAdded.has(link.id)) continue;
-    steps.push({
-      at: link.createdAt,
-      label: link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続",
-    });
-  }
-  for (const event of events) {
-    if (event.type !== "link_removed" || linksWithAdded.has(event.link.id)) {
-      continue;
-    }
-    steps.push({
-      at: event.link.createdAt,
-      label: event.link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続",
-    });
-  }
-
   return steps.toSorted((left, right) => left.at - right.at);
 }
 
