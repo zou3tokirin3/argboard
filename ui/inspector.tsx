@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import {
-  project,
+  isReplaying,
   removeCard,
   removeLink,
   selectedCard,
@@ -9,11 +9,13 @@ import {
   selectedLinkId,
   updateCard,
   updateLink,
+  viewProject,
 } from "./state.ts";
 
 export function Inspector() {
   const card = selectedCard.value;
   const link = selectedLink.value;
+  const replaying = isReplaying.value;
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
@@ -35,7 +37,7 @@ export function Inspector() {
         <div class="section-heading">
           <div>
             <span class="eyebrow">糸</span>
-            <h2>ラベル</h2>
+            <h2>{replaying ? "表示" : "ラベル"}</h2>
           </div>
         </div>
         <label class="inspector__field">
@@ -45,6 +47,7 @@ export function Inspector() {
             data-testid="link-label-input"
             value={label}
             placeholder="同一人物？ など"
+            disabled={replaying}
             onInput={(event) => setLabel(event.currentTarget.value)}
             onBlur={() => updateLink(link.id, { label })}
             onKeyDown={(event) => {
@@ -57,6 +60,7 @@ export function Inspector() {
           <select
             data-testid="link-kind-toggle"
             value={link.kind}
+            disabled={replaying}
             onChange={(event) =>
               updateLink(link.id, {
                 kind: event.currentTarget.value as "connects" | "contradicts",
@@ -66,15 +70,19 @@ export function Inspector() {
             <option value="contradicts">要検討</option>
           </select>
         </label>
-        <button
-          type="button"
-          class="inspector__danger"
-          data-testid="link-delete"
-          onClick={() => removeLink(link.id)}
-        >
-          この糸を削除
-        </button>
-        <p class="inspector__hint">Delete キーでも削除できます</p>
+        {replaying ? null : (
+          <>
+            <button
+              type="button"
+              class="inspector__danger"
+              data-testid="link-delete"
+              onClick={() => removeLink(link.id)}
+            >
+              この糸を削除
+            </button>
+            <p class="inspector__hint">Delete キーでも削除できます</p>
+          </>
+        )}
       </aside>
     );
   }
@@ -90,12 +98,13 @@ export function Inspector() {
   }
 
   async function commit() {
+    if (isReplaying.value) return;
     await updateCard(card!.id, { title, body, url });
   }
 
-  const cards = project.value?.cards ?? [];
+  const cards = viewProject.value?.cards ?? [];
   const cardLinks =
-    project.value?.links.filter((item) =>
+    viewProject.value?.links.filter((item) =>
       item.from === card.id || item.to === card.id
     ) ?? [];
 
@@ -103,7 +112,7 @@ export function Inspector() {
     <aside class="inspector" aria-label="カード編集">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">簡易編集</span>
+          <span class="eyebrow">{replaying ? "再生中" : "簡易編集"}</span>
           <h2>{card.role === "thought" ? "考察カード" : "発見カード"}</h2>
         </div>
       </div>
@@ -113,6 +122,7 @@ export function Inspector() {
           type="text"
           data-testid="inspector-title"
           value={title}
+          disabled={replaying}
           onInput={(event) => setTitle(event.currentTarget.value)}
           onBlur={commit}
         />
@@ -124,6 +134,7 @@ export function Inspector() {
           data-testid="inspector-url"
           value={url}
           placeholder="https://"
+          disabled={replaying}
           onInput={(event) => setUrl(event.currentTarget.value)}
           onBlur={commit}
         />
@@ -134,6 +145,7 @@ export function Inspector() {
           data-testid="inspector-body"
           rows={6}
           value={body}
+          disabled={replaying}
           onInput={(event) => setBody(event.currentTarget.value)}
           onBlur={commit}
         />
@@ -169,15 +181,19 @@ export function Inspector() {
           </label>
         )
         : null}
-      <button
-        type="button"
-        class="inspector__danger"
-        data-testid="card-delete"
-        onClick={() => removeCard(card.id)}
-      >
-        このカードを削除
-      </button>
-      <p class="inspector__hint">Delete キーでも削除できます</p>
+      {replaying ? <p class="inspector__hint">再生中は読み取り専用です</p> : (
+        <>
+          <button
+            type="button"
+            class="inspector__danger"
+            data-testid="card-delete"
+            onClick={() => removeCard(card.id)}
+          >
+            このカードを削除
+          </button>
+          <p class="inspector__hint">Delete キーでも削除できます</p>
+        </>
+      )}
     </aside>
   );
 }

@@ -11,10 +11,12 @@ import {
   createDemoProject,
   createEmptyProject,
   parseProjectJson,
+  viewAt,
 } from "./project.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
+export { replayBounds } from "./project.ts";
 
 const ACTIVE_PROJECT_KEY = "argboard.activeProjectId";
 let persistenceRequested = false;
@@ -61,9 +63,21 @@ export const selectedLinkId = signal<string | null>(null);
 /** Session-only focus view (T018). Not persisted. */
 export const focusCardId = signal<string | null>(null);
 export const focusHops = signal(1);
+/** Session-only growth replay (T025). Not persisted. null = live. */
+export const replayAt = signal<number | null>(null);
 export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(
   "loading",
 );
+
+export const isReplaying = computed(() => replayAt.value != null);
+
+export function setReplayAt(at: number | null): void {
+  replayAt.value = at;
+}
+
+export function clearReplay(): void {
+  replayAt.value = null;
+}
 
 export function setFocusView(cardId: string): void {
   focusCardId.value = cardId;
@@ -90,8 +104,29 @@ export const appMode = computed<AppMode>(() =>
 );
 export const sideOpen = computed(() => project.value?.ui?.sideOpen ?? false);
 
-export const filteredCards = computed(() => {
+/** Live project, or a display-only slice when replaying. */
+export const viewProject = computed<Project | null>(() => {
   const current = project.value;
+  if (!current) return null;
+  const at = replayAt.value;
+  if (at == null) return current;
+  const slice = viewAt(current, at);
+  const board = current.boards[0];
+  if (!board) return current;
+  return {
+    ...current,
+    cards: slice.cards,
+    links: slice.links,
+    boards: [{
+      ...board,
+      cardIds: slice.cardIds,
+      positions: slice.positions,
+    }, ...current.boards.slice(1)],
+  };
+});
+
+export const filteredCards = computed(() => {
+  const current = viewProject.value;
   if (!current) return [];
   const query = search.value.trim().toLocaleLowerCase("ja");
   return current.cards.filter((card) => {
@@ -103,14 +138,14 @@ export const filteredCards = computed(() => {
 });
 
 export const selectedCard = computed(() => {
-  const current = project.value;
+  const current = viewProject.value;
   const id = selectedCardId.value;
   if (!current || !id) return null;
   return current.cards.find((card) => card.id === id) ?? null;
 });
 
 export const selectedLink = computed(() => {
-  const current = project.value;
+  const current = viewProject.value;
   const id = selectedLinkId.value;
   if (!current || !id) return null;
   return current.links.find((link) => link.id === id) ?? null;
@@ -174,12 +209,18 @@ async function activateProject(next: Project): Promise<void> {
   selectedCardId.value = null;
   selectedLinkId.value = null;
   clearFocusView();
+  clearReplay();
   search.value = "";
   const opened = appendEvent(next, { type: "project_opened", at: Date.now() });
   project.value = opened;
   saveStatus.value = "saving";
   await store.saveProject(opened);
   saveStatus.value = "saved";
+}
+
+function assertWritable(): Project | null {
+  if (replayAt.value != null) return null;
+  return project.value;
 }
 
 /** Update in-memory project without writing to IndexedDB (drag/pan frames). */
@@ -239,7 +280,7 @@ export async function addCard(
 
   // Read + write memory must stay synchronous so overlapping captures
   // cannot both snapshot the same Project and drop a later card.
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
 
   const card: Card = {
@@ -286,6 +327,7 @@ export async function addCard(
 export async function setAppMode(mode: AppMode): Promise<void> {
   const current = project.value;
   if (!current || (current.ui?.mode ?? "explore") === mode) return;
+  if (mode === "explore") clearReplay();
   await persist(withUi(current, { mode }));
 }
 
@@ -299,7 +341,7 @@ export async function updateCard(
   id: string,
   patch: Pick<Card, "title" | "body" | "url">,
 ): Promise<void> {
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
   const title = patch.title.trim();
   if (!title) return;
@@ -369,7 +411,7 @@ export async function placeCardOnBoard(
   x: number,
   y: number,
 ): Promise<void> {
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
   const next = applyPlaceCardOnBoard(current, cardId, x, y);
   if (!next) return;
@@ -386,7 +428,7 @@ export async function placeCardOnBoard(
 
 /** Persist a finished board drag (final position only). */
 export async function commitCardPlacement(cardId: string): Promise<void> {
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
   const pos = current.boards[0]?.positions[cardId];
   if (!pos) {
@@ -407,7 +449,7 @@ export async function connectCards(
   toId: string,
   kind: Link["kind"] = "connects",
 ): Promise<void> {
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
   const next = applyConnectCards(current, fromId, toId, kind);
   if (!next) return;
@@ -430,7 +472,7 @@ export async function updateLink(
   linkId: string,
   patch: Partial<Pick<Link, "label" | "kind">>,
 ): Promise<void> {
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
   const next = applyUpdateLink(current, linkId, patch);
   if (!next) return;
@@ -449,7 +491,7 @@ export async function updateLink(
 }
 
 export async function removeLink(linkId: string): Promise<void> {
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
   const link = current.links.find((item) => item.id === linkId);
   const next = applyRemoveLink(current, linkId);
@@ -463,7 +505,7 @@ export async function removeLink(linkId: string): Promise<void> {
 }
 
 export async function removeCard(cardId: string): Promise<void> {
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
   const card = current.cards.find((item) => item.id === cardId);
   if (!card) return;
@@ -500,7 +542,7 @@ export function moveCardOnBoardLocal(
   x: number,
   y: number,
 ): void {
-  const current = project.value;
+  const current = assertWritable();
   if (!current) return;
   const next = applyPlaceCardOnBoard(current, cardId, x, y);
   if (next) patchProjectLocal(next);

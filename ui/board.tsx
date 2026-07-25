@@ -2,25 +2,38 @@ import { useRef, useState } from "preact/hooks";
 import {
   addCard,
   clearFocusView,
+  clearReplay,
   commitCardPlacement,
   connectCards,
   expandFocusHops,
   flushSave,
   focusCardId,
   focusHops,
+  isReplaying,
   moveCardOnBoardLocal,
   placeCardOnBoard,
   project,
+  replayAt,
+  replayBounds,
   selectedCardId,
   selectedLinkId,
   setBoardViewportLocal,
   setFocusView,
+  setReplayAt,
   shrinkFocusHops,
+  viewProject,
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
 import { reachableCardIds } from "./project.ts";
 import type { Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
+
+const replayTimeFormatter = new Intl.DateTimeFormat("ja-JP", {
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
 
 const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
@@ -464,7 +477,9 @@ function BoardNode({
 }
 
 export function BoardView() {
-  const current = project.value;
+  const live = project.value;
+  const current = viewProject.value;
+  const replaying = isReplaying.value;
   const sel = selectedCardId.value;
   const focusId = focusCardId.value;
   const hops = focusHops.value;
@@ -473,8 +488,10 @@ export function BoardView() {
   const [rubber, setRubber] = useState<Rubber | null>(null);
   const dragRef = useRef<Drag | null>(null);
 
-  if (!current || !board) return null;
+  if (!live || !current || !board) return null;
 
+  const bounds = replayBounds(live);
+  const sliderValue = replayAt.value ?? bounds.max;
   const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
   const focusSet = focusId
@@ -494,7 +511,7 @@ export function BoardView() {
 
   function clientToWorld(clientX: number, clientY: number) {
     const rect = canvasRef.current!.getBoundingClientRect();
-    const vp = defaultViewport(project.value?.boards[0]?.viewport);
+    const vp = defaultViewport(viewProject.value?.boards[0]?.viewport);
     return {
       x: (clientX - rect.left - vp.x) / vp.zoom,
       y: (clientY - rect.top - vp.y) / vp.zoom,
@@ -506,12 +523,12 @@ export function BoardView() {
     worldY: number,
     exceptId?: string,
   ): string | null {
-    const positions = project.value?.boards[0]?.positions ?? {};
-    const ids = project.value?.boards[0]?.cardIds ?? [];
+    const positions = viewProject.value?.boards[0]?.positions ?? {};
+    const ids = viewProject.value?.boards[0]?.cardIds ?? [];
     const pad = 12;
     const focused = focusCardId.value
       ? reachableCardIds(
-        project.value?.links ?? [],
+        viewProject.value?.links ?? [],
         focusCardId.value,
         focusHops.value,
       )
@@ -542,7 +559,7 @@ export function BoardView() {
     clearTextSelection();
     selectedCardId.value = null;
     selectedLinkId.value = null;
-    const vp = defaultViewport(project.value?.boards[0]?.viewport);
+    const vp = defaultViewport(viewProject.value?.boards[0]?.viewport);
     dragRef.current = {
       type: "pan",
       startX: event.clientX,
@@ -568,8 +585,9 @@ export function BoardView() {
     clearTextSelection();
     selectedCardId.value = cardId;
     selectedLinkId.value = null;
+    if (isReplaying.value) return;
     const world = clientToWorld(event.clientX, event.clientY);
-    const position = project.value?.boards[0]?.positions[cardId] ??
+    const position = viewProject.value?.boards[0]?.positions[cardId] ??
       { x: 0, y: 0 };
     dragRef.current = {
       type: "node",
@@ -583,7 +601,7 @@ export function BoardView() {
   }
 
   function onThreadPointerDown(event: PointerEvent, cardId: string) {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || isReplaying.value) return;
     event.stopPropagation();
     event.preventDefault();
     clearTextSelection();
@@ -591,7 +609,7 @@ export function BoardView() {
     selectedCardId.value = null;
     const start = threadAnchor(
       cardId,
-      project.value?.boards[0]?.positions ?? {},
+      viewProject.value?.boards[0]?.positions ?? {},
     );
     dragRef.current = { type: "link", fromId: cardId, targetId: null };
     setRubber({
@@ -630,12 +648,12 @@ export function BoardView() {
     const world = clientToWorld(event.clientX, event.clientY);
     const start = threadAnchor(
       drag.fromId,
-      project.value?.boards[0]?.positions ?? {},
+      viewProject.value?.boards[0]?.positions ?? {},
     );
     const targetId = hitNode(world.x, world.y, drag.fromId);
     drag.targetId = targetId;
     const tip = targetId
-      ? nodeCenter(targetId, project.value?.boards[0]?.positions ?? {})
+      ? nodeCenter(targetId, viewProject.value?.boards[0]?.positions ?? {})
       : world;
     setRubber({
       fromId: drag.fromId,
@@ -667,6 +685,7 @@ export function BoardView() {
       }
       return;
     }
+    if (isReplaying.value) return;
     const world = clientToWorld(event.clientX, event.clientY);
     const dropId = drag.targetId ?? hitNode(world.x, world.y, drag.fromId);
     if (dropId) {
@@ -678,7 +697,7 @@ export function BoardView() {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
     const rect = canvasRef.current!.getBoundingClientRect();
-    const vp = defaultViewport(project.value?.boards[0]?.viewport);
+    const vp = defaultViewport(viewProject.value?.boards[0]?.viewport);
     const nextZoom = clampZoom(vp.zoom * (event.deltaY < 0 ? 1.08 : 0.92));
     const cursorX = event.clientX - rect.left;
     const cursorY = event.clientY - rect.top;
@@ -693,12 +712,14 @@ export function BoardView() {
   }
 
   function onDragOver(event: DragEvent) {
+    if (isReplaying.value) return;
     if (!event.dataTransfer?.types.includes(CARD_MIME)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
   }
 
   async function onDrop(event: DragEvent) {
+    if (isReplaying.value) return;
     const cardId = event.dataTransfer?.getData(CARD_MIME);
     if (!cardId) return;
     event.preventDefault();
@@ -713,13 +734,14 @@ export function BoardView() {
 
   async function submitThought(event: SubmitEvent) {
     event.preventDefault();
+    if (isReplaying.value) return;
     const input = (event.currentTarget as HTMLFormElement)
       .elements.namedItem("thought") as HTMLInputElement;
     const parsed = parseCaptureLine(input.value);
     if (!parsed) return;
     input.value = "";
     const rect = canvasRef.current?.getBoundingClientRect();
-    const vp = defaultViewport(project.value?.boards[0]?.viewport);
+    const vp = defaultViewport(viewProject.value?.boards[0]?.viewport);
     await addCard(parsed.title, {
       role: "thought",
       body: parsed.body,
@@ -745,26 +767,68 @@ export function BoardView() {
     : undefined;
 
   return (
-    <section class="board" aria-label="捜査ボード">
+    <section
+      class={`board ${replaying ? "is-replaying" : ""}`}
+      aria-label="捜査ボード"
+    >
       <div class="board__toolbar">
         <div>
           <span class="status-dot"></span>
           <strong>{board.name}</strong>
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
-        <form class="capture board__thought" onSubmit={submitThought}>
+        {replaying
+          ? (
+            <span class="board__replay-badge" data-testid="replay-badge">
+              再生中（読み取り専用）
+            </span>
+          )
+          : (
+            <form class="capture board__thought" onSubmit={submitThought}>
+              <input
+                name="thought"
+                data-testid="thought-input"
+                aria-label="考察カードを追加"
+                autocomplete="off"
+                placeholder="考察を1行で…（// 可）"
+              />
+              <kbd>↵</kbd>
+            </form>
+          )}
+        <label class="board__replay" data-testid="replay-controls">
+          <span class="board__replay-time">
+            {replaying ? replayTimeFormatter.format(sliderValue) : "いま"}
+          </span>
           <input
-            name="thought"
-            data-testid="thought-input"
-            aria-label="考察カードを追加"
-            autocomplete="off"
-            placeholder="考察を1行で…（// 可）"
+            type="range"
+            data-testid="replay-slider"
+            min={bounds.min}
+            max={bounds.max}
+            step={Math.max(1, Math.round((bounds.max - bounds.min) / 200))}
+            value={sliderValue}
+            aria-label="育ちの再生位置"
+            onInput={(event) => {
+              const value = Number(event.currentTarget.value);
+              if (value >= bounds.max) clearReplay();
+              else setReplayAt(value);
+            }}
           />
-          <kbd>↵</kbd>
-        </form>
-        <span class="board__hint">
-          上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
-        </span>
+          {replaying
+            ? (
+              <button
+                type="button"
+                data-testid="replay-now"
+                onClick={() => clearReplay()}
+              >
+                いまに戻る
+              </button>
+            )
+            : (
+              <span class="board__hint">
+                上部の糊で移動 / 糸端で接続
+              </span>
+            )}
+        </label>
       </div>
       <div
         class={`board__canvas ${rubber ? "is-linking" : ""}`}

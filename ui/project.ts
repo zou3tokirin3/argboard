@@ -7,6 +7,167 @@ export function appendEvent(
   return { ...project, events: [...(project.events ?? []), event] };
 }
 
+/** Board/stream slice at a point in time (T025). Does not mutate `project`. */
+export type ProjectSlice = {
+  cards: Card[];
+  links: Link[];
+  cardIds: string[];
+  positions: Record<string, { x: number; y: number }>;
+};
+
+/**
+ * Hybrid replay: pre-log entities via foundAt/createdAt (current positions);
+ * events period replays add/update/remove/place/kind.
+ */
+export function viewAt(project: Project, at: number): ProjectSlice {
+  const events = project.events ?? [];
+  const cardsWithAdded = new Set<string>();
+  const linksWithAdded = new Set<string>();
+  for (const event of events) {
+    if (event.type === "card_added") cardsWithAdded.add(event.card.id);
+    if (event.type === "link_added") linksWithAdded.add(event.link.id);
+  }
+
+  const cards = new Map<string, Card>();
+  const links = new Map<string, Link>();
+  const positions: Record<string, { x: number; y: number }> = {};
+  const cardIds = new Set<string>();
+  const board = project.boards[0];
+
+  for (const card of project.cards) {
+    if (card.foundAt <= at && !cardsWithAdded.has(card.id)) {
+      cards.set(card.id, card);
+    }
+  }
+  for (const link of project.links) {
+    if (link.createdAt <= at && !linksWithAdded.has(link.id)) {
+      links.set(link.id, link);
+    }
+  }
+  for (const event of events) {
+    if (event.type === "card_removed" && event.at > at) {
+      if (event.card.foundAt <= at && !cardsWithAdded.has(event.card.id)) {
+        cards.set(event.card.id, event.card);
+        if (event.position) {
+          positions[event.card.id] = event.position;
+          cardIds.add(event.card.id);
+        }
+      }
+      for (const link of event.links) {
+        if (link.createdAt <= at && !linksWithAdded.has(link.id)) {
+          links.set(link.id, link);
+        }
+      }
+    }
+    if (
+      event.type === "link_removed" && event.at > at &&
+      event.link.createdAt <= at && !linksWithAdded.has(event.link.id)
+    ) {
+      links.set(event.link.id, event.link);
+    }
+  }
+  if (board) {
+    for (const id of board.cardIds) {
+      if (!cards.has(id)) continue;
+      cardIds.add(id);
+      const pos = board.positions[id];
+      if (pos) positions[id] = pos;
+    }
+    for (const [id, pos] of Object.entries(board.positions)) {
+      if (cards.has(id)) positions[id] = pos;
+    }
+  }
+
+  const chron = events
+    .filter((event) => event.at <= at)
+    .toSorted((left, right) => left.at - right.at);
+  for (const event of chron) {
+    switch (event.type) {
+      case "project_opened":
+        break;
+      case "card_added":
+        cards.set(event.card.id, event.card);
+        break;
+      case "card_updated": {
+        const prev = cards.get(event.cardId);
+        if (!prev) break;
+        cards.set(event.cardId, {
+          ...prev,
+          title: event.title,
+          body: event.body,
+          url: event.url,
+        });
+        break;
+      }
+      case "card_removed":
+        cards.delete(event.card.id);
+        cardIds.delete(event.card.id);
+        delete positions[event.card.id];
+        for (const link of event.links) links.delete(link.id);
+        for (const [linkId, link] of links) {
+          if (link.from === event.card.id || link.to === event.card.id) {
+            links.delete(linkId);
+          }
+        }
+        break;
+      case "link_added":
+        links.set(event.link.id, event.link);
+        break;
+      case "link_updated": {
+        const prev = links.get(event.linkId);
+        if (!prev) break;
+        links.set(event.linkId, {
+          ...prev,
+          label: event.label,
+          kind: event.kind,
+        });
+        break;
+      }
+      case "link_removed":
+        links.delete(event.link.id);
+        break;
+      case "card_placed":
+        if (!cards.has(event.cardId)) break;
+        positions[event.cardId] = { x: event.x, y: event.y };
+        cardIds.add(event.cardId);
+        break;
+    }
+  }
+
+  for (const [linkId, link] of [...links]) {
+    if (!cards.has(link.from) || !cards.has(link.to)) links.delete(linkId);
+  }
+  for (const id of [...cardIds]) {
+    if (!cards.has(id)) cardIds.delete(id);
+  }
+
+  return {
+    cards: [...cards.values()],
+    links: [...links.values()],
+    cardIds: [...cardIds],
+    positions,
+  };
+}
+
+/** Inclusive time range for the replay slider. */
+export function replayBounds(
+  project: Project,
+  now = Date.now(),
+): { min: number; max: number } {
+  let min = project.createdAt;
+  for (const card of project.cards) {
+    if (card.foundAt < min) min = card.foundAt;
+  }
+  for (const link of project.links) {
+    if (link.createdAt < min) min = link.createdAt;
+  }
+  for (const event of project.events ?? []) {
+    if (event.at < min) min = event.at;
+  }
+  const max = Math.max(now, min);
+  return { min, max };
+}
+
 export function createEmptyProject(
   name: string,
   now = Date.now(),
