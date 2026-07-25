@@ -14,6 +14,7 @@ import {
   selectedCardId,
   selectedLinkId,
   setBoardViewportLocal,
+  setFocusView,
   shrinkFocusHops,
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
@@ -730,18 +731,16 @@ export function BoardView() {
     });
   }
 
-  const focusAnchorId = focusId
+  const barAnchorId = focusId
     ? (sel && focusSet?.has(sel) ? sel : focusId)
-    : null;
-  const focusAnchorPos = focusAnchorId
-    ? board.positions[focusAnchorId]
-    : undefined;
-  const focusBarStyle = focusAnchorPos
+    : (sel && board.positions[sel] ? sel : null);
+  const barAnchorPos = barAnchorId ? board.positions[barAnchorId] : undefined;
+  const focusBarStyle = barAnchorPos
     ? {
       left: `${
-        viewport.x + (focusAnchorPos.x + NODE_WIDTH / 2) * viewport.zoom
+        viewport.x + (barAnchorPos.x + NODE_WIDTH / 2) * viewport.zoom
       }px`,
-      top: `${viewport.y + focusAnchorPos.y * viewport.zoom - 10}px`,
+      top: `${viewport.y + barAnchorPos.y * viewport.zoom - 10}px`,
     }
     : undefined;
 
@@ -779,73 +778,92 @@ export function BoardView() {
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        {focusBarStyle
+        {focusBarStyle && barAnchorId
           ? (
             <div
               class="board__focus-float"
               data-testid="board-focus"
-              title="視点中：糸で届くカードだけを表示"
+              title={focusId
+                ? "視点中：糸で届くカードだけを表示"
+                : "このカードを起点に視点を絞る"}
               style={focusBarStyle}
               onPointerDown={(event) => event.stopPropagation()}
             >
-              <span class="board__focus-meta" aria-live="polite">
-                視点 · {hops}
-              </span>
-              <button
-                type="button"
-                class="board__focus-icon"
-                data-testid="focus-shrink"
-                disabled={hops <= 1}
-                aria-label="一周戻す"
-                title="一周戻す"
-                onClick={() => shrinkFocusHops()}
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M3 8h10"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="board__focus-icon"
-                data-testid="focus-expand"
-                aria-label="もう一周広げる"
-                title="もう一周広げる"
-                onClick={() => expandFocusHops()}
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M8 3v10M3 8h10"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="board__focus-icon"
-                data-testid="focus-clear"
-                aria-label="視点をやめる"
-                title="視点をやめる"
-                onClick={() => clearFocusView()}
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M4 4l8 8M12 4l-8 8"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
+              {focusId
+                ? (
+                  <>
+                    <span class="board__focus-meta" aria-live="polite">
+                      視点 · {hops}
+                    </span>
+                    <button
+                      type="button"
+                      class="board__focus-icon"
+                      data-testid="focus-shrink"
+                      disabled={hops <= 1}
+                      aria-label="一周戻す"
+                      title="一周戻す"
+                      onClick={() => shrinkFocusHops()}
+                    >
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path
+                          d="M3 8h10"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="board__focus-icon"
+                      data-testid="focus-expand"
+                      aria-label="もう一周広げる"
+                      title="もう一周広げる"
+                      onClick={() => expandFocusHops()}
+                    >
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path
+                          d="M8 3v10M3 8h10"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      class="board__focus-icon"
+                      data-testid="focus-clear"
+                      aria-label="視点をやめる"
+                      title="視点をやめる"
+                      onClick={() => clearFocusView()}
+                    >
+                      <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path
+                          d="M4 4l8 8M12 4l-8 8"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1.8"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    </button>
+                  </>
+                )
+                : (
+                  <button
+                    type="button"
+                    class="board__focus-enter"
+                    data-testid="focus-set"
+                    aria-label="この視点で見る"
+                    title="つながるカードだけを浮かべ、ほかは沈める"
+                    onClick={() => setFocusView(barAnchorId)}
+                  >
+                    この視点で見る
+                  </button>
+                )}
             </div>
           )
           : null}

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
 import {
-  focusCardId,
   project,
   removeCard,
   removeLink,
@@ -8,7 +7,6 @@ import {
   selectedCardId,
   selectedLink,
   selectedLinkId,
-  setFocusView,
   updateCard,
   updateLink,
 } from "./state.ts";
@@ -171,30 +169,6 @@ export function Inspector() {
           </label>
         )
         : null}
-      {focusCardId.value === card.id
-        ? (
-          <p
-            class="inspector__hint inspector__hint--focus"
-            data-testid="focus-active-hint"
-          >
-            視点中。カード近くの − ＋ × で広さの調整と解除
-          </p>
-        )
-        : (
-          <>
-            <button
-              type="button"
-              class="inspector__action"
-              data-testid="focus-set"
-              onClick={() => setFocusView(card.id)}
-            >
-              この視点で見る
-            </button>
-            <p class="inspector__hint">
-              つながるカードだけを浮かべ、ほかは沈めます
-            </p>
-          </>
-        )}
       <button
         type="button"
         class="inspector__danger"
