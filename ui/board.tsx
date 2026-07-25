@@ -766,29 +766,68 @@ export function BoardView() {
       >
         {focusId
           ? (
-            <div class="board__focus-bar" data-testid="board-focus">
-              <strong>{hops}周目</strong>
+            <div
+              class="board__focus-bar"
+              data-testid="board-focus"
+              title="視点中：糸で届くカードだけを表示"
+            >
+              <span class="board__focus-meta" aria-live="polite">
+                視点 · {hops}
+              </span>
               <button
                 type="button"
+                class="board__focus-icon"
                 data-testid="focus-shrink"
                 disabled={hops <= 1}
+                aria-label="一周戻す"
+                title="一周戻す"
                 onClick={() => shrinkFocusHops()}
               >
-                一周戻す
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M3 8h10"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
               </button>
               <button
                 type="button"
+                class="board__focus-icon"
                 data-testid="focus-expand"
+                aria-label="もう一周広げる"
+                title="もう一周広げる"
                 onClick={() => expandFocusHops()}
               >
-                もう一周
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M8 3v10M3 8h10"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
               </button>
               <button
                 type="button"
+                class="board__focus-icon"
                 data-testid="focus-clear"
+                aria-label="全部見る"
+                title="全部見る（視点を解除）"
                 onClick={() => clearFocusView()}
               >
-                全部見る
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M4 4l8 8M12 4l-8 8"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
               </button>
             </div>
           )

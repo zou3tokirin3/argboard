@@ -715,36 +715,47 @@ kbd {
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   transform: translateX(-50%);
-  padding: 6px 10px;
+  padding: 4px 6px 4px 10px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-box);
   background: rgb(255 255 255 / 94%);
   box-shadow: 0 4px 16px rgb(15 20 25 / 12%);
   pointer-events: auto;
 }
-.board__focus-bar strong {
-  padding: 0 4px;
-  color: var(--ink);
-  font-size: 12px;
+.board__focus-meta {
+  margin-right: 2px;
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
-.board__focus-bar button {
+.board__focus-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
   height: 28px;
-  padding: 0 10px;
-  border: 1px solid var(--line-strong);
+  padding: 0;
+  border: 1px solid transparent;
   border-radius: var(--radius-box);
-  background: var(--panel);
+  background: transparent;
   color: var(--ink);
-  font-size: 12px;
+  cursor: pointer;
 }
-.board__focus-bar button:hover:not(:disabled) {
+.board__focus-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+.board__focus-icon:hover:not(:disabled) {
   border-color: var(--accent);
   color: var(--accent);
+  background: var(--accent-soft);
 }
-.board__focus-bar button:disabled {
-  opacity: 0.4;
+.board__focus-icon:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 .inspector__action {
