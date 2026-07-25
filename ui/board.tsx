@@ -748,26 +748,10 @@ export function BoardView() {
           />
           <kbd>↵</kbd>
         </form>
-        <span class="board__hint">
-          上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
-        </span>
-      </div>
-      <div
-        class={`board__canvas ${rubber ? "is-linking" : ""}`}
-        ref={canvasRef}
-        data-testid="board-canvas"
-        onPointerDown={onCanvasPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onWheel={onWheel}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-      >
         {focusId
           ? (
             <div
-              class="board__focus-bar"
+              class="board__focus"
               data-testid="board-focus"
               title="視点中：糸で届くカードだけを表示"
             >
@@ -815,8 +799,8 @@ export function BoardView() {
                 type="button"
                 class="board__focus-icon"
                 data-testid="focus-clear"
-                aria-label="全部見る"
-                title="全部見る（視点を解除）"
+                aria-label="視点をやめる"
+                title="視点をやめる"
                 onClick={() => clearFocusView()}
               >
                 <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -831,7 +815,24 @@ export function BoardView() {
               </button>
             </div>
           )
-          : null}
+          : (
+            <span class="board__hint">
+              上部の糊で移動 / 糸端で接続（往復すると矢印） / 糸は中ほどで選択
+            </span>
+          )}
+      </div>
+      <div
+        class={`board__canvas ${rubber ? "is-linking" : ""}`}
+        ref={canvasRef}
+        data-testid="board-canvas"
+        onPointerDown={onCanvasPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onWheel={onWheel}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+      >
         <svg aria-label="手がかりの関係図">
           <defs>
             {([["arrow-connects", "var(--link)"], [

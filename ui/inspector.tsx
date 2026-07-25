@@ -1,6 +1,5 @@
 import { useEffect, useState } from "preact/hooks";
 import {
-  clearFocusView,
   focusCardId,
   project,
   removeCard,
@@ -174,30 +173,28 @@ export function Inspector() {
         : null}
       {focusCardId.value === card.id
         ? (
-          <button
-            type="button"
-            class="inspector__action"
-            data-testid="inspector-focus-clear"
-            onClick={() => clearFocusView()}
+          <p
+            class="inspector__hint inspector__hint--focus"
+            data-testid="focus-active-hint"
           >
-            全部見る
-          </button>
+            視点中。上の − ＋ × で広さの調整と解除
+          </p>
         )
         : (
-          <button
-            type="button"
-            class="inspector__action"
-            data-testid="focus-set"
-            onClick={() => setFocusView(card.id)}
-          >
-            この視点で見る
-          </button>
+          <>
+            <button
+              type="button"
+              class="inspector__action"
+              data-testid="focus-set"
+              onClick={() => setFocusView(card.id)}
+            >
+              この視点で見る
+            </button>
+            <p class="inspector__hint">
+              つながるカードだけを浮かべ、ほかは沈めます
+            </p>
+          </>
         )}
-      <p class="inspector__hint">
-        {focusCardId.value === card.id
-          ? "視点中。盤面のバーでも周回数を変えられます"
-          : "つながるカードだけを浮かべ、ほかは沈めます"}
-      </p>
       <button
         type="button"
         class="inspector__danger"
