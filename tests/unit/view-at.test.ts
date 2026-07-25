@@ -216,7 +216,7 @@ Deno.test("replaySteps include link connect and label edits", () => {
   if (!labels.includes("糸 · 接続")) {
     throw new Error(`missing link connect step: ${labels}`);
   }
-  if (!labels.includes("糸 · 同一人物？")) {
+  if (!labels.includes("ラベル · 同一人物？")) {
     throw new Error(`missing link label step: ${labels}`);
   }
 });
@@ -322,27 +322,78 @@ Deno.test("viewAt rewinds card body and link label via birth+update events", () 
   }
 });
 
-Deno.test("same-ms link steps appear one at a time via through index", () => {
+Deno.test("demo births separate connect from label, and keep card add+place", () => {
   const demo = withBirthEvents(createDemoProject(1_000_000));
   const steps = replaySteps(demo);
-  const linkSteps = steps.filter((step) => step.label.startsWith("糸 ·"));
-  if (linkSteps.length !== 3) {
-    throw new Error(`expected 3 link steps, got ${linkSteps.length}`);
+  const labels = steps.map((step) => step.label);
+  const adds = labels.filter((label) => label.startsWith("追加 ·"));
+  const places = labels.filter((label) => label.startsWith("配置 ·"));
+  const connects = labels.filter((label) =>
+    label === "糸 · 接続" || label === "糸 · 要検討"
+  );
+  const linkLabels = labels.filter((label) => label.startsWith("ラベル ·"));
+  if (adds.length !== 4) {
+    throw new Error(`expected 4 card adds, got ${adds.length}: ${labels}`);
   }
-  const counts = linkSteps.map((step) =>
+  if (places.length !== 4) {
+    throw new Error(`expected 4 placements, got ${places.length}: ${labels}`);
+  }
+  if (connects.length !== 3) {
+    throw new Error(`expected 3 connects, got ${connects.length}: ${labels}`);
+  }
+  if (linkLabels.length !== 3) {
+    throw new Error(
+      `expected 3 label steps separate from connect, got ${linkLabels.length}: ${labels}`,
+    );
+  }
+
+  const firstConnect = steps.find((step) =>
+    step.label === "糸 · 接続" || step.label === "糸 · 要検討"
+  )!;
+  const afterConnect = viewThrough(demo, firstConnect.through);
+  if (afterConnect.links.some((link) => link.label)) {
+    throw new Error("link must have no label right after connect step");
+  }
+  const firstLabel = steps.find((step) => step.label.startsWith("ラベル ·"))!;
+  const afterLabel = viewThrough(demo, firstLabel.through);
+  if (!afterLabel.links.some((link) => link.label)) {
+    throw new Error("label step must attach a link label");
+  }
+});
+
+Deno.test("same-ms connect steps appear one at a time via through index", () => {
+  const demo = withBirthEvents(createDemoProject(1_000_000));
+  const steps = replaySteps(demo);
+  const connectSteps = steps.filter((step) =>
+    step.label === "糸 · 接続" || step.label === "糸 · 要検討"
+  );
+  if (connectSteps.length !== 3) {
+    throw new Error(`expected 3 connect steps, got ${connectSteps.length}`);
+  }
+  const counts = connectSteps.map((step) =>
     viewThrough(demo, step.through).links.length
   );
   if (counts[0] !== 1 || counts[1] !== 2 || counts[2] !== 3) {
     throw new Error(`links should accumulate 1,2,3 got ${counts}`);
   }
-  const labels = linkSteps.map((step) => {
-    const links = viewThrough(demo, step.through).links;
-    return links.map((link) => link.label).filter(Boolean);
+});
+
+Deno.test("edited pre-log cards still get an add step", () => {
+  const a = "a";
+  let project = createEmptyProject("欠落", 1);
+  project = {
+    ...project,
+    cards: [{ id: a, title: "新", body: "新本文", foundAt: 10 }],
+  };
+  project = appendEvent(project, {
+    type: "card_updated",
+    at: 20,
+    cardId: a,
+    title: "新",
+    body: "新本文",
   });
-  if (
-    labels[0]?.length !== 1 || labels[1]?.length !== 2 ||
-    labels[2]?.length !== 3
-  ) {
-    throw new Error(`labels should accumulate, got ${JSON.stringify(labels)}`);
+  const steps = replaySteps(project);
+  if (!steps.some((step) => step.label === "追加 · 新")) {
+    throw new Error(`missing add step: ${steps.map((s) => s.label)}`);
   }
 });

@@ -15,26 +15,54 @@ export type ProjectSlice = {
   positions: Record<string, { x: number; y: number }>;
 };
 
+/** Split "connect" from "label": link_added never carries a label. */
+function linkWithoutLabel(link: Link): Link {
+  const next = structuredClone(link);
+  delete next.label;
+  return next;
+}
+
 /**
- * Ensure unedited living cards/links have a birth event so later edits can rewind.
- * Skips entities that already have updates (current content would be contaminated).
- * Idempotent.
+ * Normalize + fill birth events so replay can separate add / place / connect / label.
+ * Idempotent. May rewrite labeled link_added into add + update.
  */
 export function withBirthEvents(project: Project): Project {
-  const events = project.events ?? [];
+  const raw = project.events ?? [];
+  // Pass 1: split labeled link_added (common in older synthetic births / demo).
+  const split: ProjectEvent[] = [];
+  for (const event of raw) {
+    if (event.type === "link_added" && event.link.label?.trim()) {
+      const label = event.link.label;
+      split.push({
+        ...event,
+        link: linkWithoutLabel(event.link),
+      });
+      split.push({
+        type: "link_updated",
+        at: event.at,
+        linkId: event.link.id,
+        label,
+        kind: event.link.kind,
+      });
+      continue;
+    }
+    split.push(event);
+  }
+
   const cardsWithAdded = new Set<string>();
   const linksWithAdded = new Set<string>();
-  const cardsWithUpdates = new Set<string>();
+  const cardsPlaced = new Set<string>();
   const linksWithUpdates = new Set<string>();
-  for (const event of events) {
+  for (const event of split) {
     if (event.type === "card_added") cardsWithAdded.add(event.card.id);
     if (event.type === "link_added") linksWithAdded.add(event.link.id);
-    if (event.type === "card_updated") cardsWithUpdates.add(event.cardId);
+    if (event.type === "card_placed") cardsPlaced.add(event.cardId);
     if (event.type === "link_updated") linksWithUpdates.add(event.linkId);
   }
+
   const births: ProjectEvent[] = [];
   for (const card of project.cards) {
-    if (cardsWithAdded.has(card.id) || cardsWithUpdates.has(card.id)) continue;
+    if (cardsWithAdded.has(card.id)) continue;
     births.push({
       type: "card_added",
       at: card.foundAt,
@@ -42,27 +70,54 @@ export function withBirthEvents(project: Project): Project {
     });
     cardsWithAdded.add(card.id);
   }
+
+  const board = project.boards[0];
+  if (board) {
+    for (const cardId of board.cardIds) {
+      if (cardsPlaced.has(cardId)) continue;
+      const pos = board.positions[cardId];
+      const card = project.cards.find((item) => item.id === cardId);
+      if (!pos || !card) continue;
+      births.push({
+        type: "card_placed",
+        at: card.foundAt,
+        cardId,
+        x: pos.x,
+        y: pos.y,
+      });
+      cardsPlaced.add(cardId);
+    }
+  }
+
   for (const link of project.links) {
-    if (linksWithAdded.has(link.id) || linksWithUpdates.has(link.id)) continue;
+    if (linksWithAdded.has(link.id)) continue;
     births.push({
       type: "link_added",
       at: link.createdAt,
-      link: structuredClone(link),
+      link: linkWithoutLabel(link),
     });
     linksWithAdded.add(link.id);
+    if (link.label?.trim() && !linksWithUpdates.has(link.id)) {
+      births.push({
+        type: "link_updated",
+        at: link.createdAt,
+        linkId: link.id,
+        label: link.label,
+        kind: link.kind,
+      });
+      linksWithUpdates.add(link.id);
+    }
   }
-  // Deleted pre-log entities: birth from removal snapshots so earlier steps work.
-  for (const event of events) {
-    if (
-      event.type === "card_removed" && !cardsWithAdded.has(event.card.id) &&
-      !cardsWithUpdates.has(event.card.id)
-    ) {
+
+  // Deleted pre-log entities: birth from removal snapshots.
+  for (const event of split) {
+    if (event.type === "card_removed" && !cardsWithAdded.has(event.card.id)) {
       births.push({
         type: "card_added",
         at: event.card.foundAt,
         card: structuredClone(event.card),
       });
-      if (event.position) {
+      if (event.position && !cardsPlaced.has(event.card.id)) {
         births.push({
           type: "card_placed",
           at: event.card.foundAt,
@@ -70,35 +125,52 @@ export function withBirthEvents(project: Project): Project {
           x: event.position.x,
           y: event.position.y,
         });
+        cardsPlaced.add(event.card.id);
       }
       cardsWithAdded.add(event.card.id);
       for (const link of event.links) {
-        if (linksWithAdded.has(link.id) || linksWithUpdates.has(link.id)) {
-          continue;
-        }
+        if (linksWithAdded.has(link.id)) continue;
         births.push({
           type: "link_added",
           at: link.createdAt,
-          link: structuredClone(link),
+          link: linkWithoutLabel(link),
         });
         linksWithAdded.add(link.id);
+        if (link.label?.trim() && !linksWithUpdates.has(link.id)) {
+          births.push({
+            type: "link_updated",
+            at: link.createdAt,
+            linkId: link.id,
+            label: link.label,
+            kind: link.kind,
+          });
+          linksWithUpdates.add(link.id);
+        }
       }
     }
-    if (
-      event.type === "link_removed" && !linksWithAdded.has(event.link.id) &&
-      !linksWithUpdates.has(event.link.id)
-    ) {
+    if (event.type === "link_removed" && !linksWithAdded.has(event.link.id)) {
       births.push({
         type: "link_added",
         at: event.link.createdAt,
-        link: structuredClone(event.link),
+        link: linkWithoutLabel(event.link),
       });
       linksWithAdded.add(event.link.id);
+      if (event.link.label?.trim() && !linksWithUpdates.has(event.link.id)) {
+        births.push({
+          type: "link_updated",
+          at: event.link.createdAt,
+          linkId: event.link.id,
+          label: event.link.label,
+          kind: event.link.kind,
+        });
+        linksWithUpdates.add(event.link.id);
+      }
     }
   }
+
   const tagged = [
     ...births.map((event, index) => ({ event, seq: index })),
-    ...events.map((event, index) => ({
+    ...split.map((event, index) => ({
       event,
       seq: births.length + index,
     })),
@@ -107,12 +179,14 @@ export function withBirthEvents(project: Project): Project {
     left.event.at - right.event.at || left.seq - right.seq
   );
   const ordered = tagged.map((item) => item.event);
-  if (
-    births.length === 0 &&
-    ordered.every((event, index) => event === events[index])
-  ) {
-    return project;
-  }
+  const unchanged = births.length === 0 &&
+    ordered.length === raw.length &&
+    ordered.every((event, index) => {
+      const prev = raw[index];
+      return prev !== undefined &&
+        JSON.stringify(event) === JSON.stringify(prev);
+    });
+  if (unchanged) return project;
   return {
     ...project,
     events: ordered,
@@ -272,15 +346,12 @@ function labelForEvent(project: Project, event: ProjectEvent): string | null {
       return `削除 · ${event.card.title}`;
     case "card_placed":
       return `配置 · ${titleForCard(project, event.cardId)}`;
-    case "link_added": {
-      const tip = event.link.label?.trim();
-      if (tip) return `糸 · ${tip}`;
+    case "link_added":
       return event.link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続";
-    }
     case "link_updated": {
       const tip = event.label?.trim();
-      if (tip) return `糸 · ${tip}`;
-      return event.kind === "contradicts" ? "糸 · 要検討" : "糸 · 通常";
+      if (tip) return `ラベル · ${tip}`;
+      return event.kind === "contradicts" ? "糸 · 要検討に" : "糸 · 通常に";
     }
     case "link_removed":
       return "糸 · 削除";
