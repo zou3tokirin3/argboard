@@ -1,13 +1,13 @@
 ---
 id: T018
 title: 関係ベースの動的ビューでボードの見方を切り替えられるようにする
-status: review
+status: doing
 owner: impl
 gate: human
 branch: "task/T018"
 template_ver: generic-0.2
 created: 2026-07-19
-updated: 2026-07-24
+updated: 2026-07-25
 ---
 
 ## 目的
@@ -141,4 +141,8 @@ O項目と同じ作法で**新規backlogカードへ昇格**する。この節�
 
 - 2026-07-24 impl: 完了→review。本体 3,367→3,510（+143・パケット中央+150内）。f579cfe check/test/smoke 緑。人間ゲート待ち（視点切替の確認）
 
+- 2026-07-25 impl: rework着手。導線をインスペクタ＋焦点中バーへ移す
+
 ## 差し戻し履歴（追記のみ）
+
+- 2026-07-25 human: ツールバーの「この視点で見る」は増えるだけで発見しづらい。選択→絞り込みをもっと楽な位置へ
