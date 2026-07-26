@@ -1,10 +1,10 @@
 ---
 id: T035
 title: 実装ゲートを累積行数から増分の複数指標へ切り替える
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T035"
 template_ver: generic-0.2
 created: 2026-07-25
 updated: 2026-07-26
@@ -93,5 +93,6 @@ stock（本体行・ファイル数・操作・gzip 等）は毎カードに記�
   基準に戻れないことを実測で確認。基準値の再設定ではなく指標の種類を変える方針で案を起草
 - 2026-07-26 planner: 人間の「次へ進んで」（T034 done・指標の人間語翻訳確認後）により ready。
   しきい値は planner 案を確定（+200行 / +3操作 / +2概念 / +8KB / Won't）。受け入れ条件を確定
+- 2026-07-26 impl: 取得。task/T035 worktree で PLAN / packet / board を改訂する
 
 ## 差し戻し履歴（追記のみ）
