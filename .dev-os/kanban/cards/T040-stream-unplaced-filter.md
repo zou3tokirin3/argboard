@@ -1,7 +1,7 @@
 ---
 id: T040
 title: 発見ログを未配置のみに絞り込めるようにする
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T040"
@@ -27,13 +27,13 @@ updated: 2026-07-27
 
 ## 受け入れ条件
 
-- [ ] トグルONで未配置カードだけが発見ログに出る
-- [ ] トグルOFFで従来どおり全件（検索条件は維持）
-- [ ] 検索語と同時に使える（AND）
-- [ ] タグ起点フォーカス（T033）と同時に壊れていない
-- [ ] トグル状態がエクスポートJSONに載っていない
-- [ ] 見込み flow が PLAN §4 しきい値内。超過なら評価パケットGOが作業ログにある
-- [ ] 最新コミットで check / test / smoke が緑
+- [x] トグルONで未配置カードだけが発見ログに出る
+- [x] トグルOFFで従来どおり全件（検索条件は維持）
+- [x] 検索語と同時に使える（AND）
+- [x] タグ起点フォーカス（T033）と同時に壊れていない
+- [x] トグル状態がエクスポートJSONに載っていない
+- [x] 見込み flow が PLAN §4 しきい値内。超過なら評価パケットGOが作業ログにある
+- [x] 最新コミットで check / test / smoke が緑
 - [ ] 人間が「配置作業が楽になった」と確認する（gate: human）
 
 ## このカードでやらない
@@ -50,5 +50,8 @@ updated: 2026-07-27
 - 2026-07-27 planner: T038採択済み → ready
 - 2026-07-27 impl: 取得。見込み flow=本体行+60 / 操作+1 / 概念+1 / gzip+1KB / Won't=No。
   worktree=.worktrees/T040（task/T040）で発見ログの未配置のみトグルを実装する
+- 2026-07-27 impl: 実装完了（a5b9dd7）。実測 flow=本体+47 / 操作+1 / 概念+1 / gzip+134B / Won't=No。
+  check/test/smoke 緑。session信号 `unplacedOnly` を検索とAND → review
+- 2026-07-27 impl: task/T040 を main へ merge（845fc86）。worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
