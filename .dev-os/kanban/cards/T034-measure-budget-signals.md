@@ -1,10 +1,10 @@
 ---
 id: T034
 title: 予算シグナルを1コマンドで実測できるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T034"
 template_ver: generic-0.2
 created: 2026-07-25
 updated: 2026-07-26
@@ -84,5 +84,6 @@ SVG の `<path>` 1本が12行になる。PLAN §4-5 が「一行化での帳尻�
   T035 の前提カードであり、単独では何の基準も変えない
 - 2026-07-26 planner: 人間の「T034進めて」により ready。置き場所=案A（`tools/budget.ts`、予算対象外）。
   §11-2 は beads / AGENTS.md 類が対象で、本タスク追加は可、と確定。受け入れ条件を確定
+- 2026-07-26 impl: 取得。task/T034 worktree で `tools/budget.ts` + PLAN §4 定義を実装する
 
 ## 差し戻し履歴（追記のみ）
