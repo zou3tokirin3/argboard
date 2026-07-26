@@ -485,6 +485,9 @@ kbd {
   gap: 2px;
 }
 .stream__tag-focus-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   height: 26px;
   padding: 0 9px;
   border: 1px solid var(--line-strong);
@@ -501,6 +504,13 @@ kbd {
   background: var(--accent-soft);
 }
 .stream__tag-focus-btn.is-active {
+  font-weight: 600;
+}
+.stream__tag-focus-count {
+  min-width: 1.1em;
+  color: inherit;
+  opacity: 0.72;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
 .stream__tag-focus-ops .board__focus-icon {

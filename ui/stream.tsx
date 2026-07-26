@@ -49,10 +49,11 @@ function TagFocusControls() {
             data-testid="stream-tag-focus-btn"
             data-tag={entry.name}
             aria-pressed={tagFocus === entry.name}
-            title={`「${entry.name}」の視点で見る`}
+            title={`「${entry.name}」の視点で見る（${entry.count}件）`}
             onClick={() => setFocusViewByTag(entry.name)}
           >
             #{entry.name}
+            <span class="stream__tag-focus-count">{entry.count}</span>
           </button>
         ))}
       </div>
@@ -119,7 +120,13 @@ export function Stream() {
         <input
           type="search"
           value={search.value}
-          onInput={(event) => search.value = event.currentTarget.value}
+          onInput={(event) => {
+            const value = event.currentTarget.value;
+            search.value = value;
+            if (!value.trim() && focusOrigin.value?.kind === "tag") {
+              clearFocusView();
+            }
+          }}
           placeholder="手がかりを検索"
           aria-label="手がかりを検索"
         />

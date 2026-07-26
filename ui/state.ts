@@ -146,8 +146,13 @@ export function shrinkFocusHops(): void {
 }
 
 export function clearFocusView(): void {
+  const origin = focusOrigin.value;
   focusOrigin.value = null;
   focusHops.value = 1;
+  // Tag focus sets search; drop it when still matching so the chip deselects with ×.
+  if (origin?.kind === "tag" && normalizeTag(search.value) === origin.tag) {
+    search.value = "";
+  }
 }
 
 function clearTagFocusIfEmpty(cards: readonly Card[]): void {
