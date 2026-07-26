@@ -1,7 +1,7 @@
 ---
 id: T034
 title: 予算シグナルを1コマンドで実測できるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T034"
@@ -64,7 +64,7 @@ SVG の `<path>` 1本が12行になる。PLAN §4-5 が「一行化での帳尻�
 - [x] 本カードの変更で**本体行数・本体ファイル数がどちらも増えていない**（計測対象外に置いたことの実測）
       — 本体 4,384→4,383行（`board.tsx` の事前 fmt ずれ修正 −1）/ ファイル数 13のまま。`tools/` は非計上
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「この数字なら T035 の議論に使える」と確認する（gate: human）
+- [x] 人間が「この数字なら T035 の議論に使える」と確認する（gate: human）
 
 ## このカードでやらない
 
@@ -90,5 +90,7 @@ SVG の `<path>` 1本が12行になる。PLAN §4-5 が「一行化での帳尻�
   stock例: 本体4383 / TS3252 / ファイル13 / テスト1273 / smoke5 / gzip≈28KB / 操作34 /
   概念87（fields61+events8+signals18）。check/test/smoke 緑。review へ。
   人間確認待ち: 「この数字なら T035 の議論に使えるか」
+- 2026-07-26 human: 物差しとして使えると確認（しきい値はT035）。→ done。
+  task/T034 merge・worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
