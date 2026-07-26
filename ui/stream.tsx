@@ -52,7 +52,8 @@ function TagFocusControls() {
             title={`「${entry.name}」の視点で見る（${entry.count}件）`}
             onClick={() => setFocusViewByTag(entry.name)}
           >
-            #{entry.name} {entry.count}
+            #{entry.name}
+            <span class="stream__tag-focus-count">{entry.count}</span>
           </button>
         ))}
       </div>
