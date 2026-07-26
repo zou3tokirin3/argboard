@@ -1,13 +1,13 @@
 ---
 id: T036
 title: アイコンJSXと誕生イベントの重複を畳んで board.tsx の膨張源を切る
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T036"
 template_ver: generic-0.2
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-07-26
 ---
 
 ## 目的
@@ -71,7 +71,7 @@ pan / node / link の3状態ドラッグ機械と全JSXが1関数に同居して
 - [x] 本体行数が減っている（見込み 4,385 → 約4,275。**増えていたら差し戻し**）
 - [x] 既存 unit テスト（project / import / view-at / board-ops / events / capture-notation）が**無改変で**緑
 - [x] smoke 5本が緑。特に②ストリーム→ボード配置 と ③糸を張る→ラベル（ドラッグ系）
-- [ ] 人間が付箋のノリドラッグ・糸張り・リプレイのステップ移動を実機で触って違和感がないと確認する（gate: human）
+- [x] 人間が付箋のノリドラッグ・糸張り・リプレイのステップ移動を実機で触って違和感がないと確認する（gate: human）
 
 ## このカードでやらない
 
@@ -105,5 +105,7 @@ pan / node / link の3状態ドラッグ機械と全JSXが1関数に同居して
   task/T036 worktree で①②③を実装する
 - 2026-07-25 impl: 完了→review。`pushLinkBirth` / `primaryBoard` / `IconButton`。本体 4,385→4,323（−62・純減）。
   75daf18 で check/test/smoke 緑。人間ゲート待ち（ノリドラッグ・糸張り・リプレイ）
+- 2026-07-26 human: OK → done
+- 2026-07-26 impl: task/T036 を main へ merge（18a11f5）。check/test/smoke 緑。worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
