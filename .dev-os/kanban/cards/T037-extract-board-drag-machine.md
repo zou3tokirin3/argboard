@@ -1,7 +1,7 @@
 ---
 id: T037
 title: BoardView からドラッグ状態機械を切り出して膨張源を分ける
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T037"
@@ -68,7 +68,7 @@ T036（アイコンJSXと誕生イベントの重複畳み・約 −110行）と
       （`Drag` 型と `useBoardDrag` が `board.tsx` 内に同居）
 - [x] 既存 unit テストが**無改変で**緑（34 passed）
 - [x] smoke 5本が緑。特に②ストリーム→ボード配置 と ③糸を張る→ラベル
-- [ ] 人間が実機で確認する（gate: human）:
+- [x] 人間が実機で確認する（gate: human）:
       1. 付箋のノリ部分を掴んで動かす → 離した位置に残る
       2. 糸端から別カードへドラッグ → 吸着してつながる
       3. 空白ドラッグでパン、Ctrl/⌘+ホイールでズーム
@@ -98,5 +98,6 @@ T036（アイコンJSXと誕生イベントの重複畳み・約 −110行）と
 - 2026-07-26 impl: 取得。task/T037 worktree で useBoardDrag / ReplayBar / FocusFloat を切り出す
 - 2026-07-26 impl: 実装完了（652dabc）。BoardView 633→≈186行。check/test/smoke 緑。
   ファイル分割なし。review へ。人間実機確認待ち（糊ドラッグ・糸・パンズーム・D&D）
+- 2026-07-26 human: 実機確認OK → done。task/T037 merge・worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
