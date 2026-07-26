@@ -82,6 +82,46 @@ function defaultViewport(boardViewport?: Viewport): Viewport {
   return boardViewport ?? { x: 0, y: 0, zoom: 1 };
 }
 
+function prefersReducedMotion(): boolean {
+  return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")
+    ?.matches === true;
+}
+
+/** Ease-out pan from current viewport toward a target (stream reveal). */
+function animateBoardPan(
+  from: Viewport,
+  to: Viewport,
+  onFrame: (vp: Viewport) => void,
+  onDone: () => void,
+): () => void {
+  if (prefersReducedMotion()) {
+    onFrame(to);
+    onDone();
+    return () => {};
+  }
+  const durationMs = 280;
+  const start = performance.now();
+  let frame = 0;
+  let cancelled = false;
+  const tick = (now: number) => {
+    if (cancelled) return;
+    const t = Math.min(1, (now - start) / durationMs);
+    const e = 1 - (1 - t) ** 3;
+    onFrame({
+      x: from.x + (to.x - from.x) * e,
+      y: from.y + (to.y - from.y) * e,
+      zoom: from.zoom,
+    });
+    if (t < 1) frame = requestAnimationFrame(tick);
+    else onDone();
+  };
+  frame = requestAnimationFrame(tick);
+  return () => {
+    cancelled = true;
+    cancelAnimationFrame(frame);
+  };
+}
+
 function primaryBoard(
   p: { boards: Board[] } | null | undefined,
 ): Board | undefined {
@@ -911,15 +951,21 @@ export function BoardView() {
       return;
     }
     const rect = canvas.getBoundingClientRect();
-    const vp = defaultViewport(viewBoard?.viewport);
+    const from = defaultViewport(viewBoard?.viewport);
     const cx = pos.x + NODE_WIDTH / 2;
     const cy = pos.y + NODE_HEIGHT / 2;
-    setBoardViewportLocal({
-      x: rect.width / 2 - cx * vp.zoom,
-      y: rect.height / 2 - cy * vp.zoom,
-      zoom: vp.zoom,
-    });
+    const to = {
+      x: rect.width / 2 - cx * from.zoom,
+      y: rect.height / 2 - cy * from.zoom,
+      zoom: from.zoom,
+    };
     revealCardId.value = null;
+    return animateBoardPan(
+      from,
+      to,
+      (vp) => setBoardViewportLocal(vp),
+      () => setBoardViewportLocal(to),
+    );
   }, [revealId]);
 
   if (!live || !current || !board) return null;

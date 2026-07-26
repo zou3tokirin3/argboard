@@ -113,7 +113,7 @@ function TagField(props: {
   }
 
   return (
-    <label class="inspector__field inspector__tags">
+    <div class="inspector__field inspector__tags">
       <span>タグ（上限{TAG_KIND_LIMIT}・新規は候補から）</span>
       <div class="inspector__tag-chips">
         {attached.map((tag) => {
@@ -124,13 +124,15 @@ function TagField(props: {
               class={`inspector__tag-chip${unsettled ? " is-unsettled" : ""}`}
               title={unsettled ? "未定着（1枚のみ）" : tag}
             >
-              #{tag}
+              <span class="inspector__tag-chip-label">#{tag}</span>
               <button
                 type="button"
                 class="inspector__tag-chip-remove"
                 disabled={props.disabled}
                 aria-label={`「${tag}」を外す`}
-                onClick={() => {
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
                   if (!props.disabled) {
                     void updateCardTags(
                       props.cardId,
@@ -202,7 +204,7 @@ function TagField(props: {
           )
           : null}
       </div>
-    </label>
+    </div>
   );
 }
 
