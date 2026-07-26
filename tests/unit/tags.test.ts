@@ -3,6 +3,7 @@ import {
   buildTagSuggestions,
   collectTagUsage,
   detachTag,
+  fitTagsOneLine,
   normalizeTag,
   TAG_KIND_LIMIT,
 } from "../../ui/tags.ts";
@@ -68,4 +69,25 @@ Deno.test("attachTag and detachTag round-trip", () => {
   if (twice.length !== 1) throw new Error("duplicate attach");
   const cleared = detachTag(twice, "十七");
   if (cleared !== undefined) throw new Error("detach last should clear");
+});
+
+Deno.test("fitTagsOneLine keeps all when width is enough", () => {
+  const { shown, hidden } = fitTagsOneLine(["十七", "音声"], 200);
+  if (shown.length !== 2 || hidden !== 0) {
+    throw new Error(
+      `expected all visible: ${JSON.stringify({ shown, hidden })}`,
+    );
+  }
+});
+
+Deno.test("fitTagsOneLine collapses overflow to +N", () => {
+  const tags = ["十七", "音声", "拠点", "メモ", "追加"];
+  const { shown, hidden } = fitTagsOneLine(tags, 80);
+  if (shown.length === 0) throw new Error("first tag should remain");
+  if (hidden !== tags.length - shown.length || hidden < 1) {
+    throw new Error(`expected +N: ${JSON.stringify({ shown, hidden })}`);
+  }
+  if (shown.some((name, i) => name !== tags[i])) {
+    throw new Error("shown tags must keep order from the start");
+  }
 });
