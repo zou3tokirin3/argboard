@@ -59,10 +59,15 @@ body {
   color: var(--muted);
 }
 .app-shell {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
   background: var(--bg);
 }
 .topbar {
+  flex: 0 0 auto;
   height: 56px;
   display: grid;
   grid-template-columns: 280px 1fr auto;
@@ -209,6 +214,7 @@ body {
 }
 
 .capture-block {
+  flex: 0 0 auto;
   width: min(680px, calc(100% - 48px));
   margin: 14px auto 8px;
 }
@@ -283,11 +289,11 @@ kbd {
 
 .workspace {
   border-top: 1px solid var(--line-strong);
+  flex: 1 1 auto;
   min-height: 0;
 }
 .workspace--explore {
   display: grid;
-  height: calc(100vh - 134px);
   background: var(--panel);
 }
 .workspace--explore .stream {
@@ -298,7 +304,6 @@ kbd {
 }
 .workspace--contemplate {
   display: flex;
-  height: calc(100vh - 56px);
 }
 .side-panel {
   flex: 0 0 auto;
@@ -347,9 +352,6 @@ kbd {
   flex: 1;
   border-right: 0;
   min-height: 0;
-}
-.side-panel .stream__list {
-  height: calc(100% - 118px);
 }
 .contemplate-main {
   display: grid;
@@ -406,6 +408,8 @@ kbd {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .stream {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   overflow: hidden;
   border-right: 1px solid var(--line-strong);
@@ -413,6 +417,7 @@ kbd {
 }
 .section-heading {
   display: flex;
+  flex: 0 0 auto;
   justify-content: space-between;
   align-items: end;
   padding: 16px 16px 12px;
@@ -440,6 +445,7 @@ kbd {
 }
 .search {
   display: flex;
+  flex: 0 0 auto;
   gap: 8px;
   margin: 12px 12px 8px;
   padding: 9px 12px;
@@ -461,9 +467,10 @@ kbd {
   font-size: 14px;
 }
 .stream__list {
-  height: calc(100% - 118px);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
-  padding: 0;
+  padding: 0 0 16px;
 }
 .stream-card {
   width: 100%;
@@ -1157,7 +1164,7 @@ kbd {
   .workspace--explore,
   .workspace--contemplate {
     display: block;
-    height: auto;
+    flex: none;
   }
   .side-panel {
     width: 100%;
