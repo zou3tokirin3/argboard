@@ -52,8 +52,7 @@ function TagFocusControls() {
             title={`「${entry.name}」の視点で見る（${entry.count}件）`}
             onClick={() => setFocusViewByTag(entry.name)}
           >
-            #{entry.name}
-            <span class="stream__tag-focus-count">{entry.count}</span>
+            #{entry.name} {entry.count}
           </button>
         ))}
       </div>
@@ -121,9 +120,8 @@ export function Stream() {
           type="search"
           value={search.value}
           onInput={(event) => {
-            const value = event.currentTarget.value;
-            search.value = value;
-            if (!value.trim() && focusOrigin.value?.kind === "tag") {
+            search.value = event.currentTarget.value;
+            if (!search.value.trim() && focusOrigin.value?.kind === "tag") {
               clearFocusView();
             }
           }}
