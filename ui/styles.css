@@ -293,10 +293,12 @@ kbd {
   min-height: 0;
 }
 .workspace--explore {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   background: var(--panel);
 }
 .workspace--explore .stream {
+  flex: 1 1 auto;
   border-right: 0;
   max-width: 720px;
   margin: 0 auto;
