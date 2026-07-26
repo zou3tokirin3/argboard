@@ -1,10 +1,10 @@
 ---
 id: T039
 title: ボード上のカードにタグを常時表示する
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T039"
 template_ver: generic-0.2
 created: 2026-07-27
 updated: 2026-07-27
@@ -49,5 +49,7 @@ updated: 2026-07-27
 
 - 2026-07-27 planner: T038探索から分割起票（backlog）。人間がT038を採択したら ready
 - 2026-07-27 planner: T038採択済み → ready
+- 2026-07-27 impl: 取得。見込み flow=本体行+80 / 操作+0 / 概念+0 / gzip+1KB / Won't=No。
+  worktree=.worktrees/T039（task/T039）で BoardNode にタグ1行を出す
 
 ## 差し戻し履歴（追記のみ）
