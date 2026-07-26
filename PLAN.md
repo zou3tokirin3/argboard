@@ -132,7 +132,7 @@ Webアプリの知識がない人でも「URLを知っていれば使える」�
 
 ```
 argboard/
-├── deno.json          # tasks: dev / build / check / test / smoke
+├── deno.json          # tasks: dev / build / check / test / smoke / budget
 ├── PLAN.md            # この文書
 ├── README.md          # プロダクトの説明だけを書く(開発インフラの話は書かない)
 ├── serve.ts           # 開発・テスト用ローカル静的サーバー(本番では使わない)
@@ -150,13 +150,31 @@ argboard/
 ├── tests/
 │   ├── unit/          # db.test.ts / state.test.ts(deno test)
 │   └── smoke.ts       # スモークE2E(Astral、最大5シナリオ、deno task smoke)
+├── tools/
+│   └── budget.ts      # 予算シグナル計測(deno task budget)。本体・テスト予算の対象外
 └── dist/              # deno bundle 成果物(gitignore、GitHub Pagesへはこれを公開)
 ```
 
 **予算（警告基準）**: アプリ本体(ui/ +
 serve.ts)は **15ファイル / 3,000行** を警告基準とする。**テスト(tests/)は別枠で5ファイル / 800行**。
-計測対象は `serve.ts` と `ui/` 直下（空行・コメントを含む）。dist 除く。
+`tools/` と `dist/` と `.dev-os/` はどちらにも計上しない。
 2,500行はM2時点で実測前提と合わず一度だけ3,000へ再設定した経緯がある。
+
+**予算シグナルの定義（唯一の正本・`deno task budget` が実装）**:
+
+| 指標 | 定義 |
+|---|---|
+| **本体行数**（正本） | `serve.ts` + `ui/` 直下の全ファイルの行数合計（`wc -l` と同じく改行文字数。空行・コメントを含む） |
+| 本体行数（TS/TSX・参考） | 上記のうち拡張子 `.ts` / `.tsx` のみ。ゲート判定には使わない |
+| 本体ファイル数 | 上記「本体行数」の対象ファイル数 |
+| テスト行数 | `tests/smoke.ts` + `tests/unit/` 直下の行数合計 |
+| スモーク本数 | `tests/smoke.ts` 内の `// ①`〜`// ⑩` コメントに現れる丸数字のユニーク数 |
+| 配布サイズ（gzip） | `deno task build` 後の `dist/bundle.js` を gzip したバイト数 |
+| 操作の数 | `ui/*.tsx` 内の `data-testid="..."` リテラルのユニーク数（動的属性は数えない） |
+| 概念の数 | `ui/types.ts` のプロパティキー出現数（イベント判別子 `type` を除く）+ イベント種別（`type: "..."` のユニーク数）+ `ui/state.ts` のトップレベル `signal` / `computed` バインディング数 |
+
+stock は現作業ツリー、flow は `deno task budget --since <ref>`（省略時 ref=`main`）で ref との差（stock − ref）。
+出力は評価パケット §1 に貼れる Markdown 表。数値の良し悪しは判定しない。
 
 ### 実装ゲート（警告基準＋人間GO）
 

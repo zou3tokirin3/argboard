@@ -4,7 +4,8 @@
     "build": "deno eval \"await Deno.mkdir('dist',{recursive:true})\" && deno bundle --platform browser ui/main.tsx -o dist/bundle.js && deno eval \"await Promise.all(['index.html','styles.css'].map((file)=>Deno.copyFile('ui/'+file,'dist/'+file)))\"",
     "check": "deno fmt --check && deno lint && deno check ui/main.tsx",
     "test": "deno test -A tests/unit/",
-    "smoke": "deno task build && deno run -A tests/smoke.ts"
+    "smoke": "deno task build && deno run -A tests/smoke.ts",
+    "budget": "deno run -A tools/budget.ts"
   },
   "compilerOptions": {
     "jsx": "react-jsx",
