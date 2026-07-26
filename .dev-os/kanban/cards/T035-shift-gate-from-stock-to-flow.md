@@ -1,7 +1,7 @@
 ---
 id: T035
 title: 実装ゲートを累積行数から増分の複数指標へ切り替える
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T035"
@@ -69,7 +69,7 @@ stock（本体行・ファイル数・操作・gzip 等）は毎カードに記�
 - [x] `_board.md` の done前チェックが新ゲートと矛盾していない
 - [x] §14 決定ログに改訂として記録されている（2,500→3,000 の経緯を消さずに追記する）
 - [x] **本体コード（`ui/` / `serve.ts`）の変更が0行である**（本カードは契約の改訂のみ）
-- [ ] 人間が改訂を採択する（gate: human。契約変更のため人間以外は done にできない）
+- [x] 人間が改訂を採択する（gate: human。契約変更のため人間以外は done にできない）
 
 ## このカードでやらない
 
@@ -96,5 +96,6 @@ stock（本体行・ファイル数・操作・gzip 等）は毎カードに記�
 - 2026-07-26 impl: 取得。task/T035 worktree で PLAN / packet / board を改訂する
 - 2026-07-26 impl: 改訂完了（e40c1fb）。本体0行。check/test 緑。review へ。
   人間採択待ち（改訂17: flow しきい値 +200/+3/+2/+8KB/Won't）
+- 2026-07-26 human: 改訂17採択 OK → done。task/T035 merge・worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
