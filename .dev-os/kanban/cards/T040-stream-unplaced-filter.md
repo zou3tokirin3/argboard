@@ -1,10 +1,10 @@
 ---
 id: T040
 title: 発見ログを未配置のみに絞り込めるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T040"
 template_ver: generic-0.2
 created: 2026-07-27
 updated: 2026-07-27
@@ -48,5 +48,7 @@ updated: 2026-07-27
 
 - 2026-07-27 planner: T038探索から分割起票（backlog）。人間がT038を採択したら ready
 - 2026-07-27 planner: T038採択済み → ready
+- 2026-07-27 impl: 取得。見込み flow=本体行+60 / 操作+1 / 概念+1 / gzip+1KB / Won't=No。
+  worktree=.worktrees/T040（task/T040）で発見ログの未配置のみトグルを実装する
 
 ## 差し戻し履歴（追記のみ）
