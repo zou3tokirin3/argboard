@@ -468,6 +468,50 @@ kbd {
   color: var(--ink);
   font-size: 14px;
 }
+.stream__tag-focus {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 12px 8px;
+}
+.stream__tag-focus-list,
+.stream__tag-focus-ops {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.stream__tag-focus-ops {
+  gap: 2px;
+}
+.stream__tag-focus-btn {
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  color: var(--muted);
+  font: 500 12px "IBM Plex Sans JP", sans-serif;
+  cursor: pointer;
+}
+.stream__tag-focus-btn:hover,
+.stream__tag-focus-btn.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.stream__tag-focus-btn.is-active {
+  font-weight: 600;
+}
+.stream__tag-focus-count {
+  margin-left: 0.35em;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.55;
+}
+.stream__tag-focus-ops .board__focus-icon {
+  font: 600 14px "IBM Plex Sans JP", sans-serif;
+}
 .stream__list {
   flex: 1 1 auto;
   min-height: 0;

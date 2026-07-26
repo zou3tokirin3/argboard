@@ -10,11 +10,13 @@ import {
   applyUpdateLink,
   createDemoProject,
   createEmptyProject,
+  type FocusOrigin,
   parseProjectJson,
   replaySteps,
   viewThrough,
   withBirthEvents,
 } from "./project.ts";
+import { normalizeTag } from "./tags.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
@@ -64,8 +66,8 @@ export const selectedCardId = signal<string | null>(null);
 export const selectedLinkId = signal<string | null>(null);
 /** Session-only: stream asked the board to pan this card into view (T031 rework). */
 export const revealCardId = signal<string | null>(null);
-/** Session-only focus view (T018). Not persisted. */
-export const focusCardId = signal<string | null>(null);
+/** Session-only focus view (T018 card / T033 tag). Not persisted. */
+export const focusOrigin = signal<FocusOrigin | null>(null);
 export const focusHops = signal(1);
 /** Session-only growth replay index (T025). Not persisted. null = live. */
 export const replayIndex = signal<number | null>(null);
@@ -120,23 +122,44 @@ export function clearReplay(): void {
 }
 
 export function setFocusView(cardId: string): void {
-  focusCardId.value = cardId;
+  focusOrigin.value = { kind: "card", cardId };
   focusHops.value = 1;
 }
 
+export function setFocusViewByTag(tag: string): void {
+  const name = normalizeTag(tag);
+  if (!name) return;
+  focusOrigin.value = { kind: "tag", tag: name };
+  focusHops.value = 1;
+  search.value = name;
+}
+
 export function expandFocusHops(): void {
-  if (!focusCardId.value) return;
+  if (!focusOrigin.value) return;
   focusHops.value += 1;
 }
 
 export function shrinkFocusHops(): void {
-  if (!focusCardId.value || focusHops.value <= 1) return;
+  if (!focusOrigin.value || focusHops.value <= 1) return;
   focusHops.value -= 1;
 }
 
 export function clearFocusView(): void {
-  focusCardId.value = null;
+  const origin = focusOrigin.value;
+  focusOrigin.value = null;
   focusHops.value = 1;
+  if (origin?.kind === "tag" && normalizeTag(search.value) === origin.tag) {
+    search.value = "";
+  }
+}
+
+function clearTagFocusIfEmpty(cards: readonly Card[]): void {
+  const origin = focusOrigin.value;
+  if (origin?.kind !== "tag") return;
+  const still = cards.some((card) =>
+    (card.tags ?? []).some((value) => normalizeTag(value) === origin.tag)
+  );
+  if (!still) clearFocusView();
 }
 
 export const appMode = computed<AppMode>(() =>
@@ -440,6 +463,7 @@ export async function updateCardTags(
       return rest;
     }),
   };
+  clearTagFocusIfEmpty(next.cards);
   await persist(appendEvent(next, {
     type: "card_updated",
     at: Date.now(),
@@ -605,7 +629,9 @@ export async function removeCard(cardId: string): Promise<void> {
   if (!next) return;
   if (selectedCardId.value === cardId) selectedCardId.value = null;
   if (revealCardId.value === cardId) revealCardId.value = null;
-  if (focusCardId.value === cardId) clearFocusView();
+  const origin = focusOrigin.value;
+  if (origin?.kind === "card" && origin.cardId === cardId) clearFocusView();
+  clearTagFocusIfEmpty(next.cards);
   if (!next.links.some((link) => link.id === selectedLinkId.value)) {
     selectedLinkId.value = null;
   }

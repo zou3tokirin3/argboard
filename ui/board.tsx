@@ -7,8 +7,8 @@ import {
   connectCards,
   expandFocusHops,
   flushSave,
-  focusCardId,
   focusHops,
+  focusOrigin,
   isReplaying,
   moveCardOnBoardLocal,
   placeCardOnBoard,
@@ -26,7 +26,7 @@ import {
   viewProject,
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
-import { reachableCardIds } from "./project.ts";
+import { focusReachableIds } from "./project.ts";
 import type { Board, Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
 
@@ -616,22 +616,22 @@ function ReplayBar(props: {
 
 function FocusFloat(props: {
   style: { left: string; top: string };
-  focusId: string | null;
+  cardFocusActive: boolean;
   hops: number;
   barAnchorId: string;
 }) {
-  const { style, focusId, hops, barAnchorId } = props;
+  const { style, cardFocusActive, hops, barAnchorId } = props;
   return (
     <div
       class="board__focus-float"
       data-testid="board-focus"
-      title={focusId
+      title={cardFocusActive
         ? "視点中：糸で届くカードだけを表示"
         : "このカードを起点に視点を絞る"}
       style={style}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      {focusId
+      {cardFocusActive
         ? (
           <>
             <span class="board__focus-meta" aria-live="polite">
@@ -700,10 +700,13 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     const positions = viewBoard?.positions ?? {};
     const ids = viewBoard?.cardIds ?? [];
     const pad = 12;
-    const focused = focusCardId.value
-      ? reachableCardIds(
-        viewProject.value?.links ?? [],
-        focusCardId.value,
+    const origin = focusOrigin.value;
+    const view = viewProject.value;
+    const focused = origin && view
+      ? focusReachableIds(
+        view.links,
+        view.cards,
+        origin,
         focusHops.value,
       )
       : null;
@@ -923,8 +926,9 @@ export function BoardView() {
   const steps = replayStepList.value;
   const stepIndex = replayIndex.value;
   const sel = selectedCardId.value;
-  const focusId = focusCardId.value;
+  const origin = focusOrigin.value;
   const hops = focusHops.value;
+  const cardFocusActive = origin?.kind === "card";
   const board = primaryBoard(current);
   const canvasRef = useRef<HTMLDivElement>(null);
   const {
@@ -985,8 +989,8 @@ export function BoardView() {
   const currentStep = stepIndex == null ? null : steps[stepIndex] ?? null;
   const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
-  const focusSet = focusId
-    ? reachableCardIds(current.links, focusId, hops)
+  const focusSet = origin
+    ? focusReachableIds(current.links, current.cards, origin, hops)
     : null;
   const placedLinks = current.links.filter((link) =>
     board.positions[link.from] && board.positions[link.to]
@@ -1024,8 +1028,8 @@ export function BoardView() {
     });
   }
 
-  const barAnchorId = focusId
-    ? (sel && focusSet?.has(sel) ? sel : focusId)
+  const barAnchorId = cardFocusActive && origin?.kind === "card"
+    ? (sel && focusSet?.has(sel) ? sel : origin.cardId)
     : (sel && board.positions[sel] ? sel : null);
   const barAnchorPos = barAnchorId ? board.positions[barAnchorId] : undefined;
   const focusBarStyle = barAnchorPos
@@ -1095,7 +1099,7 @@ export function BoardView() {
           ? (
             <FocusFloat
               style={focusBarStyle}
-              focusId={focusId}
+              cardFocusActive={cardFocusActive}
               hops={hops}
               barAnchorId={barAnchorId}
             />
