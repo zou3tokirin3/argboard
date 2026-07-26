@@ -1,7 +1,7 @@
 ---
 id: T031
 title: サイドから自由タグを付けられるようにする（サジェスト・種類数抑止つき）
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T031"
@@ -113,5 +113,11 @@ T020で「自由入力タグはMVP外（案A）」と確定したが、同時に
   本体行 +150 / 操作 +2（testid） / 概念 +1（card_updated.tags） / gzip +2KB / Won't No。
   いずれもしきい値未満のためパケット不要。純関数は `ui/tags.ts` 切り出し。上限12種を確定
 - 2026-07-26 impl: 取得。task/T031 worktree でサイド付与UIを実装する
+
+- 2026-07-26 impl: 実装完了（6be81bd）。`ui/tags.ts` 切り出し。サイド付与・サジェスト・
+  明示新規作成・上限12・未定着表示。check/test 緑。smoke は当該環境で Chrome 起動不可のため未確認
+  （ローカルで `deno task smoke` 要）。実測 flow（vs main）: 本体 +344 / 操作 +2 / 概念 +1 /
+  gzip +1.8KB / Won't No / unit +126。**本体行がしきい値 +200 を超過** → done 前に人間GOが必要。
+  worktree はサンドボックス制約で作成できず task/T031 ブランチ上で実装
 
 ## 差し戻し履歴（追記のみ）
