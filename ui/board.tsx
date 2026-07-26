@@ -511,42 +511,136 @@ function BoardNode({
   );
 }
 
-export function BoardView() {
-  const live = project.value;
-  const current = viewProject.value;
-  const replaying = isReplaying.value;
-  const steps = replayStepList.value;
-  const stepIndex = replayIndex.value;
-  const sel = selectedCardId.value;
-  const focusId = focusCardId.value;
-  const hops = focusHops.value;
-  const board = primaryBoard(current);
-  const canvasRef = useRef<HTMLDivElement>(null);
+function ReplayBar(props: {
+  stepIndex: number;
+  stepsLength: number;
+  label: string;
+}) {
+  const { stepIndex, stepsLength, label } = props;
+  return (
+    <div class="board__replay-bar" data-testid="replay-bar">
+      <div class="board__replay-bar-main">
+        <IconButton
+          class="board__replay-icon"
+          testId="replay-prev"
+          disabled={stepIndex <= 0}
+          onClick={() => stepReplay(-1)}
+          label="前のステップ"
+          path="M10 3L5 8l5 5"
+        />
+        <IconButton
+          class="board__replay-icon"
+          testId="replay-next"
+          disabled={stepIndex >= stepsLength - 1}
+          onClick={() => stepReplay(1)}
+          label="次のステップ"
+          path="M6 3l5 5-5 5"
+        />
+        <IconButton
+          class="board__replay-icon"
+          testId="replay-end"
+          disabled={stepIndex >= stepsLength - 1}
+          onClick={() => setReplayIndex(stepsLength - 1)}
+          label="最後のステップへ"
+          path="M4 3l5 5-5 5M12 3v10"
+        />
+        <input
+          type="range"
+          class="board__replay-slider"
+          data-testid="replay-slider"
+          min={0}
+          max={Math.max(0, stepsLength - 1)}
+          step={1}
+          value={stepIndex}
+          aria-label="タイムラインのステップ"
+          onInput={(event) =>
+            setReplayIndex(Number(event.currentTarget.value))}
+        />
+        <span class="board__replay-count">
+          {stepIndex + 1}/{stepsLength}
+        </span>
+        <IconButton
+          class="board__replay-icon"
+          testId="replay-now"
+          onClick={() => clearReplay()}
+          label="いまに戻る"
+          path="M4 4l8 8M12 4l-8 8"
+        />
+      </div>
+      <div class="board__replay-label" title={label}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function FocusFloat(props: {
+  style: { left: string; top: string };
+  focusId: string | null;
+  hops: number;
+  barAnchorId: string;
+}) {
+  const { style, focusId, hops, barAnchorId } = props;
+  return (
+    <div
+      class="board__focus-float"
+      data-testid="board-focus"
+      title={focusId
+        ? "視点中：糸で届くカードだけを表示"
+        : "このカードを起点に視点を絞る"}
+      style={style}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      {focusId
+        ? (
+          <>
+            <span class="board__focus-meta" aria-live="polite">
+              視点 · {hops}
+            </span>
+            <IconButton
+              class="board__focus-icon"
+              testId="focus-shrink"
+              disabled={hops <= 1}
+              label="一周戻す"
+              onClick={() => shrinkFocusHops()}
+              path="M3 8h10"
+            />
+            <IconButton
+              class="board__focus-icon"
+              testId="focus-expand"
+              label="もう一周広げる"
+              onClick={() => expandFocusHops()}
+              path="M8 3v10M3 8h10"
+            />
+            <IconButton
+              class="board__focus-icon"
+              testId="focus-clear"
+              label="視点をやめる"
+              onClick={() => clearFocusView()}
+              path="M4 4l8 8M12 4l-8 8"
+            />
+          </>
+        )
+        : (
+          <button
+            type="button"
+            class="board__focus-enter"
+            data-testid="focus-set"
+            aria-label="この視点で見る"
+            title="つながるカードだけを浮かべ、ほかは沈める"
+            onClick={() => setFocusView(barAnchorId)}
+          >
+            この視点で見る
+          </button>
+        )}
+    </div>
+  );
+}
+
+/** pan / node / link のドラッグ状態機械。矩形選択(T032)はここに4つ目を足す。 */
+function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
   const [rubber, setRubber] = useState<Rubber | null>(null);
   const dragRef = useRef<Drag | null>(null);
-
-  if (!live || !current || !board) return null;
-
-  const currentStep = stepIndex == null ? null : steps[stepIndex] ?? null;
-  const viewport = defaultViewport(board.viewport);
-  const cardMap = new Map(current.cards.map((card) => [card.id, card]));
-  const focusSet = focusId
-    ? reachableCardIds(current.links, focusId, hops)
-    : null;
-  const placedLinks = current.links.filter((link) =>
-    board.positions[link.from] && board.positions[link.to]
-  );
-  const visibleLinks = focusSet
-    ? placedLinks.filter((link) =>
-      focusSet.has(link.from) && focusSet.has(link.to)
-    )
-    : placedLinks;
-  const front = sel
-    ? visibleLinks.filter((link) => link.from === sel || link.to === sel)
-    : [];
-  const relatedIds = new Set(
-    front.flatMap((link) => [link.from, link.to].filter((id) => id !== sel)),
-  );
 
   function clientToWorld(clientX: number, clientY: number) {
     const rect = canvasRef.current!.getBoundingClientRect();
@@ -768,6 +862,67 @@ export function BoardView() {
     );
   }
 
+  return {
+    rubber,
+    onCanvasPointerDown,
+    onPaperPointerDown,
+    onAdhesivePointerDown,
+    onThreadPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onWheel,
+    onDragOver,
+    onDrop,
+  };
+}
+
+export function BoardView() {
+  const live = project.value;
+  const current = viewProject.value;
+  const replaying = isReplaying.value;
+  const steps = replayStepList.value;
+  const stepIndex = replayIndex.value;
+  const sel = selectedCardId.value;
+  const focusId = focusCardId.value;
+  const hops = focusHops.value;
+  const board = primaryBoard(current);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const {
+    rubber,
+    onCanvasPointerDown,
+    onPaperPointerDown,
+    onAdhesivePointerDown,
+    onThreadPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onWheel,
+    onDragOver,
+    onDrop,
+  } = useBoardDrag(canvasRef);
+
+  if (!live || !current || !board) return null;
+
+  const currentStep = stepIndex == null ? null : steps[stepIndex] ?? null;
+  const viewport = defaultViewport(board.viewport);
+  const cardMap = new Map(current.cards.map((card) => [card.id, card]));
+  const focusSet = focusId
+    ? reachableCardIds(current.links, focusId, hops)
+    : null;
+  const placedLinks = current.links.filter((link) =>
+    board.positions[link.from] && board.positions[link.to]
+  );
+  const visibleLinks = focusSet
+    ? placedLinks.filter((link) =>
+      focusSet.has(link.from) && focusSet.has(link.to)
+    )
+    : placedLinks;
+  const front = sel
+    ? visibleLinks.filter((link) => link.from === sel || link.to === sel)
+    : [];
+  const relatedIds = new Set(
+    front.flatMap((link) => [link.from, link.to].filter((id) => id !== sel)),
+  );
+
   async function submitThought(event: SubmitEvent) {
     event.preventDefault();
     if (isReplaying.value) return;
@@ -837,59 +992,11 @@ export function BoardView() {
       </div>
       {replaying && currentStep && stepIndex != null
         ? (
-          <div class="board__replay-bar" data-testid="replay-bar">
-            <div class="board__replay-bar-main">
-              <IconButton
-                class="board__replay-icon"
-                testId="replay-prev"
-                disabled={stepIndex <= 0}
-                onClick={() => stepReplay(-1)}
-                label="前のステップ"
-                path="M10 3L5 8l5 5"
-              />
-              <IconButton
-                class="board__replay-icon"
-                testId="replay-next"
-                disabled={stepIndex >= steps.length - 1}
-                onClick={() => stepReplay(1)}
-                label="次のステップ"
-                path="M6 3l5 5-5 5"
-              />
-              <IconButton
-                class="board__replay-icon"
-                testId="replay-end"
-                disabled={stepIndex >= steps.length - 1}
-                onClick={() => setReplayIndex(steps.length - 1)}
-                label="最後のステップへ"
-                path="M4 3l5 5-5 5M12 3v10"
-              />
-              <input
-                type="range"
-                class="board__replay-slider"
-                data-testid="replay-slider"
-                min={0}
-                max={Math.max(0, steps.length - 1)}
-                step={1}
-                value={stepIndex}
-                aria-label="タイムラインのステップ"
-                onInput={(event) =>
-                  setReplayIndex(Number(event.currentTarget.value))}
-              />
-              <span class="board__replay-count">
-                {stepIndex + 1}/{steps.length}
-              </span>
-              <IconButton
-                class="board__replay-icon"
-                testId="replay-now"
-                onClick={() => clearReplay()}
-                label="いまに戻る"
-                path="M4 4l8 8M12 4l-8 8"
-              />
-            </div>
-            <div class="board__replay-label" title={currentStep.label}>
-              {currentStep.label}
-            </div>
-          </div>
+          <ReplayBar
+            stepIndex={stepIndex}
+            stepsLength={steps.length}
+            label={currentStep.label}
+          />
         )
         : null}
       <div
@@ -906,58 +1013,12 @@ export function BoardView() {
       >
         {focusBarStyle && barAnchorId
           ? (
-            <div
-              class="board__focus-float"
-              data-testid="board-focus"
-              title={focusId
-                ? "視点中：糸で届くカードだけを表示"
-                : "このカードを起点に視点を絞る"}
+            <FocusFloat
               style={focusBarStyle}
-              onPointerDown={(event) => event.stopPropagation()}
-            >
-              {focusId
-                ? (
-                  <>
-                    <span class="board__focus-meta" aria-live="polite">
-                      視点 · {hops}
-                    </span>
-                    <IconButton
-                      class="board__focus-icon"
-                      testId="focus-shrink"
-                      disabled={hops <= 1}
-                      label="一周戻す"
-                      onClick={() => shrinkFocusHops()}
-                      path="M3 8h10"
-                    />
-                    <IconButton
-                      class="board__focus-icon"
-                      testId="focus-expand"
-                      label="もう一周広げる"
-                      onClick={() => expandFocusHops()}
-                      path="M8 3v10M3 8h10"
-                    />
-                    <IconButton
-                      class="board__focus-icon"
-                      testId="focus-clear"
-                      label="視点をやめる"
-                      onClick={() => clearFocusView()}
-                      path="M4 4l8 8M12 4l-8 8"
-                    />
-                  </>
-                )
-                : (
-                  <button
-                    type="button"
-                    class="board__focus-enter"
-                    data-testid="focus-set"
-                    aria-label="この視点で見る"
-                    title="つながるカードだけを浮かべ、ほかは沈める"
-                    onClick={() => setFocusView(barAnchorId)}
-                  >
-                    この視点で見る
-                  </button>
-                )}
-            </div>
+              focusId={focusId}
+              hops={hops}
+              barAnchorId={barAnchorId}
+            />
           )
           : null}
         <svg aria-label="手がかりの関係図">
