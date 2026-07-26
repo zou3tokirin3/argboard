@@ -140,6 +140,7 @@ T020で「自由入力タグはMVP外（案A）」と確定したが、同時に
 - 2026-07-26 impl: 中央寄せアニメが一発で動かない不具合を修正。 revealCardId クリア時の effect cleanup が rAF を殺していた
 
 - 2026-07-26 human: 中央寄せアニメ修正を確認（良くなった）
+- 2026-07-26 planner: タグのボード見え方・未配置絞りは [T038](T038-tag-visibility-and-stream-filters.md) へ起票
 
 ## 差し戻し履歴（追記のみ）
 
