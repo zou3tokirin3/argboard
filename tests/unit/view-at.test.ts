@@ -397,3 +397,58 @@ Deno.test("edited pre-log cards still get an add step", () => {
     throw new Error(`missing add step: ${steps.map((s) => s.label)}`);
   }
 });
+
+Deno.test("viewAt applies and rewinds card tags when event carries them", () => {
+  const a = "a";
+  let project = createEmptyProject("タグ", 1);
+  project = {
+    ...project,
+    cards: [{ id: a, title: "カード", foundAt: 10 }],
+    events: [
+      {
+        type: "card_added",
+        at: 10,
+        card: { id: a, title: "カード", foundAt: 10 },
+      },
+      {
+        type: "card_updated",
+        at: 20,
+        cardId: a,
+        title: "カード",
+        tags: ["十七"],
+      },
+      {
+        type: "card_updated",
+        at: 30,
+        cardId: a,
+        title: "カード",
+        body: "メモ",
+      },
+    ],
+  };
+  project = {
+    ...project,
+    cards: [{
+      id: a,
+      title: "カード",
+      body: "メモ",
+      tags: ["十七"],
+      foundAt: 10,
+    }],
+  };
+
+  const mid = viewAt(project, 25);
+  if (mid.cards[0]?.tags?.[0] !== "十七" || mid.cards[0]?.body) {
+    throw new Error(
+      `tags should apply before body edit: ${JSON.stringify(mid.cards[0])}`,
+    );
+  }
+  const early = viewAt(project, 15);
+  if (early.cards[0]?.tags) {
+    throw new Error("tags must rewind when event is later");
+  }
+  const late = viewAt(project, 35);
+  if (late.cards[0]?.tags?.[0] !== "十七" || late.cards[0]?.body !== "メモ") {
+    throw new Error("title-only update must keep prior tags");
+  }
+});

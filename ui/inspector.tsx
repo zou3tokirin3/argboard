@@ -11,9 +11,19 @@ import {
   selectedLink,
   selectedLinkId,
   updateCard,
+  updateCardTags,
   updateLink,
   viewProject,
 } from "./state.ts";
+import {
+  attachTag,
+  buildTagSuggestions,
+  collectTagUsage,
+  detachTag,
+  normalizeTag,
+  TAG_KIND_LIMIT,
+  type TagSuggestItem,
+} from "./tags.ts";
 
 function HistoryEntry() {
   const replaying = isReplaying.value;
@@ -45,6 +55,149 @@ function HistoryEntry() {
         タイムライン
       </button>
     </div>
+  );
+}
+
+function TagField(props: {
+  cardId: string;
+  tags: string[] | undefined;
+  disabled: boolean;
+}) {
+  const usage = collectTagUsage(viewProject.value?.cards ?? []);
+  const attached = props.tags ?? [];
+  const [draft, setDraft] = useState("");
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const { items, atLimit } = buildTagSuggestions(draft, usage, attached);
+  const q = normalizeTag(draft);
+  const blocked = atLimit && !!q && !usage.some((e) => e.name === q) &&
+    !attached.some((t) => normalizeTag(t) === q);
+  const counts = new Map(usage.map((e) => [e.name, e.count]));
+
+  useEffect(() => {
+    setDraft("");
+    setOpen(false);
+    setActive(0);
+  }, [props.cardId]);
+  useEffect(() => setActive(0), [draft]);
+
+  async function apply(item: TagSuggestItem) {
+    if (props.disabled) return;
+    await updateCardTags(props.cardId, attachTag(attached, item.name));
+    setDraft("");
+    setOpen(false);
+    setActive(0);
+  }
+
+  function onKeyDown(event: KeyboardEvent) {
+    if (!open && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+      setOpen(true);
+      return;
+    }
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+    if (!open || !items.length) return;
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActive((i) => (i + 1) % items.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive((i) => (i - 1 + items.length) % items.length);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const item = items[active];
+      if (item) void apply(item);
+    }
+  }
+
+  return (
+    <label class="inspector__field inspector__tags">
+      <span>タグ（上限{TAG_KIND_LIMIT}・新規は候補から）</span>
+      <div class="inspector__tag-chips">
+        {attached.map((tag) => {
+          const unsettled = (counts.get(tag) ?? 1) === 1;
+          return (
+            <button
+              key={tag}
+              type="button"
+              class={`inspector__tag-chip${unsettled ? " is-unsettled" : ""}`}
+              disabled={props.disabled}
+              title={unsettled ? "未定着（1枚のみ）" : tag}
+              onClick={() => {
+                if (!props.disabled) {
+                  void updateCardTags(
+                    props.cardId,
+                    detachTag(attached, tag) ?? [],
+                  );
+                }
+              }}
+            >
+              #{tag}
+              <span aria-hidden="true">×</span>
+            </button>
+          );
+        })}
+      </div>
+      <div class="inspector__tag-input-wrap">
+        <input
+          type="text"
+          data-testid="inspector-tag-input"
+          value={draft}
+          disabled={props.disabled}
+          placeholder="付けて整理…"
+          autocomplete="off"
+          onInput={(event) => {
+            setDraft(event.currentTarget.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 120)}
+          onKeyDown={onKeyDown}
+        />
+        {open && (items.length || blocked)
+          ? (
+            <ul
+              class="inspector__tag-suggest"
+              data-testid="inspector-tag-suggest"
+              role="listbox"
+            >
+              {items.map((item, index) => (
+                <li key={`${item.kind}:${item.name}`}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={index === active}
+                    class={`inspector__tag-suggest-item${
+                      index === active ? " is-active" : ""
+                    }`}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      void apply(item);
+                    }}
+                  >
+                    {item.kind === "create" ? `「${item.name}」を新規作成` : (
+                      <>
+                        #{item.name}
+                        {item.unsettled ? <small>未定着</small> : null}
+                      </>
+                    )}
+                  </button>
+                </li>
+              ))}
+              {blocked
+                ? (
+                  <li class="inspector__tag-suggest-hint">
+                    種類上限です。既存から選ぶか整理してください
+                  </li>
+                )
+                : null}
+            </ul>
+          )
+          : null}
+      </div>
+    </label>
   );
 }
 
@@ -190,6 +343,11 @@ export function Inspector() {
           onBlur={commit}
         />
       </label>
+      <TagField
+        cardId={card.id}
+        tags={card.tags}
+        disabled={replaying}
+      />
       {cardLinks.length
         ? (
           <label class="inspector__field">

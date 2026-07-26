@@ -189,12 +189,17 @@ function applyEvent(
     case "card_updated": {
       const prev = cards.get(event.cardId);
       if (!prev) break;
-      cards.set(event.cardId, {
+      const next: Card = {
         ...prev,
         title: event.title,
         body: event.body,
         url: event.url,
-      });
+      };
+      if ("tags" in event) {
+        if (event.tags?.length) next.tags = [...event.tags];
+        else delete next.tags;
+      }
+      cards.set(event.cardId, next);
       break;
     }
     case "card_removed":
