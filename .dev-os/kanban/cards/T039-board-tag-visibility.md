@@ -1,7 +1,7 @@
 ---
 id: T039
 title: ボード上のカードにタグを常時表示する
-status: backlog
+status: ready
 owner: none
 gate: human
 branch: ""
@@ -48,5 +48,6 @@ updated: 2026-07-27
 ## 作業ログ（追記のみ）
 
 - 2026-07-27 planner: T038探索から分割起票（backlog）。人間がT038を採択したら ready
+- 2026-07-27 planner: T038採択済み → ready
 
 ## 差し戻し履歴（追記のみ）
