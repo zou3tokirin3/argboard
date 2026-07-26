@@ -406,6 +406,36 @@ export async function updateCard(
   }));
 }
 
+/** Replace a card's free tags (T031). Empty list clears tags. */
+export async function updateCardTags(
+  id: string,
+  tags: string[],
+): Promise<void> {
+  const current = assertWritable();
+  if (!current) return;
+  const card = current.cards.find((item) => item.id === id);
+  if (!card) return;
+  const nextTags = tags.length ? [...tags] : undefined;
+  const next = {
+    ...current,
+    cards: current.cards.map((item) => {
+      if (item.id !== id) return item;
+      if (nextTags) return { ...item, tags: nextTags };
+      const { tags: _drop, ...rest } = item;
+      return rest;
+    }),
+  };
+  await persist(appendEvent(next, {
+    type: "card_updated",
+    at: Date.now(),
+    cardId: id,
+    title: card.title,
+    body: card.body,
+    url: card.url,
+    tags: nextTags ?? [],
+  }));
+}
+
 export function exportProject(): void {
   const current = project.value;
   if (!current) return;

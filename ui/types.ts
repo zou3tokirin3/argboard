@@ -15,6 +15,8 @@ export type ProjectEvent =
     title: string;
     body?: string;
     url?: string;
+    /** Present only when tags changed (omit keeps previous tags on replay). */
+    tags?: string[];
   }
   | {
     type: "card_removed";
