@@ -940,16 +940,18 @@ export function BoardView() {
     onDrop,
   } = useBoardDrag(canvasRef);
 
+  const panCancelRef = useRef<(() => void) | null>(null);
   const revealId = revealCardId.value;
   useEffect(() => {
     if (!revealId) return;
     const canvas = canvasRef.current;
     const viewBoard = primaryBoard(viewProject.value);
     const pos = viewBoard?.positions[revealId];
-    if (!canvas || !pos) {
-      revealCardId.value = null;
-      return;
-    }
+    // Clear immediately so the same card can be revealed again; do NOT cancel
+    // the pan in this effect's cleanup when revealId becomes null (that was
+    // aborting the animation on the first frame).
+    revealCardId.value = null;
+    if (!canvas || !pos) return;
     const rect = canvas.getBoundingClientRect();
     const from = defaultViewport(viewBoard?.viewport);
     const cx = pos.x + NODE_WIDTH / 2;
@@ -959,14 +961,24 @@ export function BoardView() {
       y: rect.height / 2 - cy * from.zoom,
       zoom: from.zoom,
     };
-    revealCardId.value = null;
-    return animateBoardPan(
+    panCancelRef.current?.();
+    panCancelRef.current = animateBoardPan(
       from,
       to,
       (vp) => setBoardViewportLocal(vp),
-      () => setBoardViewportLocal(to),
+      () => {
+        setBoardViewportLocal(to);
+        panCancelRef.current = null;
+      },
     );
   }, [revealId]);
+
+  useEffect(() => {
+    return () => {
+      panCancelRef.current?.();
+      panCancelRef.current = null;
+    };
+  }, []);
 
   if (!live || !current || !board) return null;
 
