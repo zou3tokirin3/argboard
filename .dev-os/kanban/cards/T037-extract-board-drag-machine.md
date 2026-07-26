@@ -1,10 +1,10 @@
 ---
 id: T037
 title: BoardView からドラッグ状態機械を切り出して膨張源を分ける
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T037"
 template_ver: generic-0.2
 created: 2026-07-25
 updated: 2026-07-26
@@ -95,5 +95,6 @@ T036（アイコンJSXと誕生イベントの重複畳み・約 −110行）と
   生存確認がない」ため、T036 の低リスク部分と切り分けが必要という判断
 - 2026-07-26 planner: 人間の「T037やって」により ready。分割方針=1ファイル内切り出し（ファイル増なし）。
   受け入れ条件を確定
+- 2026-07-26 impl: 取得。task/T037 worktree で useBoardDrag / ReplayBar / FocusFloat を切り出す
 
 ## 差し戻し履歴（追記のみ）
