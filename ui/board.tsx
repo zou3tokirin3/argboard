@@ -553,8 +553,7 @@ function ReplayBar(props: {
           step={1}
           value={stepIndex}
           aria-label="タイムラインのステップ"
-          onInput={(event) =>
-            setReplayIndex(Number(event.currentTarget.value))}
+          onInput={(event) => setReplayIndex(Number(event.currentTarget.value))}
         />
         <span class="board__replay-count">
           {stepIndex + 1}/{stepsLength}
