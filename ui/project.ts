@@ -434,10 +434,7 @@ export function reachableCardIds(
   return reachableFromCardIds(links, [startId], hops);
 }
 
-/**
- * Focus set for card or tag origin (T018 / T033).
- * Tag at 1 hop = cards with that tag; further hops expand via links.
- */
+/** Focus set (T018/T033): card BFS, or tag-holders at 1 hop then expand. */
 export function focusReachableIds(
   links: readonly Pick<Link, "from" | "to">[],
   cards: ReadonlyArray<{ id: string; tags?: string[] }>,
@@ -449,10 +446,8 @@ export function focusReachableIds(
   }
   const tag = normalizeTag(origin.tag);
   const seeds = cards
-    .filter((card) =>
-      (card.tags ?? []).some((value) => normalizeTag(value) === tag)
-    )
-    .map((card) => card.id);
+    .filter((c) => (c.tags ?? []).some((t) => normalizeTag(t) === tag))
+    .map((c) => c.id);
   return reachableFromCardIds(links, seeds, Math.max(0, hops - 1));
 }
 

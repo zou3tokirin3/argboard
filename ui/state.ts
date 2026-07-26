@@ -19,7 +19,6 @@ import {
 import { normalizeTag } from "./tags.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
-export type { FocusOrigin } from "./project.ts";
 export { createDemoProject, createEmptyProject } from "./project.ts";
 export { replaySteps } from "./project.ts";
 
