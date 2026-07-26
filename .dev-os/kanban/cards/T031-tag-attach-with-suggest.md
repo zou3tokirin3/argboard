@@ -4,7 +4,7 @@ title: サイドから自由タグを付けられるようにする（サジェ�
 status: review
 owner: impl
 gate: human
-branch: "task/T031-rework"
+branch: "task/T031-rework2"
 template_ver: generic-0.2
 created: 2026-07-25
 updated: 2026-07-26
@@ -134,6 +134,8 @@ T020で「自由入力タグはMVP外（案A）」と確定したが、同時に
   （revealCardId）/ gzip 微小 / Won't No。しきい値内
 
 - 2026-07-26 impl: rework 完了（c5626b2）→ main merge。 ×のみ削除・stream選択で中央パン。実測 flow 本体 +53 / 操作 +0 / 概念 +1。 check/test 緑。smoke は手元確認。review へ
+
+- 2026-07-26 impl: ×当たりを狭め（ラベルと22pxの×を分離・label→div）、中央寄せに280ms ease-out アニメ。reduced-motion は即時。check/test 緑
 
 ## 差し戻し履歴（追記のみ）
 
