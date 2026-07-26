@@ -1,7 +1,7 @@
 ---
 id: T039
 title: ボード上のカードにタグを常時表示する
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T039"
@@ -35,7 +35,7 @@ updated: 2026-07-27
 - [x] ボード上タグをクリックしても付与・視点切替が起きない
 - [x] 見込み flow が PLAN §4 しきい値内。超過なら評価パケットGOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「盤面でタグが読める」と確認する（gate: human）
+- [x] 人間が「盤面でタグが読める」と確認する（gate: human）
 
 ## このカードでやらない
 
@@ -53,5 +53,7 @@ updated: 2026-07-27
   worktree=.worktrees/T039（task/T039）で BoardNode にタグ1行を出す
 - 2026-07-27 impl: 実装完了（2399836）。実測 flow=本体+110 / 操作+0 / 概念+0 / gzip+525B / Won't=No。
   check/test/smoke 緑。タグ有時は preview 1行・pointer-events none 維持 → review
+- 2026-07-27 impl: task/T039 を main へ merge（217a36d）。worktree/branch 削除
+- 2026-07-27 human: 盤面でタグが読める確認OK → done
 
 ## 差し戻し履歴（追記のみ）
