@@ -62,6 +62,8 @@ function pickProjectId(summaries: ProjectSummary[]): string {
 export const project = signal<Project | null>(null);
 export const projectSummaries = signal<ProjectSummary[]>([]);
 export const search = signal("");
+/** Session-only: show unplaced stream cards only (T040). Not persisted. */
+export const unplacedOnly = signal(false);
 export const selectedCardId = signal<string | null>(null);
 export const selectedLinkId = signal<string | null>(null);
 /** Session-only: stream asked the board to pan this card into view (T031 rework). */
@@ -192,7 +194,11 @@ export const filteredCards = computed(() => {
   const current = viewProject.value;
   if (!current) return [];
   const query = search.value.trim().toLocaleLowerCase("ja");
+  const placed = unplacedOnly.value
+    ? new Set(current.boards[0]?.cardIds ?? [])
+    : null;
   return current.cards.filter((card) => {
+    if (placed?.has(card.id)) return false;
     if (!query) return true;
     return [card.title, card.body, card.url, ...(card.tags ?? [])]
       .filter(Boolean)
@@ -275,6 +281,7 @@ async function activateProject(next: Project): Promise<void> {
   clearFocusView();
   clearReplay();
   search.value = "";
+  unplacedOnly.value = false;
   // Snapshot missing births before open so later edits can rewind text/labels.
   const birthed = withBirthEvents(next);
   const opened = appendEvent(birthed, {

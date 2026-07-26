@@ -468,6 +468,31 @@ kbd {
   color: var(--ink);
   font-size: 14px;
 }
+.stream__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 12px 8px;
+}
+.stream__filter-btn {
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  color: var(--muted);
+  font: 500 12px "IBM Plex Sans JP", sans-serif;
+  cursor: pointer;
+}
+.stream__filter-btn:hover,
+.stream__filter-btn.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.stream__filter-btn.is-active {
+  font-weight: 600;
+}
 .stream__tag-focus {
   display: flex;
   flex-direction: column;
