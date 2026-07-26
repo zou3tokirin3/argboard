@@ -124,4 +124,6 @@ T020で「自由入力タグはMVP外（案A）」と確定したが、同時に
 
 - 2026-07-26 impl: task/T031 を main へ merge（b7f6b15）。check/test 緑。 smoke は手元再確認待ち。branch 削除予定
 
+- 2026-07-26 human: merge 後に `deno task smoke` 緑を確認
+
 ## 差し戻し履歴（追記のみ）
