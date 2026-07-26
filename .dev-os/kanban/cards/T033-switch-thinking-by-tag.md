@@ -1,7 +1,7 @@
 ---
 id: T033
 title: タグを起点にフォーカスビューへ入れるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T033"
@@ -77,7 +77,7 @@ T020案B制約3「タグをワークフロー状態（未読・保留）にし�
 - [x] PLAN §1・§14へ改訂19として同期されている（done前）
 - [x] 見込み flow が PLAN §4 しきい値内（下記作業ログ）。超過ならパケットGOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「思考の切り替えが速くなった」と確認する（gate: human）
+- [x] 人間が「思考の切り替えが速くなった」と確認する（gate: human）
 
 ## このカードでやらない
 
@@ -108,5 +108,8 @@ T020案B制約3「タグをワークフロー状態（未読・保留）にし�
 
 - 2026-07-26 human: review確認。検索×でタグ選択が残る／個数表示がほしい
 - 2026-07-26 impl: 反映（a2c8a07）。検索クリア＝タグ視点解除、ボタンに件数。budget 本体+196 しきい値内
+
+- 2026-07-26 impl: task/T033 を main へ merge（4ba12fc）。check / test / smoke 緑。budget 本体+196
+- 2026-07-26 human: 全体OK → done。branch / worktree 削除
 
 ## 差し戻し履歴（追記のみ）
