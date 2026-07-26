@@ -3,6 +3,7 @@ import {
   isReplaying,
   removeCard,
   search,
+  selectCardFromStream,
   selectedCardId,
   viewProject,
 } from "./state.ts";
@@ -72,7 +73,7 @@ export function Stream() {
                   }}
                   onDragEnd={() =>
                     globalThis.getSelection?.()?.removeAllRanges()}
-                  onClick={() => selectedCardId.value = card.id}
+                  onClick={() => selectCardFromStream(card.id)}
                 >
                   <span class="stream-card__meta">
                     <time>{timeFormatter.format(card.foundAt)}</time>

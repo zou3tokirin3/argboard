@@ -119,24 +119,29 @@ function TagField(props: {
         {attached.map((tag) => {
           const unsettled = (counts.get(tag) ?? 1) === 1;
           return (
-            <button
+            <span
               key={tag}
-              type="button"
               class={`inspector__tag-chip${unsettled ? " is-unsettled" : ""}`}
-              disabled={props.disabled}
               title={unsettled ? "未定着（1枚のみ）" : tag}
-              onClick={() => {
-                if (!props.disabled) {
-                  void updateCardTags(
-                    props.cardId,
-                    detachTag(attached, tag) ?? [],
-                  );
-                }
-              }}
             >
               #{tag}
-              <span aria-hidden="true">×</span>
-            </button>
+              <button
+                type="button"
+                class="inspector__tag-chip-remove"
+                disabled={props.disabled}
+                aria-label={`「${tag}」を外す`}
+                onClick={() => {
+                  if (!props.disabled) {
+                    void updateCardTags(
+                      props.cardId,
+                      detachTag(attached, tag) ?? [],
+                    );
+                  }
+                }}
+              >
+                ×
+              </button>
+            </span>
           );
         })}
       </div>

@@ -1,4 +1,4 @@
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import {
   addCard,
   clearFocusView,
@@ -15,6 +15,7 @@ import {
   project,
   replayIndex,
   replayStepList,
+  revealCardId,
   selectedCardId,
   selectedLinkId,
   setBoardViewportLocal,
@@ -898,6 +899,28 @@ export function BoardView() {
     onDragOver,
     onDrop,
   } = useBoardDrag(canvasRef);
+
+  const revealId = revealCardId.value;
+  useEffect(() => {
+    if (!revealId) return;
+    const canvas = canvasRef.current;
+    const viewBoard = primaryBoard(viewProject.value);
+    const pos = viewBoard?.positions[revealId];
+    if (!canvas || !pos) {
+      revealCardId.value = null;
+      return;
+    }
+    const rect = canvas.getBoundingClientRect();
+    const vp = defaultViewport(viewBoard?.viewport);
+    const cx = pos.x + NODE_WIDTH / 2;
+    const cy = pos.y + NODE_HEIGHT / 2;
+    setBoardViewportLocal({
+      x: rect.width / 2 - cx * vp.zoom,
+      y: rect.height / 2 - cy * vp.zoom,
+      zoom: vp.zoom,
+    });
+    revealCardId.value = null;
+  }, [revealId]);
 
   if (!live || !current || !board) return null;
 

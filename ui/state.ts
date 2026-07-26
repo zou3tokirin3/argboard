@@ -62,6 +62,8 @@ export const projectSummaries = signal<ProjectSummary[]>([]);
 export const search = signal("");
 export const selectedCardId = signal<string | null>(null);
 export const selectedLinkId = signal<string | null>(null);
+/** Session-only: stream asked the board to pan this card into view (T031 rework). */
+export const revealCardId = signal<string | null>(null);
 /** Session-only focus view (T018). Not persisted. */
 export const focusCardId = signal<string | null>(null);
 export const focusHops = signal(1);
@@ -246,6 +248,7 @@ async function activateProject(next: Project): Promise<void> {
   writeActiveProjectId(next.id);
   selectedCardId.value = null;
   selectedLinkId.value = null;
+  revealCardId.value = null;
   clearFocusView();
   clearReplay();
   search.value = "";
@@ -259,6 +262,18 @@ async function activateProject(next: Project): Promise<void> {
   saveStatus.value = "saving";
   await store.saveProject(opened);
   saveStatus.value = "saved";
+}
+
+/** Select from the discovery stream; pan the board if the card is placed. */
+export function selectCardFromStream(cardId: string): void {
+  selectedCardId.value = cardId;
+  selectedLinkId.value = null;
+  const board = project.value?.boards[0];
+  if (board?.cardIds.includes(cardId) && board.positions[cardId]) {
+    revealCardId.value = cardId;
+  } else {
+    revealCardId.value = null;
+  }
 }
 
 function assertWritable(): Project | null {
@@ -589,6 +604,7 @@ export async function removeCard(cardId: string): Promise<void> {
   const next = applyRemoveCard(current, cardId);
   if (!next) return;
   if (selectedCardId.value === cardId) selectedCardId.value = null;
+  if (revealCardId.value === cardId) revealCardId.value = null;
   if (focusCardId.value === cardId) clearFocusView();
   if (!next.links.some((link) => link.id === selectedLinkId.value)) {
     selectedLinkId.value = null;
