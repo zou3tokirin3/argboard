@@ -1,7 +1,7 @@
 ---
 id: T031
 title: サイドから自由タグを付けられるようにする（サジェスト・種類数抑止つき）
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T031-rework"
@@ -132,6 +132,8 @@ T020で「自由入力タグはMVP外（案A）」と確定したが、同時に
 
 - 2026-07-26 impl: rework 取得（B案）。見込み flow: 本体 +40〜60 / 操作 +0〜1 / 概念 +1
   （revealCardId）/ gzip 微小 / Won't No。しきい値内
+
+- 2026-07-26 impl: rework 完了（c5626b2）→ main merge。 ×のみ削除・stream選択で中央パン。実測 flow 本体 +53 / 操作 +0 / 概念 +1。 check/test 緑。smoke は手元確認。review へ
 
 ## 差し戻し履歴（追記のみ）
 
