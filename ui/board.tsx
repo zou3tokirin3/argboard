@@ -27,12 +27,14 @@ import {
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
 import { focusReachableIds } from "./project.ts";
+import { collectTagUsage, fitTagsOneLine, normalizeTag } from "./tags.ts";
 import type { Board, Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
 
 const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
 const ADHESIVE_HEIGHT = 38;
+const NODE_CONTENT_WIDTH = NODE_WIDTH - 36;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 const LINK_LANE_GAP = 22;
@@ -418,6 +420,7 @@ function BoardNode({
   isDropTarget,
   isRelated,
   isDimmed,
+  tagCounts,
   onAdhesivePointerDown,
   onPaperPointerDown,
   onThreadPointerDown,
@@ -428,6 +431,7 @@ function BoardNode({
   isDropTarget: boolean;
   isRelated: boolean;
   isDimmed: boolean;
+  tagCounts: ReadonlyMap<string, number>;
   onAdhesivePointerDown: (event: PointerEvent, cardId: string) => void;
   onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
@@ -435,6 +439,12 @@ function BoardNode({
   const selected = selectedCardId.value === card.id;
   const threadY = NODE_HEIGHT / 2;
   const thought = card.role === "thought";
+  const tags = (card.tags ?? []).map(normalizeTag).filter(Boolean);
+  const { shown: visibleTags, hidden: hiddenTagCount } = fitTagsOneLine(
+    tags,
+    NODE_CONTENT_WIDTH,
+  );
+  const hasTags = tags.length > 0;
   return (
     <g
       class={`board-node ${selected ? "is-selected" : ""} ${
@@ -516,8 +526,30 @@ function BoardNode({
         height="78"
         style={{ pointerEvents: "none" }}
       >
-        <div class="board-node__content">
+        <div class={`board-node__content${hasTags ? " has-tags" : ""}`}>
           <div class="board-node__title">{card.title}</div>
+          {hasTags
+            ? (
+              <div class="board-node__tags" aria-hidden="true">
+                {visibleTags.map((tag) => {
+                  const unsettled = (tagCounts.get(tag) ?? 1) === 1;
+                  return (
+                    <span
+                      key={tag}
+                      class={`board-node__tag${
+                        unsettled ? " is-unsettled" : ""
+                      }`}
+                    >
+                      #{tag}
+                    </span>
+                  );
+                })}
+                {hiddenTagCount > 0
+                  ? <span class="board-node__tag-more">+{hiddenTagCount}</span>
+                  : null}
+              </div>
+            )
+            : null}
           {card.body?.trim()
             ? (
               <div class="board-node__preview" data-testid="board-node-preview">
@@ -989,6 +1021,9 @@ export function BoardView() {
   const currentStep = stepIndex == null ? null : steps[stepIndex] ?? null;
   const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
+  const tagCounts = new Map(
+    collectTagUsage(current.cards).map((entry) => [entry.name, entry.count]),
+  );
   const focusSet = origin
     ? focusReachableIds(current.links, current.cards, origin, hops)
     : null;
@@ -1163,6 +1198,7 @@ export function BoardView() {
                       isDropTarget={!dimmed && rubber?.targetId === card.id}
                       isRelated={!dimmed && relatedIds.has(card.id)}
                       isDimmed={dimmed}
+                      tagCounts={tagCounts}
                       onAdhesivePointerDown={onAdhesivePointerDown}
                       onPaperPointerDown={onPaperPointerDown}
                       onThreadPointerDown={onThreadPointerDown}

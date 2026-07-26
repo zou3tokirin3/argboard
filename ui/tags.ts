@@ -74,3 +74,42 @@ export function detachTag(
   const next = tags.filter((t) => normalizeTag(t) !== target);
   return next.length ? next : undefined;
 }
+
+/** Approximate chip width for board one-line layout (10px face). */
+function estimateTagChipWidth(name: string): number {
+  let text = 6; // "#"
+  for (const ch of name) {
+    text += (ch.codePointAt(0) ?? 0) > 0xff ? 10 : 6;
+  }
+  return text + 12; // padding + border
+}
+
+/**
+ * Pick tags that fit one row; remainder becomes +N.
+ * Always keeps the first tag when any exist (CSS may ellipsis a long name).
+ */
+export function fitTagsOneLine(
+  tags: readonly string[],
+  maxWidthPx: number,
+): { shown: string[]; hidden: number } {
+  if (tags.length === 0) return { shown: [], hidden: 0 };
+  const gap = 4;
+  const moreW = 24;
+  const shown: string[] = [];
+  let used = 0;
+  for (let i = 0; i < tags.length; i++) {
+    const name = tags[i]!;
+    const width = estimateTagChipWidth(name);
+    const next = shown.length === 0 ? width : used + gap + width;
+    const rest = tags.length - i - 1;
+    const limit = rest > 0 ? maxWidthPx - gap - moreW : maxWidthPx;
+    if (shown.length === 0 || next <= limit) {
+      shown.push(name);
+      used = next;
+      if (rest > 0 && next > limit) break;
+      continue;
+    }
+    break;
+  }
+  return { shown, hidden: tags.length - shown.length };
+}
