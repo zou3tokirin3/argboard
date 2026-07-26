@@ -1,7 +1,7 @@
 ---
 id: T040
 title: 発見ログを未配置のみに絞り込めるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T040"
@@ -34,7 +34,7 @@ updated: 2026-07-27
 - [x] トグル状態がエクスポートJSONに載っていない
 - [x] 見込み flow が PLAN §4 しきい値内。超過なら評価パケットGOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「配置作業が楽になった」と確認する（gate: human）
+- [x] 人間が「配置作業が楽になった」と確認する（gate: human）
 
 ## このカードでやらない
 
@@ -53,5 +53,6 @@ updated: 2026-07-27
 - 2026-07-27 impl: 実装完了（a5b9dd7）。実測 flow=本体+47 / 操作+1 / 概念+1 / gzip+134B / Won't=No。
   check/test/smoke 緑。session信号 `unplacedOnly` を検索とAND → review
 - 2026-07-27 impl: task/T040 を main へ merge（845fc86）。worktree/branch 削除
+- 2026-07-27 human: 配置作業が楽になった確認OK → done
 
 ## 差し戻し履歴（追記のみ）
