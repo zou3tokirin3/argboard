@@ -1,4 +1,10 @@
+import { normalizeTag } from "./tags.ts";
 import type { Board, Card, Link, Project, ProjectEvent } from "./types.ts";
+
+/** Session focus origin (T018 card / T033 tag). Not persisted. */
+export type FocusOrigin =
+  | { kind: "card"; cardId: string }
+  | { kind: "tag"; tag: string };
 
 export function appendEvent(
   project: Project,
@@ -379,14 +385,9 @@ export function createEmptyProject(
   };
 }
 
-/** Undirected BFS from startId up to `hops` link steps (includes start). */
-export function reachableCardIds(
+function linkAdjacency(
   links: readonly Pick<Link, "from" | "to">[],
-  startId: string,
-  hops: number,
-): Set<string> {
-  const reached = new Set<string>([startId]);
-  if (hops <= 0) return reached;
+): Map<string, string[]> {
   const adj = new Map<string, string[]>();
   for (const link of links) {
     const from = adj.get(link.from) ?? [];
@@ -396,8 +397,20 @@ export function reachableCardIds(
     to.push(link.from);
     adj.set(link.to, to);
   }
-  let frontier = [startId];
-  for (let depth = 0; depth < hops; depth += 1) {
+  return adj;
+}
+
+/** Undirected multi-source BFS: seeds included; expand `extraHops` steps. */
+export function reachableFromCardIds(
+  links: readonly Pick<Link, "from" | "to">[],
+  seedIds: readonly string[],
+  extraHops: number,
+): Set<string> {
+  const reached = new Set<string>(seedIds);
+  if (extraHops <= 0 || seedIds.length === 0) return reached;
+  const adj = linkAdjacency(links);
+  let frontier = [...seedIds];
+  for (let depth = 0; depth < extraHops; depth += 1) {
     const next: string[] = [];
     for (const id of frontier) {
       for (const neighbor of adj.get(id) ?? []) {
@@ -410,6 +423,37 @@ export function reachableCardIds(
     frontier = next;
   }
   return reached;
+}
+
+/** Undirected BFS from startId up to `hops` link steps (includes start). */
+export function reachableCardIds(
+  links: readonly Pick<Link, "from" | "to">[],
+  startId: string,
+  hops: number,
+): Set<string> {
+  return reachableFromCardIds(links, [startId], hops);
+}
+
+/**
+ * Focus set for card or tag origin (T018 / T033).
+ * Tag at 1 hop = cards with that tag; further hops expand via links.
+ */
+export function focusReachableIds(
+  links: readonly Pick<Link, "from" | "to">[],
+  cards: ReadonlyArray<{ id: string; tags?: string[] }>,
+  origin: FocusOrigin,
+  hops: number,
+): Set<string> {
+  if (origin.kind === "card") {
+    return reachableCardIds(links, origin.cardId, hops);
+  }
+  const tag = normalizeTag(origin.tag);
+  const seeds = cards
+    .filter((card) =>
+      (card.tags ?? []).some((value) => normalizeTag(value) === tag)
+    )
+    .map((card) => card.id);
+  return reachableFromCardIds(links, seeds, Math.max(0, hops - 1));
 }
 
 export function parseProjectJson(text: string): Project {

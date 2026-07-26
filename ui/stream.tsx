@@ -1,12 +1,19 @@
 import {
+  clearFocusView,
+  expandFocusHops,
   filteredCards,
+  focusHops,
+  focusOrigin,
   isReplaying,
   removeCard,
   search,
   selectCardFromStream,
   selectedCardId,
+  setFocusViewByTag,
+  shrinkFocusHops,
   viewProject,
 } from "./state.ts";
+import { collectTagUsage } from "./tags.ts";
 import { CARD_MIME } from "./types.ts";
 
 const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
@@ -20,6 +27,75 @@ function sourceLabel(url: string): string {
   } catch {
     return url;
   }
+}
+
+function TagFocusControls() {
+  const current = viewProject.value;
+  const usage = current ? collectTagUsage(current.cards) : [];
+  if (usage.length === 0) return null;
+  const origin = focusOrigin.value;
+  const tagFocus = origin?.kind === "tag" ? origin.tag : null;
+  const hops = focusHops.value;
+  return (
+    <div class="stream__tag-focus">
+      <div class="stream__tag-focus-list" role="group" aria-label="タグで視点">
+        {usage.map((entry) => (
+          <button
+            key={entry.name}
+            type="button"
+            class={`stream__tag-focus-btn${
+              tagFocus === entry.name ? " is-active" : ""
+            }`}
+            data-testid="stream-tag-focus-btn"
+            data-tag={entry.name}
+            aria-pressed={tagFocus === entry.name}
+            title={`「${entry.name}」の視点で見る`}
+            onClick={() => setFocusViewByTag(entry.name)}
+          >
+            #{entry.name}
+          </button>
+        ))}
+      </div>
+      {tagFocus
+        ? (
+          <div class="stream__tag-focus-ops" aria-label={`視点 #${tagFocus}`}>
+            <span class="board__focus-meta" aria-live="polite">
+              視点 · {hops}
+            </span>
+            <button
+              type="button"
+              class="board__focus-icon"
+              disabled={hops <= 1}
+              aria-label="一周戻す"
+              title="一周戻す"
+              onClick={() => shrinkFocusHops()}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              class="board__focus-icon"
+              aria-label="もう一周広げる"
+              title="もう一周広げる"
+              onClick={() => expandFocusHops()}
+            >
+              ＋
+            </button>
+            <button
+              type="button"
+              class="board__focus-icon"
+              data-testid="tag-focus-clear"
+              aria-label="視点をやめる"
+              title="視点をやめる"
+              onClick={() => clearFocusView()}
+            >
+              ×
+            </button>
+          </div>
+        )
+        : null}
+    </div>
+  );
 }
 
 export function Stream() {
@@ -48,6 +124,7 @@ export function Stream() {
           aria-label="手がかりを検索"
         />
       </label>
+      <TagFocusControls />
       <div class="stream__list">
         {filteredCards.value.map((card) => {
           const selected = selectedCardId.value === card.id;

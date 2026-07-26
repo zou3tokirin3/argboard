@@ -1,7 +1,9 @@
 import {
   createDemoProject,
   createEmptyProject,
+  focusReachableIds,
   reachableCardIds,
+  reachableFromCardIds,
 } from "../../ui/project.ts";
 
 Deno.test("createEmptyProject starts with no cards and one board", () => {
@@ -69,5 +71,65 @@ Deno.test("reachableCardIds includes thought neighbors the same way", () => {
   const set = [...reachableCardIds(links, "thought", 1)].toSorted().join(",");
   if (set !== "finding,other,thought") {
     throw new Error(`thought 1 hop mismatch: ${set}`);
+  }
+});
+
+Deno.test("reachableFromCardIds expands from multiple seeds", () => {
+  const links = [
+    { from: "a", to: "x" },
+    { from: "b", to: "y" },
+  ];
+  const zero = [...reachableFromCardIds(links, ["a", "b"], 0)].toSorted()
+    .join(",");
+  if (zero !== "a,b") throw new Error(`0 extra hops expected a,b got ${zero}`);
+  const one = [...reachableFromCardIds(links, ["a", "b"], 1)].toSorted()
+    .join(",");
+  if (one !== "a,b,x,y") {
+    throw new Error(`1 extra hop expected a,b,x,y got ${one}`);
+  }
+});
+
+Deno.test("focusReachableIds tag origin: 1 hop = tagged cards only", () => {
+  const cards = [
+    { id: "a", tags: ["17"] },
+    { id: "b", tags: ["17"] },
+    { id: "c", tags: ["other"] },
+    { id: "d" },
+  ];
+  const links = [
+    { from: "a", to: "c" },
+    { from: "b", to: "d" },
+  ];
+  const one = [
+    ...focusReachableIds(links, cards, { kind: "tag", tag: "17" }, 1),
+  ]
+    .toSorted().join(",");
+  if (one !== "a,b") {
+    throw new Error(`tag 1 hop expected a,b got ${one}`);
+  }
+  const two = [
+    ...focusReachableIds(links, cards, { kind: "tag", tag: "17" }, 2),
+  ]
+    .toSorted().join(",");
+  if (two !== "a,b,c,d") {
+    throw new Error(`tag 2 hops expected a,b,c,d got ${two}`);
+  }
+});
+
+Deno.test("focusReachableIds card origin matches reachableCardIds", () => {
+  const links = [
+    { from: "a", to: "b" },
+    { from: "b", to: "c" },
+  ];
+  const cards = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const viaFocus = [...focusReachableIds(
+    links,
+    cards,
+    { kind: "card", cardId: "a" },
+    1,
+  )].toSorted().join(",");
+  const viaReach = [...reachableCardIds(links, "a", 1)].toSorted().join(",");
+  if (viaFocus !== viaReach) {
+    throw new Error(`card origin mismatch: ${viaFocus} vs ${viaReach}`);
   }
 });
