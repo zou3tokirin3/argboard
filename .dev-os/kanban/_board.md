@@ -50,7 +50,7 @@ dropped → backlog（人間のみ・復活）
 
 - 最新の実装コミットに対して check / test / smoke が緑である（カードに明示した例外を除く）
 - PLANに影響する決定・UI変更は、done前にPLANへ同期されている
-- 本体・テストのファイル数/行数が警告基準（15ファイル/3,000行・テスト別枠5/800）内である。超過見込みで実装した場合は、評価パケット（`.dev-os/budget-review-packet.md`）への人間GOが作業ログに残っていること（それが「明示承認」）
+- カードの見込み flow（本体行 / 操作 / 概念 / gzip / Won't）が PLAN §4 のしきい値内である。1つでも超過見込みで実装した場合は、評価パケット（`.dev-os/budget-review-packet.md`）への人間GOが作業ログに残っていること（それが「明示承認」）。smoke は5本以内。flaky が出たら作業ログに台帳1行
 - マイルストーン境界、デザイン、公開URL、ドッグフードは `gate: human` とする
 - review中に追加実装が必要になった場合、必ず理由を記録して rework → doing を経る
 - merge後にbranch/worktreeを片付けてからdoneへ進める
