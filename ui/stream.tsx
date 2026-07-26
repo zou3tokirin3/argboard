@@ -11,6 +11,7 @@ import {
   selectedCardId,
   setFocusViewByTag,
   shrinkFocusHops,
+  unplacedOnly,
   viewProject,
 } from "./state.ts";
 import { collectTagUsage } from "./tags.ts";
@@ -130,6 +131,20 @@ export function Stream() {
           aria-label="手がかりを検索"
         />
       </label>
+      <div class="stream__filters">
+        <button
+          type="button"
+          class={`stream__filter-btn${unplacedOnly.value ? " is-active" : ""}`}
+          data-testid="stream-unplaced-only"
+          aria-pressed={unplacedOnly.value}
+          title="ボードに未配置のカードだけを表示"
+          onClick={() => {
+            unplacedOnly.value = !unplacedOnly.value;
+          }}
+        >
+          未配置のみ
+        </button>
+      </div>
       <TagFocusControls />
       <div class="stream__list">
         {filteredCards.value.map((card) => {
