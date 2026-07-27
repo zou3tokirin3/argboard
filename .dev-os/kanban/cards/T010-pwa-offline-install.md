@@ -1,13 +1,13 @@
 ---
 id: T010
 title: PWAとしてオフライン利用できるようにする
-status: backlog
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T010"
 template_ver: generic-0.2
 created: 2026-07-13
-updated: 2026-07-13
+updated: 2026-07-27
 ---
 
 ## 目的
@@ -29,5 +29,8 @@ updated: 2026-07-13
 
 - 2026-07-13 planner: M4の耐久性タスクとして起票。depends on T009
 - 2026-07-16 planner: v1行数の都合で延期。枠をT013へ移譲（PLAN §4）。復活は絶対上限に余裕が出てから
+
+- 2026-07-27 human: 着手GO。案内UIは最小ヒントのみ同梱（beforeinstallpromptなし）
+- 2026-07-27 impl: 見込み flow 本体行+160 / 操作+1 / 概念+0 / gzip+1KB / Won't=No。しきい値内のためパケットなし。status→doing branch=task/T010
 
 ## 差し戻し履歴（追記のみ）
