@@ -1,5 +1,5 @@
 import { render } from "preact";
-import { useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
 import { getPersistenceRequestCount } from "./db.ts";
@@ -29,6 +29,49 @@ import {
   updateLink,
 } from "./state.ts";
 import { Stream } from "./stream.tsx";
+
+const INSTALL_TIP_KEY = "argboard.installTipDismissed";
+
+function isStandaloneDisplay(): boolean {
+  if (globalThis.matchMedia("(display-mode: standalone)").matches) return true;
+  const safari = navigator as Navigator & { standalone?: boolean };
+  return safari.standalone === true;
+}
+
+function InstallTip() {
+  const [open, setOpen] = useState(() => {
+    if (isStandaloneDisplay()) return false;
+    try {
+      return localStorage.getItem(INSTALL_TIP_KEY) !== "1";
+    } catch {
+      return true;
+    }
+  });
+
+  if (!open) return null;
+
+  return (
+    <div class="install-tip" role="status" data-testid="install-tip">
+      <p>
+        ホーム画面やDockに追加すると、このブラウザでの保存がより安定します。
+      </p>
+      <button
+        type="button"
+        data-testid="install-tip-dismiss"
+        onClick={() => {
+          try {
+            localStorage.setItem(INSTALL_TIP_KEY, "1");
+          } catch {
+            // ignore quota / private mode
+          }
+          setOpen(false);
+        }}
+      >
+        閉じる
+      </button>
+    </div>
+  );
+}
 
 declare global {
   interface Window {
@@ -103,6 +146,7 @@ function App() {
 
   return (
     <main class={`app-shell mode-${mode}`}>
+      <InstallTip />
       <header class="topbar">
         <div class="brand">
           <span class="brand__mark" aria-hidden="true">A</span>
@@ -237,7 +281,9 @@ function App() {
   );
 }
 
-if (new URLSearchParams(location.search).has("test")) {
+const isTest = new URLSearchParams(location.search).has("test");
+
+if (isTest) {
   (globalThis as Window & typeof globalThis).__argboardTest = {
     getState: () => structuredClone(project.value),
     flushSave,
@@ -255,6 +301,10 @@ if (new URLSearchParams(location.search).has("test")) {
     setAppMode,
   };
   document.documentElement.dataset.test = "true";
+} else if ("serviceWorker" in navigator) {
+  void navigator.serviceWorker.register(new URL("./sw.js", location.href), {
+    scope: "./",
+  });
 }
 
 render(<App />, document.getElementById("app")!);
