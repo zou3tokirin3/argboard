@@ -1,7 +1,7 @@
 ---
 id: T010
 title: PWAとしてオフライン利用できるようにする
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T010"
@@ -32,5 +32,7 @@ updated: 2026-07-27
 
 - 2026-07-27 human: 着手GO。案内UIは最小ヒントのみ同梱（beforeinstallpromptなし）
 - 2026-07-27 impl: 見込み flow 本体行+160 / 操作+1 / 概念+0 / gzip+1KB / Won't=No。しきい値内のためパケットなし。status→doing branch=task/T010
+
+- 2026-07-27 impl: 実装完了。実測 flow 本体+170 / 操作+2 / 概念+0 / gzip+0.4KB。check/test/smoke 緑。公開URLでのオフライン・ホーム追加は human 待ち → review
 
 ## 差し戻し履歴（追記のみ）
