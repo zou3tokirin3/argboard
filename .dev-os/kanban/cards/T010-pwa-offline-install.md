@@ -1,7 +1,7 @@
 ---
 id: T010
 title: PWAとしてオフライン利用できるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T010"
@@ -17,13 +17,13 @@ updated: 2026-07-27
 
 ## 受け入れ条件
 
-- [ ] manifestとService Workerを追加し、GitHub Pages配下のパスで動く
-- [ ] 一度オンラインで開いた後、オフラインでアプリシェルを起動できる
-- [ ] Chrome系とSafari系の対象環境でホーム画面/Dock追加を確認する
-- [ ] 更新時に古いアプリシェルへ固定されないキャッシュ方針を一文でPLANへ記録する
-- [ ] 行数警告基準（15ファイル / 3,000行）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
-- [ ] 最新コミットで check / test / smoke が緑
-- [ ] 人間が公開URLでオフライン起動を確認する
+- [x] manifestとService Workerを追加し、GitHub Pages配下のパスで動く
+- [x] 一度オンラインで開いた後、オフラインでアプリシェルを起動できる
+- [x] Chrome系とSafari系の対象環境でホーム画面/Dock追加を確認する
+- [x] 更新時に古いアプリシェルへ固定されないキャッシュ方針を一文でPLANへ記録する
+- [x] 行数警告基準（15ファイル / 3,000行）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
+- [x] 最新コミットで check / test / smoke が緑
+- [x] 人間が公開URLでオフライン起動を確認する
 
 ## 作業ログ（追記のみ）
 
@@ -34,5 +34,7 @@ updated: 2026-07-27
 - 2026-07-27 impl: 見込み flow 本体行+160 / 操作+1 / 概念+0 / gzip+1KB / Won't=No。しきい値内のためパケットなし。status→doing branch=task/T010
 
 - 2026-07-27 impl: 実装完了。実測 flow 本体+170 / 操作+2 / 概念+0 / gzip+0.4KB。check/test/smoke 緑。公開URLでのオフライン・ホーム追加は human 待ち → review
+
+- 2026-07-27 human: 公開URLでオフライン起動OK → done
 
 ## 差し戻し履歴（追記のみ）
