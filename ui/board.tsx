@@ -601,6 +601,7 @@ function BoardNode({
                     <MediaThumb
                       image={card.image}
                       className="board-node__thumb"
+                      preferContain={card.size === "l"}
                     />
                   )
                   : null}

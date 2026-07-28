@@ -500,10 +500,19 @@ kbd {
   width: 100%;
   max-height: 56px;
   object-fit: cover;
+  object-position: center;
   border-radius: 2px;
 }
 .board-node--l .board-node__thumb {
-  max-height: 100px;
+  height: 168px;
+  max-height: 168px;
+  background: color-mix(in srgb, var(--line) 55%, transparent);
+}
+.board-node--l .board-node__thumb.is-fit-contain {
+  object-fit: contain;
+}
+.board-node--l .board-node__thumb.is-fit-cover {
+  object-fit: cover;
 }
 .board-node__below {
   margin-top: 4px;
@@ -526,11 +535,15 @@ kbd {
   border-radius: 3px;
 }
 .board-node--l .board-node__below.has-both {
-  min-height: 88px;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  align-items: stretch;
 }
 .board-node--l .board-node__below.has-both .board-node__thumb {
-  width: 120px;
-  height: 88px;
+  width: 100%;
+  height: 132px;
+  max-height: 132px;
 }
 .board-node__preview-wrap {
   flex: 1;
@@ -541,17 +554,55 @@ kbd {
   max-height: 56px;
 }
 .board-node--l .board-node__below.has-both .board-node__preview-wrap {
-  max-height: 88px;
+  max-height: 48px;
 }
 .board-node__below.has-both .board-node__preview {
   margin-top: 0;
   -webkit-line-clamp: 4;
 }
 .board-node--l .board-node__below.has-both .board-node__preview {
-  -webkit-line-clamp: 6;
+  -webkit-line-clamp: 3;
 }
 .board-node--l .board-node__preview {
-  -webkit-line-clamp: 8;
+  -webkit-line-clamp: 4;
+}
+.inspector__size-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  padding: 2px;
+  background: var(--bg);
+}
+.inspector__size-toggle button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border: 0;
+  border-radius: calc(var(--radius-box) - 1px);
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.inspector__size-toggle button svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+.inspector__size-toggle button:hover:not(:disabled) {
+  color: var(--ink);
+}
+.inspector__size-toggle button.is-active {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+.inspector__size-toggle button:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 .board-node__adhesive-meta {
   display: flex;

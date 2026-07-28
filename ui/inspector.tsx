@@ -519,6 +519,56 @@ export function Inspector() {
           <span class="eyebrow">{replaying ? "タイムライン" : "簡易編集"}</span>
           <h2>{card.role === "thought" ? "考察カード" : "発見カード"}</h2>
         </div>
+        <div
+          class="inspector__size-toggle"
+          role="group"
+          aria-label="ボード上のサイズ"
+        >
+          <button
+            type="button"
+            class={card.size === "l" ? undefined : "is-active"}
+            data-testid="inspector-card-size-m"
+            aria-pressed={card.size !== "l"}
+            title="標準"
+            disabled={replaying}
+            onClick={() => void updateCardSize(card.id, "m")}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect
+                x="4"
+                y="5"
+                width="8"
+                height="6"
+                rx="1"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class={card.size === "l" ? "is-active" : undefined}
+            data-testid="inspector-card-size-l"
+            aria-pressed={card.size === "l"}
+            title="大きめ"
+            disabled={replaying}
+            onClick={() => void updateCardSize(card.id, "l")}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <rect
+                x="2"
+                y="3"
+                width="12"
+                height="10"
+                rx="1.5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
       <label class="inspector__field">
         <span>タイトル</span>
@@ -553,21 +603,6 @@ export function Inspector() {
           onInput={(event) => setBody(event.currentTarget.value)}
           onBlur={commit}
         />
-      </label>
-      <label class="inspector__field">
-        <span>ボード上のサイズ</span>
-        <select
-          data-testid="inspector-card-size"
-          value={card.size === "l" ? "l" : "m"}
-          disabled={replaying}
-          onChange={(event) => {
-            const next = event.currentTarget.value === "l" ? "l" : "m";
-            void updateCardSize(card.id, next);
-          }}
-        >
-          <option value="m">標準</option>
-          <option value="l">大きめ</option>
-        </select>
       </label>
       <ImageField
         cardId={card.id}

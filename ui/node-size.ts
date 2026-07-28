@@ -13,7 +13,7 @@ export type NodeDims = {
 /** Default (= medium) matches pre-T022 fixed NODE_WIDTH/HEIGHT. */
 export const NODE_DIMS: Record<CardSize, NodeDims> = {
   m: { w: 235, h: 128, contentH: 78 },
-  l: { w: 320, h: 200, contentH: 148 },
+  l: { w: 340, h: 248, contentH: 196 },
 };
 
 export const ADHESIVE_HEIGHT = 38;
