@@ -216,7 +216,10 @@ M4でPWA化する際に `ui/manifest.json` と `ui/sw.js` を追加する（フ�
 
 1 ARG = 1プロジェクト。IndexedDB(DB名 `argboard`、objectStore
 `projects`、key=id)に
-**Project全体を1レコードとして保存**する。テキスト中心で数MB以下の想定なので全置換保存で問題ない。この単純さが乗り換え可能性の担保でもある(エクスポートされるJSONと保存形式が同一)。
+**Project全体を1レコードとして保存**する。カード画像の実体は別 objectStore `media`
+（key=id、Blob）に置き、Project JSON には参照 id のみを持つ。テキスト中心で数MB以下の想定なので
+Project は全置換保存で問題ない。この単純さが乗り換え可能性の担保でもある
+（持ち出し本線は `project.json` + `media/` の zip。実行時の Project JSON とエクスポート内 JSON は同型）。
 
 ```ts
 type Project = {
@@ -236,7 +239,7 @@ type Card = {
   role?: "finding" | "thought"; // 省略時はfinding。発見とユーザー自身の考察を区別
   body?: string; // 考察メモ(プレーンテキスト)
   url?: string; // タイトルは手入力(OGP自動取得は静的構成では不可。§12)
-  image?: string; // URL文字列のみ(ローカル画像保存はWon't)
+  image?: string; // ローカル添付の media id（IndexedDB Blob）。1カード最大1枚
   tags?: string[];
   foundAt: number; // 自動付与・以後不変。thoughtでは作成時刻として同じ並び順に使う
 };
@@ -271,15 +274,23 @@ interface Store {
   >;
   loadProject(id: string): Promise<Project | null>;
   saveProject(p: Project): Promise<void>; // 全置換。デバウンスは呼び出し側(state.ts)
-  deleteProject(id: string): Promise<void>;
+  deleteProject(id: string): Promise<void>; // 紐づく media も削除
   requestPersistence(): Promise<boolean>; // navigator.storage.persist() ラップ
+  putMedia(record: { id: string; projectId: string; blob: Blob }): Promise<void>;
+  getMedia(id: string): Promise<{ id: string; projectId: string; blob: Blob } | null>;
+  deleteMedia(id: string): Promise<void>;
+  listMediaIds(projectId: string): Promise<string[]>;
+  deleteMediaForProject(projectId: string): Promise<void>;
 }
 ```
 
-- エクスポート: Project を整形JSONで `<プロジェクト名>.json` としてダウンロード
-- インポート: ファイル選択/ドラッグ&ドロップ → `version`
-  フィールドを見てマイグレーション → 新規プロジェクトとして取り込み
+- エクスポート本線: `project.json` + `media/<id>.(webp|jpg|…)` を含む zip を
+  `<プロジェクト名>.zip` としてダウンロード
+- インポート: `.zip`（画像込み完全復元）または既存の `.json` 単体（画像参照は落とす）→
+  `version` フィールドを見てマイグレーション → 新規プロジェクトとして取り込み
 - 保存失敗(容量等)はtoastで通知し、エクスポートを促す
+- カード画像: 1カード最大1枚。取り込み時に長辺制限＋ WebP/JPEG 圧縮。ペーストを第一級、
+  ファイル選択は副次。差し替え可・複数枚UIは作らない（T041）
 
 ## 7. 画面仕様
 
@@ -474,7 +485,8 @@ GitHub Pagesのbuild/deploy workflowは配布に必要な例外として維持�
   Deploy乗り換え時の拡張候補として§13に記録
 - 名寄せ/Entity辞書・カードの親子階層・Era/時代概念
 - タイムラインビュー（出来事の時系列一覧。ボード状態の時点再生は T025 で別扱い）
-- ローカル画像ファイルの取り込み保存(URLのみ)
+- 1カード複数枚・ギャラリー・リッチ画像エディタ・外部画像URL専用UI・
+  Project JSON への base64 直書き（1カード1枚のローカル添付＋zip持ち出しは T041 で許可）
 - 全文検索の高度化(単純な部分一致で足りる)
 - 自動レイアウト(force等)
 - SQLite-wasm / OPFS(現規模では複雑さに見合わない)
@@ -494,7 +506,7 @@ JSONスキーマ(versionフィールド付き)」**。
 | UIライブラリ | Preact           | React(`preact/compat` 経由)                            | 最悪時の保険                                              |
 | E2Eランナー  | Astral           | `npm:playwright`                                       | smoke.tsの書き換えのみ(シナリオ5本なので小さい)           |
 | 包装         | Webアプリ        | PWA(M4で実施) / deno desktop(Deno 2.9+, experimental)  | 同一コードのまま被せるだけ。IndexedDBはwebview内でも動く  |
-| データ       | ブラウザ内       | 別ブラウザ/別端末へ                                    | エクスポートJSON→インポート(唯一の移送手段として常に維持) |
+| データ       | ブラウザ内       | 別ブラウザ/別端末へ                                    | エクスポート zip（JSON+media）→インポート。`.json` 単体も継続 |
 
 ## 14. 決定ログ
 
@@ -605,10 +617,15 @@ JSONスキーマ(versionフィールド付き)」**。
   T038でタグの見え方と一覧絞りを確定。ボードは常時1行 `#tag`（+N・未定着破線・高さ不変・クリック不可＝T039）。
   発見ログは session の「未配置のみ」トグル（T040）。タグ単位の一覧絞りは作らない（T033維持）。
   §1へ同期
-- **2026-07-27 改訂21(現行)**:
+- **2026-07-27 改訂21**:
   T010でアプリシェルPWAを実装。キャッシュ範囲はシェルのみ（index/bundle/styles/manifest/icons）。
   更新方針は network-first＋cache名版管理（`argboard-shell-vN`、activateで旧削除）。
   インストール案内は閉じられる一行ヒントのみ（beforeinstallpromptは持たない）。GitHub Pages サブパスは相対URLで吸収
+- **2026-07-28 改訂22(現行)**:
+  T041でカードにスクショ1枚を貼れるようにする（評価パケット GO）。
+  実行時は Project JSON に media id 参照のみ、実体は IndexedDB `media`。持ち出し本線は
+  `project.json` + `media/` の zip。既存 `.json` 単体インポートは継続（画像参照は落とす）。
+  §5/§6/§12 を同期。複数枚・OPFS・外部URL専用・JSON直書き base64 は Won't のまま
 
 ## 15. 参照
 

@@ -1,5 +1,19 @@
 import { computed, signal } from "@preact/signals";
 import { store } from "./db.ts";
+import { compressImage } from "./image-compress.ts";
+import {
+  buildZip,
+  clearAllMediaObjectUrls,
+  collectMediaIds,
+  forgetMediaObjectUrl,
+  isLocalMediaRef,
+  mediaExtFromType,
+  mediaFromZip,
+  parseZip,
+  peekMediaObjectUrl,
+  projectJsonFromZip,
+  rememberMediaObjectUrl,
+} from "./media.ts";
 import {
   appendEvent,
   applyConnectCards,
@@ -282,6 +296,7 @@ async function activateProject(next: Project): Promise<void> {
   clearReplay();
   search.value = "";
   unplacedOnly.value = false;
+  clearAllMediaObjectUrls();
   // Snapshot missing births before open so later edits can rewind text/labels.
   const birthed = withBirthEvents(next);
   const opened = appendEvent(birthed, {
@@ -482,15 +497,118 @@ export async function updateCardTags(
   }));
 }
 
-export function exportProject(): void {
+async function gcMediaIfOrphan(
+  mediaId: string | undefined,
+  cards: ReadonlyArray<Card>,
+): Promise<void> {
+  if (!isLocalMediaRef(mediaId)) return;
+  const id = mediaId!.trim();
+  const stillUsed = cards.some((card) =>
+    isLocalMediaRef(card.image) && card.image!.trim() === id
+  );
+  if (stillUsed) return;
+  forgetMediaObjectUrl(id);
+  await store.deleteMedia(id).catch(() => undefined);
+}
+
+/** Attach or replace the single screenshot on a card. */
+export async function setCardImage(
+  cardId: string,
+  source: Blob,
+): Promise<void> {
+  const current = assertWritable();
+  if (!current) return;
+  const card = current.cards.find((item) => item.id === cardId);
+  if (!card) return;
+  if (!source.type.startsWith("image/")) {
+    throw new Error("画像ファイルを選んでください");
+  }
+  const compressed = await compressImage(source);
+  const mediaId = crypto.randomUUID();
+  await store.putMedia({
+    id: mediaId,
+    projectId: current.id,
+    blob: compressed,
+  });
+  const previous = card.image;
+  const next = {
+    ...current,
+    cards: current.cards.map((item) =>
+      item.id === cardId ? { ...item, image: mediaId } : item
+    ),
+  };
+  await persist(appendEvent(next, {
+    type: "card_updated",
+    at: Date.now(),
+    cardId,
+    title: card.title,
+    body: card.body,
+    url: card.url,
+    image: mediaId,
+  }));
+  await gcMediaIfOrphan(previous, next.cards);
+}
+
+/** Remove the screenshot from a card and GC the blob. */
+export async function clearCardImage(cardId: string): Promise<void> {
+  const current = assertWritable();
+  if (!current) return;
+  const card = current.cards.find((item) => item.id === cardId);
+  if (!card || !card.image) return;
+  const previous = card.image;
+  const next = {
+    ...current,
+    cards: current.cards.map((item) => {
+      if (item.id !== cardId) return item;
+      const { image: _drop, ...rest } = item;
+      return rest;
+    }),
+  };
+  await persist(appendEvent(next, {
+    type: "card_updated",
+    at: Date.now(),
+    cardId,
+    title: card.title,
+    body: card.body,
+    url: card.url,
+    image: "",
+  }));
+  await gcMediaIfOrphan(previous, next.cards);
+}
+
+/** Resolve a local media id to an object URL (cached). */
+export async function resolveMediaUrl(
+  image: string | undefined,
+): Promise<string | null> {
+  if (!isLocalMediaRef(image)) return null;
+  const id = image!.trim();
+  const cached = peekMediaObjectUrl(id);
+  if (cached) return cached;
+  const record = await store.getMedia(id);
+  if (!record) return null;
+  const url = URL.createObjectURL(record.blob);
+  rememberMediaObjectUrl(id, url);
+  return url;
+}
+
+export async function exportProject(): Promise<void> {
   const current = project.value;
   if (!current) return;
-  const blob = new Blob([JSON.stringify(current, null, 2)], {
-    type: "application/json",
-  });
+  const files = new Map<string, Uint8Array>();
+  const json = new TextEncoder().encode(JSON.stringify(current, null, 2));
+  files.set("project.json", json);
+  for (const id of collectMediaIds(current.cards)) {
+    const record = await store.getMedia(id);
+    if (!record) continue;
+    const ext = mediaExtFromType(record.blob.type);
+    const bytes = new Uint8Array(await record.blob.arrayBuffer());
+    files.set(`media/${id}.${ext}`, bytes);
+  }
+  const zipBytes = buildZip(files);
+  const blob = new Blob([zipBytes.slice()], { type: "application/zip" });
   const anchor = document.createElement("a");
   anchor.href = URL.createObjectURL(blob);
-  anchor.download = `${current.name.replaceAll(/[\\/:*?\"<>|]/g, "-")}.json`;
+  anchor.download = `${current.name.replaceAll(/[\\/:*?\"<>|]/g, "-")}.zip`;
   anchor.click();
   URL.revokeObjectURL(anchor.href);
 }
@@ -502,18 +620,68 @@ export async function importProjectFromText(text: string): Promise<Project> {
     id: crypto.randomUUID(),
     name: `${parsed.name}（取り込み）`,
   };
+  // Drop dangling local image refs when importing bare JSON (no media/).
+  next.cards = next.cards.map((card) => {
+    if (!isLocalMediaRef(card.image)) return card;
+    const { image: _drop, ...rest } = card;
+    return rest;
+  });
   await store.saveProject(next);
   await activateProject(next);
   await refreshSummaries();
   return project.value ?? next;
 }
 
+async function importProjectFromZip(bytes: Uint8Array): Promise<Project> {
+  const entries = parseZip(bytes);
+  const parsed = parseProjectJson(projectJsonFromZip(entries));
+  const media = mediaFromZip(entries);
+  const next: Project = {
+    ...parsed,
+    id: crypto.randomUUID(),
+    name: `${parsed.name}（取り込み）`,
+  };
+  const idMap = new Map<string, string>();
+  for (const [oldId, { blob }] of media) {
+    const newId = crypto.randomUUID();
+    idMap.set(oldId, newId);
+    await store.putMedia({ id: newId, projectId: next.id, blob });
+  }
+  next.cards = next.cards.map((card) => {
+    if (!isLocalMediaRef(card.image)) return card;
+    const mapped = idMap.get(card.image!.trim());
+    if (!mapped) {
+      const { image: _drop, ...rest } = card;
+      return rest;
+    }
+    return { ...card, image: mapped };
+  });
+  await store.saveProject(next);
+  await activateProject(next);
+  await refreshSummaries();
+  return project.value ?? next;
+}
+
+export async function importProjectFromFile(file: File): Promise<Project> {
+  const name = file.name.toLowerCase();
+  if (
+    name.endsWith(".zip") || file.type === "application/zip" ||
+    file.type === "application/x-zip-compressed"
+  ) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    return await importProjectFromZip(bytes);
+  }
+  return await importProjectFromText(await file.text());
+}
+
 export function pickAndImportProject(): void {
   const input = document.createElement("input");
   input.type = "file";
-  input.accept = "application/json,.json";
+  input.accept = "application/json,.json,application/zip,.zip";
   input.onchange = () => {
-    void input.files?.[0]?.text().then(importProjectFromText).catch((e) =>
+    const file = input.files?.[0];
+    if (!file) return;
+    void importProjectFromFile(file).catch((e) =>
       alert(e instanceof Error ? e.message : "読み込めませんでした")
     );
   };
@@ -649,6 +817,7 @@ export async function removeCard(cardId: string): Promise<void> {
     links,
     ...(position ? { position } : {}),
   }));
+  await gcMediaIfOrphan(card.image, next.cards);
 }
 
 export async function setBoardViewport(

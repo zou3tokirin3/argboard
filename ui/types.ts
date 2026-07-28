@@ -15,6 +15,8 @@ export type ProjectEvent =
     title: string;
     body?: string;
     url?: string;
+    /** Local media id (IndexedDB Blob). Present when image changed. */
+    image?: string;
     /** Present only when tags changed (omit keeps previous tags on replay). */
     tags?: string[];
   }
@@ -55,6 +57,7 @@ export type Card = {
   role?: "finding" | "thought";
   body?: string;
   url?: string;
+  /** Local media id in IndexedDB (not an external URL). */
   image?: string;
   tags?: string[];
   foundAt: number;

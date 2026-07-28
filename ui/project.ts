@@ -205,6 +205,10 @@ function applyEvent(
         if (event.tags?.length) next.tags = [...event.tags];
         else delete next.tags;
       }
+      if ("image" in event) {
+        if (event.image) next.image = event.image;
+        else delete next.image;
+      }
       cards.set(event.cardId, next);
       break;
     }

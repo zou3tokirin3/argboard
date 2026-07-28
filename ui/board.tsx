@@ -26,6 +26,8 @@ import {
   viewProject,
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
+import { MediaThumb } from "./media-thumb.tsx";
+import { isLocalMediaRef } from "./media.ts";
 import { focusReachableIds } from "./project.ts";
 import { collectTagUsage, fitTagsOneLine, normalizeTag } from "./tags.ts";
 import type { Board, Card, Link } from "./types.ts";
@@ -445,6 +447,7 @@ function BoardNode({
     NODE_CONTENT_WIDTH,
   );
   const hasTags = tags.length > 0;
+  const hasImage = isLocalMediaRef(card.image);
   return (
     <g
       class={`board-node ${selected ? "is-selected" : ""} ${
@@ -526,7 +529,11 @@ function BoardNode({
         height="78"
         style={{ pointerEvents: "none" }}
       >
-        <div class={`board-node__content${hasTags ? " has-tags" : ""}`}>
+        <div
+          class={`board-node__content${hasTags ? " has-tags" : ""}${
+            hasImage ? " has-image" : ""
+          }`}
+        >
           <div class="board-node__title">{card.title}</div>
           {hasTags
             ? (
@@ -550,7 +557,15 @@ function BoardNode({
               </div>
             )
             : null}
-          {card.body?.trim()
+          {hasImage
+            ? (
+              <MediaThumb
+                image={card.image}
+                className="board-node__thumb"
+              />
+            )
+            : null}
+          {!hasImage && card.body?.trim()
             ? (
               <div class="board-node__preview" data-testid="board-node-preview">
                 {card.body.trim()}

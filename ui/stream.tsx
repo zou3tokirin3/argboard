@@ -14,6 +14,8 @@ import {
   unplacedOnly,
   viewProject,
 } from "./state.ts";
+import { MediaThumb } from "./media-thumb.tsx";
+import { isLocalMediaRef } from "./media.ts";
 import { collectTagUsage } from "./tags.ts";
 import { CARD_MIME } from "./types.ts";
 
@@ -178,17 +180,30 @@ export function Stream() {
                     <span>
                       {card.role === "thought" ? "考察" : "発見"} ·{" "}
                       {boardCardIds.has(card.id) ? "ボード済" : "未配置"}
+                      {isLocalMediaRef(card.image) ? " · 画像" : ""}
                     </span>
                   </span>
-                  <strong>{card.title}</strong>
-                  {card.body ? <small>{card.body}</small> : null}
-                  {card.tags?.length
-                    ? (
-                      <span class="tags">
-                        {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
-                      </span>
-                    )
-                    : null}
+                  <span class="stream-card__body-row">
+                    <span class="stream-card__text">
+                      <strong>{card.title}</strong>
+                      {card.body ? <small>{card.body}</small> : null}
+                      {card.tags?.length
+                        ? (
+                          <span class="tags">
+                            {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
+                          </span>
+                        )
+                        : null}
+                    </span>
+                    {isLocalMediaRef(card.image)
+                      ? (
+                        <MediaThumb
+                          image={card.image}
+                          className="stream-card__thumb"
+                        />
+                      )
+                      : null}
+                  </span>
                 </button>
                 {card.url
                   ? (

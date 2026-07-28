@@ -218,7 +218,9 @@ function App() {
           <button
             type="button"
             data-testid="export-btn"
-            onClick={exportProject}
+            onClick={() => {
+              void exportProject();
+            }}
           >
             JSONを書き出す
           </button>

@@ -1,15 +1,18 @@
 import { useEffect, useState } from "preact/hooks";
 import {
+  clearCardImage,
   clearReplay,
   enterReplay,
   isReplaying,
   removeCard,
   removeLink,
   replayStepList,
+  resolveMediaUrl,
   selectedCard,
   selectedCardId,
   selectedLink,
   selectedLinkId,
+  setCardImage,
   updateCard,
   updateCardTags,
   updateLink,
@@ -24,6 +27,7 @@ import {
   TAG_KIND_LIMIT,
   type TagSuggestItem,
 } from "./tags.ts";
+import { isLocalMediaRef } from "./media.ts";
 
 function HistoryEntry() {
   const replaying = isReplaying.value;
@@ -208,6 +212,128 @@ function TagField(props: {
   );
 }
 
+function ImageField(props: {
+  cardId: string;
+  image: string | undefined;
+  disabled: boolean;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const hasImage = isLocalMediaRef(props.image);
+
+  useEffect(() => {
+    let cancelled = false;
+    setUrl(null);
+    if (!hasImage) return;
+    void resolveMediaUrl(props.image).then((resolved) => {
+      if (!cancelled) setUrl(resolved);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.cardId, props.image, hasImage]);
+
+  async function applyBlob(blob: Blob | undefined) {
+    if (!blob || props.disabled || busy) return;
+    setBusy(true);
+    try {
+      await setCardImage(props.cardId, blob);
+    } catch (error) {
+      alert(
+        error instanceof Error ? error.message : "画像を添付できませんでした",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onPaste(event: ClipboardEvent) {
+    if (props.disabled) return;
+    const items = event.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        event.preventDefault();
+        void applyBlob(item.getAsFile() ?? undefined);
+        return;
+      }
+    }
+  }
+
+  function onPick() {
+    if (props.disabled || busy) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = () => {
+      void applyBlob(input.files?.[0]);
+    };
+    input.click();
+  }
+
+  return (
+    <div class="inspector__field inspector__image">
+      <span>スクショ</span>
+      <div
+        class={`inspector__image-drop${hasImage ? " has-image" : ""}`}
+        data-testid="inspector-image"
+        tabIndex={props.disabled ? -1 : 0}
+        onPaste={onPaste}
+        onDragOver={(event) => {
+          if (props.disabled) return;
+          event.preventDefault();
+        }}
+        onDrop={(event) => {
+          if (props.disabled) return;
+          event.preventDefault();
+          const file = [...(event.dataTransfer?.files ?? [])].find((f) =>
+            f.type.startsWith("image/")
+          );
+          void applyBlob(file);
+        }}
+      >
+        {url
+          ? (
+            <img
+              class="inspector__image-preview"
+              src={url}
+              alt="添付スクショ"
+            />
+          )
+          : (
+            <p class="inspector__image-hint">
+              ここに貼り付け（⌘V）またはドロップ
+            </p>
+          )}
+      </div>
+      <div class="inspector__image-actions">
+        <button
+          type="button"
+          data-testid="inspector-image-pick"
+          disabled={props.disabled || busy}
+          onClick={onPick}
+        >
+          {hasImage ? "差し替え…" : "ファイルを選ぶ…"}
+        </button>
+        {hasImage
+          ? (
+            <button
+              type="button"
+              data-testid="inspector-image-clear"
+              disabled={props.disabled || busy}
+              onClick={() => {
+                void clearCardImage(props.cardId);
+              }}
+            >
+              削除
+            </button>
+          )
+          : null}
+      </div>
+    </div>
+  );
+}
+
 export function Inspector() {
   const card = selectedCard.value;
   const link = selectedLink.value;
@@ -350,6 +476,11 @@ export function Inspector() {
           onBlur={commit}
         />
       </label>
+      <ImageField
+        cardId={card.id}
+        image={card.image}
+        disabled={replaying}
+      />
       <TagField
         cardId={card.id}
         tags={card.tags}
