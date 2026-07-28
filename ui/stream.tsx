@@ -9,6 +9,7 @@ import {
   search,
   selectCardFromStream,
   selectedCardId,
+  selectedCardIds,
   setFocusViewByTag,
   shrinkFocusHops,
   unplacedOnly,
@@ -150,7 +151,8 @@ export function Stream() {
       <TagFocusControls />
       <div class="stream__list">
         {filteredCards.value.map((card) => {
-          const selected = selectedCardId.value === card.id;
+          const selected = selectedCardIds.value.includes(card.id) ||
+            selectedCardId.value === card.id;
           return (
             <div class="stream-row" key={card.id}>
               <div

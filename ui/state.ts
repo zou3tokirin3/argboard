@@ -30,7 +30,7 @@ import {
   viewThrough,
   withBirthEvents,
 } from "./project.ts";
-import { normalizeTag } from "./tags.ts";
+import { attachTag, normalizeTag, replaceTag } from "./tags.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
@@ -79,7 +79,39 @@ export const search = signal("");
 /** Session-only: show unplaced stream cards only (T040). Not persisted. */
 export const unplacedOnly = signal(false);
 export const selectedCardId = signal<string | null>(null);
+/** Session-only multi-select (T032). Primary is selectedCardId (last id). */
+export const selectedCardIds = signal<string[]>([]);
 export const selectedLinkId = signal<string | null>(null);
+
+/** Replace card selection; primary = last id. Clears link selection. */
+export function setSelectedCards(ids: readonly string[]): void {
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const id of ids) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    unique.push(id);
+  }
+  selectedCardIds.value = unique;
+  selectedCardId.value = unique[unique.length - 1] ?? null;
+  selectedLinkId.value = null;
+}
+
+export function clearCardSelection(): void {
+  selectedCardIds.value = [];
+  selectedCardId.value = null;
+}
+
+export function selectSingleCard(id: string): void {
+  setSelectedCards([id]);
+}
+
+/** Toggle membership when a multi-selection already exists. */
+export function toggleCardInSelection(id: string): void {
+  const cur = selectedCardIds.value;
+  if (cur.includes(id)) setSelectedCards(cur.filter((item) => item !== id));
+  else setSelectedCards([...cur, id]);
+}
 /** Session-only: stream asked the board to pan this card into view (T031 rework). */
 export const revealCardId = signal<string | null>(null);
 /** Session-only focus view (T018 card / T033 tag). Not persisted. */
@@ -289,7 +321,7 @@ function withUi(
 
 async function activateProject(next: Project): Promise<void> {
   writeActiveProjectId(next.id);
-  selectedCardId.value = null;
+  clearCardSelection();
   selectedLinkId.value = null;
   revealCardId.value = null;
   clearFocusView();
@@ -311,8 +343,7 @@ async function activateProject(next: Project): Promise<void> {
 
 /** Select from the discovery stream; pan the board if the card is placed. */
 export function selectCardFromStream(cardId: string): void {
-  selectedCardId.value = cardId;
-  selectedLinkId.value = null;
+  selectSingleCard(cardId);
   const board = project.value?.boards[0];
   if (board?.cardIds.includes(cardId) && board.positions[cardId]) {
     revealCardId.value = cardId;
@@ -412,8 +443,7 @@ export async function addCard(
       x: options.placeAt.x,
       y: options.placeAt.y,
     });
-    selectedCardId.value = card.id;
-    selectedLinkId.value = null;
+    selectSingleCard(card.id);
   }
   // persist() writes project.value synchronously before any await.
   const saving = persist(next);
@@ -495,6 +525,86 @@ export async function updateCardTags(
     url: card.url,
     tags: nextTags ?? [],
   }));
+}
+
+/** Attach a tag to many cards in one persist (T032). Skips duplicates per card. */
+export async function attachTagToCards(
+  ids: readonly string[],
+  name: string,
+): Promise<void> {
+  const current = assertWritable();
+  if (!current || !normalizeTag(name) || ids.length === 0) return;
+  const tag = normalizeTag(name);
+  let next = current;
+  let any = false;
+  for (const id of ids) {
+    const card = next.cards.find((item) => item.id === id);
+    if (!card) continue;
+    const tags = attachTag(card.tags, tag);
+    if (tags.length === (card.tags?.length ?? 0)) continue;
+    any = true;
+    next = patchCardTags(next, card, tags);
+  }
+  if (any) {
+    clearTagFocusIfEmpty(next.cards);
+    await persist(next);
+  }
+}
+
+/** Rename or merge a tag across all cards (T032). Same op: replace `from` with `to`. */
+export async function renameProjectTag(
+  from: string,
+  to: string,
+): Promise<void> {
+  await replaceProjectTag(from, to);
+}
+
+export async function mergeProjectTags(
+  from: string,
+  into: string,
+): Promise<void> {
+  await replaceProjectTag(from, into);
+}
+
+function patchCardTags(
+  project: Project,
+  card: Card,
+  nextTags: string[] | undefined,
+): Project {
+  const cards = project.cards.map((item) => {
+    if (item.id !== card.id) return item;
+    if (nextTags) return { ...item, tags: nextTags };
+    const { tags: _drop, ...rest } = item;
+    return rest;
+  });
+  return appendEvent({ ...project, cards }, {
+    type: "card_updated",
+    at: Date.now(),
+    cardId: card.id,
+    title: card.title,
+    body: card.body,
+    url: card.url,
+    tags: nextTags ?? [],
+  });
+}
+
+async function replaceProjectTag(from: string, to: string): Promise<void> {
+  const current = assertWritable();
+  if (!current) return;
+  const src = normalizeTag(from);
+  const dst = normalizeTag(to);
+  if (!src || !dst || src === dst) return;
+  let next = current;
+  let any = false;
+  for (const card of current.cards) {
+    const result = replaceTag(card.tags, src, dst);
+    if (!result.changed) continue;
+    any = true;
+    next = patchCardTags(next, card, result.tags);
+  }
+  if (!any) return;
+  clearTagFocusIfEmpty(next.cards);
+  await persist(next);
 }
 
 async function gcMediaIfOrphan(
@@ -702,8 +812,7 @@ export async function placeCardOnBoard(
   if (!current) return;
   const next = applyPlaceCardOnBoard(current, cardId, x, y);
   if (!next) return;
-  selectedCardId.value = cardId;
-  selectedLinkId.value = null;
+  selectSingleCard(cardId);
   await persist(appendEvent(next, {
     type: "card_placed",
     at: Date.now(),
@@ -745,7 +854,7 @@ export async function connectCards(
   );
   // Keep the board quiet after drawing — edit later via link click + inspector.
   selectedLinkId.value = null;
-  selectedCardId.value = null;
+  clearCardSelection();
   if (!link) {
     await persist(next);
     return;
@@ -802,7 +911,11 @@ export async function removeCard(cardId: string): Promise<void> {
   const position = current.boards[0]?.positions[cardId];
   const next = applyRemoveCard(current, cardId);
   if (!next) return;
-  if (selectedCardId.value === cardId) selectedCardId.value = null;
+  if (
+    selectedCardId.value === cardId || selectedCardIds.value.includes(cardId)
+  ) {
+    setSelectedCards(selectedCardIds.value.filter((id) => id !== cardId));
+  }
   if (revealCardId.value === cardId) revealCardId.value = null;
   const origin = focusOrigin.value;
   if (origin?.kind === "card" && origin.cardId === cardId) clearFocusView();

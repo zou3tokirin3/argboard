@@ -5,6 +5,7 @@ import {
   detachTag,
   fitTagsOneLine,
   normalizeTag,
+  replaceTag,
   TAG_KIND_LIMIT,
 } from "../../ui/tags.ts";
 
@@ -69,6 +70,23 @@ Deno.test("attachTag and detachTag round-trip", () => {
   if (twice.length !== 1) throw new Error("duplicate attach");
   const cleared = detachTag(twice, "十七");
   if (cleared !== undefined) throw new Error("detach last should clear");
+});
+
+Deno.test("replaceTag renames and merges with dedupe", () => {
+  const renamed = replaceTag(["十七", "音声"], "十七", "17歳");
+  if (
+    !renamed.changed || !renamed.tags || renamed.tags.join(",") !== "17歳,音声"
+  ) {
+    throw new Error(`rename failed: ${JSON.stringify(renamed)}`);
+  }
+  const merged = replaceTag(["十七", "音声"], "音声", "十七");
+  if (
+    !merged.changed || !merged.tags || merged.tags.join(",") !== "十七"
+  ) {
+    throw new Error(`merge failed: ${JSON.stringify(merged)}`);
+  }
+  const missing = replaceTag(["十七"], "音声", "拠点");
+  if (missing.changed) throw new Error("missing source should no-op");
 });
 
 Deno.test("fitTagsOneLine keeps all when width is enough", () => {

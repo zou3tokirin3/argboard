@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import {
   addCard,
+  clearCardSelection,
   clearFocusView,
   clearReplay,
   commitCardPlacement,
@@ -17,12 +18,16 @@ import {
   replayStepList,
   revealCardId,
   selectedCardId,
+  selectedCardIds,
   selectedLinkId,
+  selectSingleCard,
   setBoardViewportLocal,
   setFocusView,
   setReplayIndex,
+  setSelectedCards,
   shrinkFocusHops,
   stepReplay,
+  toggleCardInSelection,
   viewProject,
 } from "./state.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
@@ -58,6 +63,7 @@ type Rubber = {
   y2: number;
   targetId: string | null;
 };
+type Marquee = { x1: number; y1: number; x2: number; y2: number };
 type Drag =
   | { type: "pan"; startX: number; startY: number; origin: Viewport }
   | {
@@ -68,7 +74,14 @@ type Drag =
     originX: number;
     originY: number;
   }
-  | { type: "link"; fromId: string; targetId: string | null };
+  | { type: "link"; fromId: string; targetId: string | null }
+  | {
+    type: "marquee";
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+  };
 type LinkGeometry = {
   x1: number;
   y1: number;
@@ -311,7 +324,7 @@ function clearTextSelection(): void {
 
 function selectLink(linkId: string): void {
   selectedLinkId.value = linkId;
-  selectedCardId.value = null;
+  clearCardSelection();
 }
 
 function mapLinkVisuals(
@@ -437,7 +450,8 @@ function BoardNode({
   onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
-  const selected = selectedCardId.value === card.id;
+  const selected = selectedCardIds.value.includes(card.id) ||
+    selectedCardId.value === card.id;
   const threadY = NODE_HEIGHT / 2;
   const thought = card.role === "thought";
   const tags = (card.tags ?? []).map(normalizeTag).filter(Boolean);
@@ -743,9 +757,10 @@ function FocusFloat(props: {
   );
 }
 
-/** pan / node / link のドラッグ状態機械。矩形選択(T032)はここに4つ目を足す。 */
+/** pan / node / link / marquee のドラッグ状態機械。 */
 function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
   const [rubber, setRubber] = useState<Rubber | null>(null);
+  const [marquee, setMarquee] = useState<Marquee | null>(null);
   const dragRef = useRef<Drag | null>(null);
 
   function clientToWorld(clientX: number, clientY: number) {
@@ -794,14 +809,65 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     return null;
   }
 
+  function cardsInMarquee(box: Marquee): string[] {
+    const viewBoard = primaryBoard(viewProject.value);
+    const positions = viewBoard?.positions ?? {};
+    const ids = viewBoard?.cardIds ?? [];
+    const minX = Math.min(box.x1, box.x2);
+    const maxX = Math.max(box.x1, box.x2);
+    const minY = Math.min(box.y1, box.y2);
+    const maxY = Math.max(box.y1, box.y2);
+    const origin = focusOrigin.value;
+    const view = viewProject.value;
+    const focused = origin && view
+      ? focusReachableIds(
+        view.links,
+        view.cards,
+        origin,
+        focusHops.value,
+      )
+      : null;
+    const hit: string[] = [];
+    for (const cardId of ids) {
+      if (focused && !focused.has(cardId)) continue;
+      const position = positions[cardId];
+      if (!position) continue;
+      if (
+        position.x < maxX && position.x + NODE_WIDTH > minX &&
+        position.y < maxY && position.y + NODE_HEIGHT > minY
+      ) {
+        hit.push(cardId);
+      }
+    }
+    return hit;
+  }
+
   function onCanvasPointerDown(event: PointerEvent) {
     if (event.button !== 0) return;
     const target = event.target as Element;
     if (target.closest(".board-node") || target.closest(".link")) return;
     event.preventDefault();
     clearTextSelection();
-    selectedCardId.value = null;
     selectedLinkId.value = null;
+    if (event.shiftKey) {
+      const world = clientToWorld(event.clientX, event.clientY);
+      dragRef.current = {
+        type: "marquee",
+        startX: world.x,
+        startY: world.y,
+        currentX: world.x,
+        currentY: world.y,
+      };
+      setMarquee({
+        x1: world.x,
+        y1: world.y,
+        x2: world.x,
+        y2: world.y,
+      });
+      canvasRef.current?.setPointerCapture(event.pointerId);
+      return;
+    }
+    clearCardSelection();
     const vp = defaultViewport(primaryBoard(viewProject.value)?.viewport);
     dragRef.current = {
       type: "pan",
@@ -817,8 +883,12 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     event.stopPropagation();
     event.preventDefault();
     clearTextSelection();
-    selectedCardId.value = cardId;
     selectedLinkId.value = null;
+    if (selectedCardIds.value.length > 0) {
+      toggleCardInSelection(cardId);
+    } else {
+      selectSingleCard(cardId);
+    }
   }
 
   function onAdhesivePointerDown(event: PointerEvent, cardId: string) {
@@ -826,8 +896,7 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     event.stopPropagation();
     event.preventDefault();
     clearTextSelection();
-    selectedCardId.value = cardId;
-    selectedLinkId.value = null;
+    selectSingleCard(cardId);
     if (isReplaying.value) return;
     const world = clientToWorld(event.clientX, event.clientY);
     const position = primaryBoard(viewProject.value)?.positions[cardId] ??
@@ -849,7 +918,7 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     event.preventDefault();
     clearTextSelection();
     selectedLinkId.value = null;
-    selectedCardId.value = null;
+    clearCardSelection();
     const start = threadAnchor(
       cardId,
       primaryBoard(viewProject.value)?.positions ?? {},
@@ -888,6 +957,18 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
       );
       return;
     }
+    if (drag.type === "marquee") {
+      const world = clientToWorld(event.clientX, event.clientY);
+      drag.currentX = world.x;
+      drag.currentY = world.y;
+      setMarquee({
+        x1: drag.startX,
+        y1: drag.startY,
+        x2: world.x,
+        y2: world.y,
+      });
+      return;
+    }
     const world = clientToWorld(event.clientX, event.clientY);
     const positions = primaryBoard(viewProject.value)?.positions ?? {};
     const start = threadAnchor(drag.fromId, positions);
@@ -908,6 +989,7 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     const drag = dragRef.current;
     dragRef.current = null;
     setRubber(null);
+    setMarquee(null);
     if (!drag) return;
     if (drag.type === "pan") {
       await flushSave();
@@ -922,6 +1004,15 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
       } else {
         await flushSave();
       }
+      return;
+    }
+    if (drag.type === "marquee") {
+      setSelectedCards(cardsInMarquee({
+        x1: drag.startX,
+        y1: drag.startY,
+        x2: drag.currentX,
+        y2: drag.currentY,
+      }));
       return;
     }
     if (isReplaying.value) return;
@@ -973,6 +1064,7 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
 
   return {
     rubber,
+    marquee,
     onCanvasPointerDown,
     onPaperPointerDown,
     onAdhesivePointerDown,
@@ -999,6 +1091,7 @@ export function BoardView() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const {
     rubber,
+    marquee,
     onCanvasPointerDown,
     onPaperPointerDown,
     onAdhesivePointerDown,
@@ -1140,7 +1233,9 @@ export function BoardView() {
             </form>
           )}
         <span class="board__hint">
-          {replaying ? "下のバーでステップ移動" : "上部の糊で移動 / 糸端で接続"}
+          {replaying
+            ? "下のバーでステップ移動"
+            : "上部の糊で移動 / 糸端で接続 / Shift＋空白ドラッグで複数選択"}
         </span>
       </div>
       {replaying && currentStep && stepIndex != null
@@ -1250,6 +1345,18 @@ export function BoardView() {
                   y1={rubber.y1}
                   x2={rubber.x2}
                   y2={rubber.y2}
+                />
+              )
+              : null}
+            {marquee
+              ? (
+                <rect
+                  class="board-marquee"
+                  data-testid="board-marquee"
+                  x={Math.min(marquee.x1, marquee.x2)}
+                  y={Math.min(marquee.y1, marquee.y2)}
+                  width={Math.abs(marquee.x2 - marquee.x1)}
+                  height={Math.abs(marquee.y2 - marquee.y1)}
                 />
               )
               : null}
