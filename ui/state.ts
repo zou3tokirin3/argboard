@@ -393,6 +393,14 @@ export async function createProject(
   return project.value ?? next;
 }
 
+export async function renameProject(name: string): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  const nextName = name.trim();
+  if (!nextName || nextName === current.name) return;
+  await persist({ ...current, name: nextName });
+}
+
 export async function switchProject(id: string): Promise<void> {
   if (project.value?.id === id) return;
   const loaded = await store.loadProject(id);

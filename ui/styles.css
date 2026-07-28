@@ -70,11 +70,18 @@ body {
   flex: 0 0 auto;
   height: 56px;
   display: grid;
-  grid-template-columns: 280px 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   border-bottom: 1px solid var(--line-strong);
   padding: 0 var(--space-4);
   background: var(--panel);
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .brand,
@@ -89,6 +96,12 @@ body {
   font-weight: 700;
   font-size: 16px;
   letter-spacing: -0.02em;
+}
+.brand > div {
+  min-width: 0;
+}
+.brand > div > span {
+  display: block;
 }
 .brand small,
 .case-title small {
@@ -107,6 +120,77 @@ body {
   background: var(--accent);
   color: #fff;
   font: 700 13px/1 "IBM Plex Sans JP", sans-serif;
+}
+.project-menu {
+  position: relative;
+}
+.project-menu__toggle {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 7px 12px;
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.project-menu__toggle:hover,
+.project-menu.is-open .project-menu__toggle {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.project-menu__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  width: min(360px, calc(100vw - 32px));
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--panel);
+  box-shadow: 0 10px 24px rgb(15 20 25 / 12%);
+}
+.project-menu__field {
+  display: grid;
+  gap: 4px;
+}
+.project-menu__field span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.project-menu__field select,
+.project-menu__field input {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  padding: 8px 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+}
+.project-menu__action {
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  background: var(--bg);
+  color: var(--ink);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.project-menu__action:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.project-menu__rename {
+  display: grid;
+  gap: 8px;
 }
 .case-title {
   justify-content: center;
@@ -1512,6 +1596,20 @@ kbd {
     grid-template-columns: 1fr;
     gap: 10px;
     padding: 10px 14px;
+  }
+  .topbar__left {
+    flex-wrap: wrap;
+  }
+  .project-menu {
+    width: 100%;
+  }
+  .project-menu__toggle {
+    width: 100%;
+  }
+  .project-menu__panel {
+    right: 0;
+    left: 0;
+    width: auto;
   }
   .case-title {
     justify-content: flex-start;

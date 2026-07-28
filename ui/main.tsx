@@ -19,6 +19,7 @@ import {
   projectSummaries,
   removeCard,
   removeLink,
+  renameProject,
   saveStatus,
   selectedCardId,
   selectedLinkId,
@@ -102,6 +103,9 @@ declare global {
 }
 
 function App() {
+  const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+  const [projectRename, setProjectRename] = useState("");
+
   useEffect(() => {
     initialize();
   }, []);
@@ -132,6 +136,29 @@ function App() {
     return () => globalThis.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  useEffect(() => {
+    const current = project.value?.name ?? "";
+    setProjectRename((prev) => (prev === current ? prev : current));
+  }, [project.value?.id, project.value?.name]);
+
+  useEffect(() => {
+    if (!projectMenuOpen) return;
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target as Element | null;
+      if (target?.closest("[data-project-menu-root]")) return;
+      setProjectMenuOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setProjectMenuOpen(false);
+    }
+    globalThis.addEventListener("pointerdown", onPointerDown);
+    globalThis.addEventListener("keydown", onKeyDown);
+    return () => {
+      globalThis.removeEventListener("pointerdown", onPointerDown);
+      globalThis.removeEventListener("keydown", onKeyDown);
+    };
+  }, [projectMenuOpen]);
+
   if (!project.value) {
     return <main class="loading">読み込み中…</main>;
   }
@@ -148,46 +175,112 @@ function App() {
     <main class={`app-shell mode-${mode}`}>
       <InstallTip />
       <header class="topbar">
-        <div class="brand">
-          <span class="brand__mark" aria-hidden="true">A</span>
-          <div>
-            <span>ARGBoard</span>
-            <small>手がかりノート</small>
-          </div>
-        </div>
-        <div class="case-title project-switcher">
-          <label>
-            <small>プロジェクト</small>
-            <select
-              data-testid="project-select"
-              aria-label="プロジェクト切替"
-              value={project.value.id}
-              onChange={(event) => switchProject(event.currentTarget.value)}
-            >
-              {projectSummaries.value
-                .toSorted((left, right) => right.updatedAt - left.updatedAt)
-                .map((item) => {
-                  const when = new Date(item.updatedAt).toLocaleString("ja", {
-                    month: "numeric",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  return (
-                    <option key={item.id} value={item.id}>
-                      {item.name}（{item.cardCount}枚・{when}）
-                    </option>
-                  );
-                })}
-            </select>
-          </label>
-          <button
-            type="button"
-            data-testid="project-create"
-            onClick={() => createProject()}
+        <div class="topbar__left">
+          <div
+            class={`project-menu ${projectMenuOpen ? "is-open" : ""}`}
+            data-project-menu-root
           >
-            新規
-          </button>
+            <button
+              type="button"
+              class="project-menu__toggle"
+              data-testid="project-menu-toggle"
+              aria-haspopup="menu"
+              aria-expanded={projectMenuOpen}
+              aria-controls="project-menu-panel"
+              onClick={() => setProjectMenuOpen(!projectMenuOpen)}
+            >
+              プロジェクト
+            </button>
+            {projectMenuOpen
+              ? (
+                <div
+                  id="project-menu-panel"
+                  class="project-menu__panel"
+                  role="menu"
+                  aria-label="プロジェクト操作"
+                >
+                  <label class="project-menu__field">
+                    <span>切替</span>
+                    <select
+                      data-testid="project-select"
+                      aria-label="プロジェクト切替"
+                      value={project.value.id}
+                      onChange={(event) => {
+                        void switchProject(event.currentTarget.value);
+                        setProjectMenuOpen(false);
+                      }}
+                    >
+                      {projectSummaries.value
+                        .toSorted((left, right) =>
+                          right.updatedAt - left.updatedAt
+                        )
+                        .map((item) => {
+                          const when = new Date(item.updatedAt).toLocaleString(
+                            "ja",
+                            {
+                              month: "numeric",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          );
+                          return (
+                            <option key={item.id} value={item.id}>
+                              {item.name}（{item.cardCount}枚・{when}）
+                            </option>
+                          );
+                        })}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    class="project-menu__action"
+                    data-testid="project-create"
+                    role="menuitem"
+                    onClick={() => {
+                      void createProject();
+                      setProjectMenuOpen(false);
+                    }}
+                  >
+                    新規作成
+                  </button>
+                  <form
+                    class="project-menu__rename"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void renameProject(projectRename);
+                      setProjectMenuOpen(false);
+                    }}
+                  >
+                    <label class="project-menu__field">
+                      <span>名前変更</span>
+                      <input
+                        data-testid="project-rename-input"
+                        aria-label="プロジェクト名"
+                        value={projectRename}
+                        onInput={(event) =>
+                          setProjectRename(event.currentTarget.value)}
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      class="project-menu__action"
+                      data-testid="project-rename-save"
+                    >
+                      保存
+                    </button>
+                  </form>
+                </div>
+              )
+              : null}
+          </div>
+          <div class="brand">
+            <span class="brand__mark" aria-hidden="true">A</span>
+            <div>
+              <span>ARGBoard</span>
+              <small>{project.value.name}</small>
+            </div>
+          </div>
         </div>
         <div class="topbar__actions">
           <div class="mode-switch" role="tablist" aria-label="モード">
