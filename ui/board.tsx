@@ -36,7 +36,6 @@ import { CARD_MIME } from "./types.ts";
 const NODE_WIDTH = 235;
 const NODE_HEIGHT = 128;
 const ADHESIVE_HEIGHT = 38;
-const NODE_CONTENT_WIDTH = NODE_WIDTH - 36;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 const LINK_LANE_GAP = 22;
@@ -442,12 +441,13 @@ function BoardNode({
   const threadY = NODE_HEIGHT / 2;
   const thought = card.role === "thought";
   const tags = (card.tags ?? []).map(normalizeTag).filter(Boolean);
-  const { shown: visibleTags, hidden: hiddenTagCount } = fitTagsOneLine(
-    tags,
-    NODE_CONTENT_WIDTH,
-  );
   const hasTags = tags.length > 0;
   const hasImage = isLocalMediaRef(card.image);
+  const adhesiveTagWidth = NODE_WIDTH - 88;
+  const { shown: visibleTags, hidden: hiddenTagCount } = fitTagsOneLine(
+    tags,
+    adhesiveTagWidth,
+  );
   return (
     <g
       class={`board-node ${selected ? "is-selected" : ""} ${
@@ -488,9 +488,39 @@ function BoardNode({
         role="button"
         aria-label="糊付け部分をドラッグして移動"
       />
-      <text class="board-node__index" x="18" y="27">
-        {thought ? "考察" : "発見"}
-      </text>
+      <foreignObject
+        x="14"
+        y="7"
+        width={NODE_WIDTH - 48}
+        height="26"
+        style={{ pointerEvents: "none" }}
+      >
+        <div class="board-node__adhesive-meta">
+          <span class="board-node__index">{thought ? "考察" : "発見"}</span>
+          {hasTags
+            ? (
+              <div class="board-node__tags" aria-hidden="true">
+                {visibleTags.map((tag) => {
+                  const unsettled = (tagCounts.get(tag) ?? 1) === 1;
+                  return (
+                    <span
+                      key={tag}
+                      class={`board-node__tag${
+                        unsettled ? " is-unsettled" : ""
+                      }`}
+                    >
+                      #{tag}
+                    </span>
+                  );
+                })}
+                {hiddenTagCount > 0
+                  ? <span class="board-node__tag-more">+{hiddenTagCount}</span>
+                  : null}
+              </div>
+            )
+            : null}
+        </div>
+      </foreignObject>
       {card.url
         ? (
           <a
@@ -529,46 +559,35 @@ function BoardNode({
         height="78"
         style={{ pointerEvents: "none" }}
       >
-        <div
-          class={`board-node__content${hasTags ? " has-tags" : ""}${
-            hasImage ? " has-image" : ""
-          }`}
-        >
+        <div class={`board-node__content${hasImage ? " has-image" : ""}`}>
           <div class="board-node__title">{card.title}</div>
-          {hasTags
+          {hasImage || card.body?.trim()
             ? (
-              <div class="board-node__tags" aria-hidden="true">
-                {visibleTags.map((tag) => {
-                  const unsettled = (tagCounts.get(tag) ?? 1) === 1;
-                  return (
-                    <span
-                      key={tag}
-                      class={`board-node__tag${
-                        unsettled ? " is-unsettled" : ""
-                      }`}
-                    >
-                      #{tag}
-                    </span>
-                  );
-                })}
-                {hiddenTagCount > 0
-                  ? <span class="board-node__tag-more">+{hiddenTagCount}</span>
+              <div
+                class={`board-node__below${
+                  hasImage && card.body?.trim() ? " has-both" : ""
+                }`}
+              >
+                {hasImage
+                  ? (
+                    <MediaThumb
+                      image={card.image}
+                      className="board-node__thumb"
+                    />
+                  )
                   : null}
-              </div>
-            )
-            : null}
-          {hasImage
-            ? (
-              <MediaThumb
-                image={card.image}
-                className="board-node__thumb"
-              />
-            )
-            : null}
-          {!hasImage && card.body?.trim()
-            ? (
-              <div class="board-node__preview" data-testid="board-node-preview">
-                {card.body.trim()}
+                {card.body?.trim()
+                  ? (
+                    <div class="board-node__preview-wrap">
+                      <div
+                        class="board-node__preview"
+                        data-testid="board-node-preview"
+                      >
+                        {card.body.trim()}
+                      </div>
+                    </div>
+                  )
+                  : null}
               </div>
             )
             : null}

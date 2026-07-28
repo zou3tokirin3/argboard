@@ -308,6 +308,7 @@ body {
 }
 .board-node.is-thought .board-node__index {
   fill: var(--accent);
+  color: var(--accent);
 }
 kbd {
   border: 1px solid var(--line-strong);
@@ -497,9 +498,60 @@ kbd {
   display: block;
   margin-top: 4px;
   width: 100%;
-  max-height: 44px;
+  max-height: 56px;
   object-fit: cover;
   border-radius: 2px;
+}
+.board-node__below {
+  margin-top: 4px;
+}
+.board-node__content.has-image .board-node__title {
+  -webkit-line-clamp: 1;
+}
+.board-node__below.has-both {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  min-height: 56px;
+}
+.board-node__below.has-both .board-node__thumb {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 56px;
+  max-height: none;
+  margin-top: 0;
+  border-radius: 3px;
+}
+.board-node__preview-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.board-node__below.has-both .board-node__preview-wrap {
+  max-height: 56px;
+}
+.board-node__below.has-both .board-node__preview {
+  margin-top: 0;
+  -webkit-line-clamp: 4;
+}
+.board-node__adhesive-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.board-node__adhesive-meta .board-node__index {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font: 500 10px/1 "IBM Plex Mono", monospace;
+  letter-spacing: .04em;
+}
+.board-node__adhesive-meta .board-node__tags {
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
 }
 .stream-card__body-row {
   display: flex;
@@ -516,8 +568,8 @@ kbd {
 }
 .stream-card__thumb {
   flex: 0 0 auto;
-  width: 48px;
-  height: 36px;
+  width: 88px;
+  height: 66px;
   object-fit: cover;
   border-radius: 3px;
   border: 1px solid var(--line);
@@ -946,6 +998,7 @@ kbd {
   fill: rgb(232 196 90 / 32%);
 }
 .board-node__index {
+  /* adhesive-meta 内の HTML。SVG text 用の fill は使わない */
   fill: var(--muted);
   font: 500 10px "IBM Plex Mono", monospace;
   letter-spacing: .04em;
@@ -979,9 +1032,6 @@ kbd {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-}
-.board-node__content.has-tags .board-node__preview {
-  -webkit-line-clamp: 1;
 }
 .board-node__title {
   color: var(--paper-ink);
