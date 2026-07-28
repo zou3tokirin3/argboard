@@ -209,6 +209,10 @@ function applyEvent(
         if (event.image) next.image = event.image;
         else delete next.image;
       }
+      if ("size" in event) {
+        if (event.size === "l") next.size = "l";
+        else delete next.size;
+      }
       cards.set(event.cardId, next);
       break;
     }

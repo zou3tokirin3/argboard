@@ -19,6 +19,11 @@ export type ProjectEvent =
     image?: string;
     /** Present only when tags changed (omit keeps previous tags on replay). */
     tags?: string[];
+    /**
+     * Present only when board size changed (omit keeps previous on replay).
+     * `""` clears to default medium.
+     */
+    size?: "m" | "l" | "";
   }
   | {
     type: "card_removed";
@@ -60,6 +65,8 @@ export type Card = {
   /** Local media id in IndexedDB (not an external URL). */
   image?: string;
   tags?: string[];
+  /** Board display size (T022). Omit or `"m"` = default; `"l"` = large. */
+  size?: "m" | "l";
   foundAt: number;
 };
 

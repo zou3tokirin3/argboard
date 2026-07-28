@@ -35,15 +35,20 @@ import { MediaThumb } from "./media-thumb.tsx";
 import { isLocalMediaRef } from "./media.ts";
 import { focusReachableIds } from "./project.ts";
 import { collectTagUsage, fitTagsOneLine, normalizeTag } from "./tags.ts";
+import {
+  ADHESIVE_HEIGHT,
+  dimsForCardId,
+  NODE_DIMS,
+  type NodeDims,
+  nodeDims,
+} from "./node-size.ts";
 import type { Board, Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
 
-const NODE_WIDTH = 235;
-const NODE_HEIGHT = 128;
-const ADHESIVE_HEIGHT = 38;
 const MIN_ZOOM = 0.4;
 const MAX_ZOOM = 2.5;
 const LINK_LANE_GAP = 22;
+const DEFAULT_DIMS = NODE_DIMS.m;
 
 function sourceHost(url: string): string {
   try {
@@ -182,26 +187,28 @@ function IconButton(props: IconButtonProps) {
 function nodeCenter(
   cardId: string,
   positions: Record<string, { x: number; y: number }>,
+  dims: NodeDims,
 ): Point {
   const position = positions[cardId] ?? { x: 0, y: 0 };
-  return { x: position.x + NODE_WIDTH / 2, y: position.y + NODE_HEIGHT / 2 };
+  return { x: position.x + dims.w / 2, y: position.y + dims.h / 2 };
 }
 
 function threadAnchor(
   cardId: string,
   positions: Record<string, { x: number; y: number }>,
+  dims: NodeDims,
 ): Point {
   const position = positions[cardId] ?? { x: 0, y: 0 };
-  return { x: position.x + NODE_WIDTH, y: position.y + NODE_HEIGHT / 2 };
+  return { x: position.x + dims.w, y: position.y + dims.h / 2 };
 }
 
 /** Border point of the card rect, on the ray from `from` toward `toward`. */
-function rectEdge(from: Point, toward: Point): Point {
+function rectEdge(from: Point, toward: Point, dims: NodeDims): Point {
   const dx = toward.x - from.x;
   const dy = toward.y - from.y;
   if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return from;
-  const halfW = NODE_WIDTH / 2;
-  const halfH = NODE_HEIGHT / 2;
+  const halfW = dims.w / 2;
+  const halfH = dims.h / 2;
   const sx = Math.abs(dx) < 0.001
     ? Number.POSITIVE_INFINITY
     : halfW / Math.abs(dx);
@@ -276,11 +283,14 @@ function linkGeometry(
   link: Link,
   links: Link[],
   positions: Record<string, { x: number; y: number }>,
+  cards: ReadonlyArray<Pick<Card, "id" | "size">>,
 ): LinkGeometry {
-  const from = nodeCenter(link.from, positions);
-  const to = nodeCenter(link.to, positions);
-  const start = rectEdge(from, to);
-  const end = rectEdge(to, from);
+  const fromDims = dimsForCardId(link.from, cards);
+  const toDims = dimsForCardId(link.to, cards);
+  const from = nodeCenter(link.from, positions, fromDims);
+  const to = nodeCenter(link.to, positions, toDims);
+  const start = rectEdge(from, to, fromDims);
+  const end = rectEdge(to, from, toDims);
   const siblings = pairSiblings(link, links);
   const directed = siblings.length >= 2;
   const lane = linkLane(link, siblings);
@@ -291,8 +301,8 @@ function linkGeometry(
     start,
     end,
     lane,
-    nodeCenter(axisFromId, positions),
-    nodeCenter(axisToId, positions),
+    nodeCenter(axisFromId, positions, dimsForCardId(axisFromId, cards)),
+    nodeCenter(axisToId, positions, dimsForCardId(axisToId, cards)),
   );
   const along = directed ? 0.78 : 0.5;
   const side = lane === 0 ? 1 : Math.sign(lane);
@@ -331,13 +341,14 @@ function mapLinkVisuals(
   links: Link[],
   all: Link[],
   positions: Record<string, { x: number; y: number }>,
+  cards: ReadonlyArray<Pick<Card, "id" | "size">>,
   prefix: string,
 ) {
   return links.map((link) => (
     <LinkVisual
       key={`${prefix}-${link.id}`}
       link={link}
-      geometry={linkGeometry(link, all, positions)}
+      geometry={linkGeometry(link, all, positions, cards)}
     />
   ));
 }
@@ -452,19 +463,21 @@ function BoardNode({
 }) {
   const selected = selectedCardIds.value.includes(card.id) ||
     selectedCardId.value === card.id;
-  const threadY = NODE_HEIGHT / 2;
+  const dims = nodeDims(card);
+  const threadY = dims.h / 2;
   const thought = card.role === "thought";
   const tags = (card.tags ?? []).map(normalizeTag).filter(Boolean);
   const hasTags = tags.length > 0;
   const hasImage = isLocalMediaRef(card.image);
-  const adhesiveTagWidth = NODE_WIDTH - 88;
+  const adhesiveTagWidth = dims.w - 88;
   const { shown: visibleTags, hidden: hiddenTagCount } = fitTagsOneLine(
     tags,
     adhesiveTagWidth,
   );
+  const sizeClass = card.size === "l" ? "board-node--l" : "board-node--m";
   return (
     <g
-      class={`board-node ${selected ? "is-selected" : ""} ${
+      class={`board-node ${sizeClass} ${selected ? "is-selected" : ""} ${
         isDropTarget ? "is-drop-target" : ""
       } ${thought ? "is-thought" : ""} ${isRelated ? "is-related" : ""} ${
         isDimmed ? "is-dimmed" : ""
@@ -472,6 +485,7 @@ function BoardNode({
       data-testid="board-node"
       data-card-id={card.id}
       data-role={thought ? "thought" : "finding"}
+      data-size={card.size === "l" ? "l" : "m"}
       data-dimmed={isDimmed ? "true" : undefined}
       transform={`translate(${x} ${y})`}
     >
@@ -479,14 +493,14 @@ function BoardNode({
         class="board-node__shadow"
         x="5"
         y="7"
-        width={NODE_WIDTH}
-        height={NODE_HEIGHT}
+        width={dims.w}
+        height={dims.h}
         rx="3"
       />
       <rect
         class="board-node__paper"
-        width={NODE_WIDTH}
-        height={NODE_HEIGHT}
+        width={dims.w}
+        height={dims.h}
         rx="3"
         onPointerDown={(event) => onPaperPointerDown(event, card.id)}
       />
@@ -495,7 +509,7 @@ function BoardNode({
         data-testid="board-adhesive"
         x="0"
         y="0"
-        width={NODE_WIDTH}
+        width={dims.w}
         height={ADHESIVE_HEIGHT}
         rx="3"
         onPointerDown={(event) => onAdhesivePointerDown(event, card.id)}
@@ -505,7 +519,7 @@ function BoardNode({
       <foreignObject
         x="14"
         y="7"
-        width={NODE_WIDTH - 48}
+        width={dims.w - 48}
         height="26"
         style={{ pointerEvents: "none" }}
       >
@@ -549,7 +563,7 @@ function BoardNode({
             <title>{sourceHost(card.url)}</title>
             <rect
               class="board-node__source-hit"
-              x={NODE_WIDTH - 34}
+              x={dims.w - 34}
               y="8"
               width="26"
               height="22"
@@ -557,7 +571,7 @@ function BoardNode({
             />
             <text
               class="board-node__source-mark"
-              x={NODE_WIDTH - 21}
+              x={dims.w - 21}
               y="24"
               text-anchor="middle"
             >
@@ -569,8 +583,8 @@ function BoardNode({
       <foreignObject
         x="18"
         y="40"
-        width={NODE_WIDTH - 36}
-        height="78"
+        width={dims.w - 36}
+        height={dims.contentH}
         style={{ pointerEvents: "none" }}
       >
         <div class={`board-node__content${hasImage ? " has-image" : ""}`}>
@@ -610,7 +624,7 @@ function BoardNode({
       <g
         class="board-node__thread"
         data-testid="link-handle"
-        transform={`translate(${NODE_WIDTH} ${threadY})`}
+        transform={`translate(${dims.w} ${threadY})`}
         onPointerDown={(event) => onThreadPointerDown(event, card.id)}
         role="button"
         aria-label="糸をドラッグして接続"
@@ -780,6 +794,7 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     const viewBoard = primaryBoard(viewProject.value);
     const positions = viewBoard?.positions ?? {};
     const ids = viewBoard?.cardIds ?? [];
+    const cards = viewProject.value?.cards ?? [];
     const pad = 12;
     const origin = focusOrigin.value;
     const view = viewProject.value;
@@ -797,11 +812,12 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
       if (focused && !focused.has(cardId)) continue;
       const position = positions[cardId];
       if (!position) continue;
+      const dims = dimsForCardId(cardId, cards);
       if (
         worldX >= position.x - pad &&
-        worldX <= position.x + NODE_WIDTH + pad &&
+        worldX <= position.x + dims.w + pad &&
         worldY >= position.y - pad &&
-        worldY <= position.y + NODE_HEIGHT + pad
+        worldY <= position.y + dims.h + pad
       ) {
         return cardId;
       }
@@ -813,6 +829,7 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     const viewBoard = primaryBoard(viewProject.value);
     const positions = viewBoard?.positions ?? {};
     const ids = viewBoard?.cardIds ?? [];
+    const cards = viewProject.value?.cards ?? [];
     const minX = Math.min(box.x1, box.x2);
     const maxX = Math.max(box.x1, box.x2);
     const minY = Math.min(box.y1, box.y2);
@@ -832,9 +849,10 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
       if (focused && !focused.has(cardId)) continue;
       const position = positions[cardId];
       if (!position) continue;
+      const dims = dimsForCardId(cardId, cards);
       if (
-        position.x < maxX && position.x + NODE_WIDTH > minX &&
-        position.y < maxY && position.y + NODE_HEIGHT > minY
+        position.x < maxX && position.x + dims.w > minX &&
+        position.y < maxY && position.y + dims.h > minY
       ) {
         hit.push(cardId);
       }
@@ -919,9 +937,11 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     clearTextSelection();
     selectedLinkId.value = null;
     clearCardSelection();
+    const cards = viewProject.value?.cards ?? [];
     const start = threadAnchor(
       cardId,
       primaryBoard(viewProject.value)?.positions ?? {},
+      dimsForCardId(cardId, cards),
     );
     dragRef.current = { type: "link", fromId: cardId, targetId: null };
     setRubber({
@@ -971,10 +991,17 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     }
     const world = clientToWorld(event.clientX, event.clientY);
     const positions = primaryBoard(viewProject.value)?.positions ?? {};
-    const start = threadAnchor(drag.fromId, positions);
+    const cards = viewProject.value?.cards ?? [];
+    const start = threadAnchor(
+      drag.fromId,
+      positions,
+      dimsForCardId(drag.fromId, cards),
+    );
     const targetId = hitNode(world.x, world.y, drag.fromId);
     drag.targetId = targetId;
-    const tip = targetId ? nodeCenter(targetId, positions) : world;
+    const tip = targetId
+      ? nodeCenter(targetId, positions, dimsForCardId(targetId, cards))
+      : world;
     setRubber({
       fromId: drag.fromId,
       x1: start.x,
@@ -1057,8 +1084,8 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     const world = clientToWorld(event.clientX, event.clientY);
     await placeCardOnBoard(
       cardId,
-      world.x - NODE_WIDTH / 2,
-      world.y - NODE_HEIGHT / 2,
+      world.x - DEFAULT_DIMS.w / 2,
+      world.y - DEFAULT_DIMS.h / 2,
     );
   }
 
@@ -1117,8 +1144,9 @@ export function BoardView() {
     if (!canvas || !pos) return;
     const rect = canvas.getBoundingClientRect();
     const from = defaultViewport(viewBoard?.viewport);
-    const cx = pos.x + NODE_WIDTH / 2;
-    const cy = pos.y + NODE_HEIGHT / 2;
+    const dims = dimsForCardId(revealId, viewProject.value?.cards ?? []);
+    const cx = pos.x + dims.w / 2;
+    const cy = pos.y + dims.h / 2;
     const to = {
       x: rect.width / 2 - cx * from.zoom,
       y: rect.height / 2 - cy * from.zoom,
@@ -1184,8 +1212,8 @@ export function BoardView() {
       body: parsed.body,
       url: parsed.url,
       placeAt: {
-        x: ((rect?.width ?? 640) / 2 - vp.x) / vp.zoom - NODE_WIDTH / 2,
-        y: ((rect?.height ?? 480) / 2 - vp.y) / vp.zoom - NODE_HEIGHT / 2,
+        x: ((rect?.width ?? 640) / 2 - vp.x) / vp.zoom - DEFAULT_DIMS.w / 2,
+        y: ((rect?.height ?? 480) / 2 - vp.y) / vp.zoom - DEFAULT_DIMS.h / 2,
       },
     });
   }
@@ -1194,10 +1222,13 @@ export function BoardView() {
     ? (sel && focusSet?.has(sel) ? sel : origin.cardId)
     : (sel && board.positions[sel] ? sel : null);
   const barAnchorPos = barAnchorId ? board.positions[barAnchorId] : undefined;
+  const barDims = barAnchorId
+    ? dimsForCardId(barAnchorId, current.cards)
+    : DEFAULT_DIMS;
   const focusBarStyle = barAnchorPos
     ? {
       left: `${
-        viewport.x + (barAnchorPos.x + NODE_WIDTH / 2) * viewport.zoom
+        viewport.x + (barAnchorPos.x + barDims.w / 2) * viewport.zoom
       }px`,
       top: `${viewport.y + barAnchorPos.y * viewport.zoom - 10}px`,
     }
@@ -1296,6 +1327,7 @@ export function BoardView() {
                 visibleLinks,
                 visibleLinks,
                 board.positions,
+                current.cards,
                 "v",
               )}
             </g>
@@ -1308,6 +1340,7 @@ export function BoardView() {
                     link,
                     visibleLinks,
                     board.positions,
+                    current.cards,
                   )}
                 />
               ))}
@@ -1369,7 +1402,13 @@ export function BoardView() {
           <g
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
           >
-            {mapLinkVisuals(front, visibleLinks, board.positions, "f")}
+            {mapLinkVisuals(
+              front,
+              visibleLinks,
+              board.positions,
+              current.cards,
+              "f",
+            )}
           </g>
         </svg>
         <div class="board__legend">

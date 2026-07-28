@@ -31,6 +31,8 @@ import {
   withBirthEvents,
 } from "./project.ts";
 import { attachTag, normalizeTag, replaceTag } from "./tags.ts";
+import type { CardSize } from "./node-size.ts";
+import { normalizeCardSize } from "./node-size.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
@@ -524,6 +526,38 @@ export async function updateCardTags(
     body: card.body,
     url: card.url,
     tags: nextTags ?? [],
+  }));
+}
+
+/** Set board display size for a card (T022). `"m"` clears to default. */
+export async function updateCardSize(
+  id: string,
+  size: CardSize,
+): Promise<void> {
+  const current = assertWritable();
+  if (!current) return;
+  const card = current.cards.find((item) => item.id === id);
+  if (!card) return;
+  const nextSize = normalizeCardSize(size);
+  const prev = normalizeCardSize(card.size);
+  if (nextSize === prev) return;
+  const next = {
+    ...current,
+    cards: current.cards.map((item) => {
+      if (item.id !== id) return item;
+      if (nextSize === "l") return { ...item, size: "l" as const };
+      const { size: _drop, ...rest } = item;
+      return rest;
+    }),
+  };
+  await persist(appendEvent(next, {
+    type: "card_updated",
+    at: Date.now(),
+    cardId: id,
+    title: card.title,
+    body: card.body,
+    url: card.url,
+    size: nextSize === "l" ? "l" : "",
   }));
 }
 

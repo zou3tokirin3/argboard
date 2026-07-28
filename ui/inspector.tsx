@@ -18,6 +18,7 @@ import {
   selectedLinkId,
   setCardImage,
   updateCard,
+  updateCardSize,
   updateCardTags,
   updateLink,
   viewProject,
@@ -552,6 +553,21 @@ export function Inspector() {
           onInput={(event) => setBody(event.currentTarget.value)}
           onBlur={commit}
         />
+      </label>
+      <label class="inspector__field">
+        <span>ボード上のサイズ</span>
+        <select
+          data-testid="inspector-card-size"
+          value={card.size === "l" ? "l" : "m"}
+          disabled={replaying}
+          onChange={(event) => {
+            const next = event.currentTarget.value === "l" ? "l" : "m";
+            void updateCardSize(card.id, next);
+          }}
+        >
+          <option value="m">標準</option>
+          <option value="l">大きめ</option>
+        </select>
       </label>
       <ImageField
         cardId={card.id}
