@@ -1,15 +1,19 @@
 import { useEffect, useState } from "preact/hooks";
 import {
+  attachTagToCards,
   clearCardImage,
+  clearCardSelection,
   clearReplay,
   enterReplay,
   isReplaying,
+  mergeProjectTags,
   removeCard,
   removeLink,
+  renameProjectTag,
   replayStepList,
   resolveMediaUrl,
   selectedCard,
-  selectedCardId,
+  selectedCardIds,
   selectedLink,
   selectedLinkId,
   setCardImage,
@@ -26,8 +30,24 @@ import {
   normalizeTag,
   TAG_KIND_LIMIT,
   type TagSuggestItem,
+  type TagUsage,
 } from "./tags.ts";
 import { isLocalMediaRef } from "./media.ts";
+
+async function organizeTag(tag: string, usage: TagUsage[]): Promise<void> {
+  const others = usage.filter((e) => e.name !== tag).map((e) => e.name);
+  const next = globalThis.prompt(
+    others.length
+      ? `「${tag}」を改名、または既存名で統合（${others.join(" / ")}）`
+      : `「${tag}」の新しい名前`,
+    tag,
+  );
+  if (next == null) return;
+  const name = normalizeTag(next);
+  if (!name || name === tag) return;
+  if (others.includes(name)) await mergeProjectTags(tag, name);
+  else await renameProjectTag(tag, name);
+}
 
 function HistoryEntry() {
   const replaying = isReplaying.value;
@@ -64,9 +84,13 @@ function HistoryEntry() {
 
 function TagField(props: {
   cardId: string;
+  /** When longer than 1, attach to all and hide per-card chips. */
+  cardIds?: string[];
   tags: string[] | undefined;
   disabled: boolean;
 }) {
+  const ids = props.cardIds ?? [props.cardId];
+  const bulk = ids.length > 1;
   const usage = collectTagUsage(viewProject.value?.cards ?? []);
   const attached = props.tags ?? [];
   const [draft, setDraft] = useState("");
@@ -77,17 +101,19 @@ function TagField(props: {
   const blocked = atLimit && !!q && !usage.some((e) => e.name === q) &&
     !attached.some((t) => normalizeTag(t) === q);
   const counts = new Map(usage.map((e) => [e.name, e.count]));
+  const resetKey = bulk ? ids.join(",") : props.cardId;
 
   useEffect(() => {
     setDraft("");
     setOpen(false);
     setActive(0);
-  }, [props.cardId]);
+  }, [resetKey]);
   useEffect(() => setActive(0), [draft]);
 
   async function apply(item: TagSuggestItem) {
     if (props.disabled) return;
-    await updateCardTags(props.cardId, attachTag(attached, item.name));
+    if (bulk) await attachTagToCards(ids, item.name);
+    else await updateCardTags(props.cardId, attachTag(attached, item.name));
     setDraft("");
     setOpen(false);
     setActive(0);
@@ -118,46 +144,73 @@ function TagField(props: {
 
   return (
     <div class="inspector__field inspector__tags">
-      <span>タグ（上限{TAG_KIND_LIMIT}・新規は候補から）</span>
-      <div class="inspector__tag-chips">
-        {attached.map((tag) => {
-          const unsettled = (counts.get(tag) ?? 1) === 1;
-          return (
-            <span
-              key={tag}
-              class={`inspector__tag-chip${unsettled ? " is-unsettled" : ""}`}
-              title={unsettled ? "未定着（1枚のみ）" : tag}
-            >
-              <span class="inspector__tag-chip-label">#{tag}</span>
-              <button
-                type="button"
-                class="inspector__tag-chip-remove"
-                disabled={props.disabled}
-                aria-label={`「${tag}」を外す`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  if (!props.disabled) {
-                    void updateCardTags(
-                      props.cardId,
-                      detachTag(attached, tag) ?? [],
-                    );
-                  }
-                }}
-              >
-                ×
-              </button>
-            </span>
-          );
-        })}
-      </div>
+      <span>
+        {bulk
+          ? `タグを一括付与（${ids.length}枚）`
+          : `タグ（上限${TAG_KIND_LIMIT}・新規は候補から）`}
+      </span>
+      {!bulk
+        ? (
+          <div class="inspector__tag-chips">
+            {attached.map((tag) => {
+              const unsettled = (counts.get(tag) ?? 1) === 1;
+              return (
+                <span
+                  key={tag}
+                  class={`inspector__tag-chip${
+                    unsettled ? " is-unsettled" : ""
+                  }`}
+                  title={unsettled ? "未定着（1枚のみ）" : tag}
+                >
+                  <span class="inspector__tag-chip-label">#{tag}</span>
+                  {unsettled
+                    ? (
+                      <button
+                        type="button"
+                        class="inspector__tag-organize-btn"
+                        disabled={props.disabled}
+                        title="改名または統合"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          if (!props.disabled) void organizeTag(tag, usage);
+                        }}
+                      >
+                        整理
+                      </button>
+                    )
+                    : null}
+                  <button
+                    type="button"
+                    class="inspector__tag-chip-remove"
+                    disabled={props.disabled}
+                    aria-label={`「${tag}」を外す`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      if (!props.disabled) {
+                        void updateCardTags(
+                          props.cardId,
+                          detachTag(attached, tag) ?? [],
+                        );
+                      }
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        )
+        : null}
       <div class="inspector__tag-input-wrap">
         <input
           type="text"
           data-testid="inspector-tag-input"
           value={draft}
           disabled={props.disabled}
-          placeholder="付けて整理…"
+          placeholder={bulk ? "選んだカードへ付けて整理…" : "付けて整理…"}
           autocomplete="off"
           onInput={(event) => {
             setDraft(event.currentTarget.value);
@@ -335,6 +388,7 @@ function ImageField(props: {
 }
 
 export function Inspector() {
+  const multiIds = selectedCardIds.value;
   const card = selectedCard.value;
   const link = selectedLink.value;
   const replaying = isReplaying.value;
@@ -407,6 +461,29 @@ export function Inspector() {
               <p class="inspector__hint">Delete キーでも削除できます</p>
             </>
           )}
+        <HistoryEntry />
+      </aside>
+    );
+  }
+
+  if (multiIds.length > 1) {
+    return (
+      <aside class="inspector" aria-label="複数カードの整理">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">複数選択</span>
+            <h2>{multiIds.length}枚を整理</h2>
+          </div>
+        </div>
+        <p class="inspector__hint">
+          Shift＋空白ドラッグで囲み、紙クリックで足し引き
+        </p>
+        <TagField
+          cardId={multiIds[0]!}
+          cardIds={multiIds}
+          tags={[]}
+          disabled={replaying}
+        />
         <HistoryEntry />
       </aside>
     );
@@ -497,7 +574,7 @@ export function Inspector() {
                 const id = event.currentTarget.value;
                 if (!id) return;
                 selectedLinkId.value = id;
-                selectedCardId.value = null;
+                clearCardSelection();
               }}
             >
               <option value="">糸を選ぶ…</option>

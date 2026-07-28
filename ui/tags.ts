@@ -75,6 +75,34 @@ export function detachTag(
   return next.length ? next : undefined;
 }
 
+/**
+ * Replace one tag with another on a card's list (rename or merge).
+ * Dedupes; returns undefined when the list becomes empty.
+ */
+export function replaceTag(
+  tags: string[] | undefined,
+  from: string,
+  to: string,
+): { tags: string[] | undefined; changed: boolean } {
+  const src = normalizeTag(from);
+  const dst = normalizeTag(to);
+  if (!tags?.length || !src || !dst || src === dst) {
+    return { tags, changed: false };
+  }
+  let changed = false;
+  const next: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of tags) {
+    const name = normalizeTag(raw) === src ? dst : normalizeTag(raw);
+    if (normalizeTag(raw) === src) changed = true;
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    next.push(name);
+  }
+  if (!changed) return { tags, changed: false };
+  return { tags: next.length ? next : undefined, changed: true };
+}
+
 /** Approximate chip width for board one-line layout (10px face). */
 function estimateTagChipWidth(name: string): number {
   let text = 6; // "#"
