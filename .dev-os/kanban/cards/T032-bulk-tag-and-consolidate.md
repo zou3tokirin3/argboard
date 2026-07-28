@@ -1,10 +1,10 @@
 ---
 id: T032
 title: 矩形選択で複数カードへ一括タグ付けし、タグを統合・改名できるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T032"
 template_ver: generic-0.2
 created: 2026-07-25
 updated: 2026-07-28
@@ -105,5 +105,6 @@ updated: 2026-07-28
 - 2026-07-28 planner: ready。分岐=Shift＋空白ドラッグで矩形。見込み flow:
   本体行 +120〜150 / 操作 +2（testid） / 概念 +1（selectedCardIds） / gzip +3KB / Won't No。
   いずれもしきい値未満のためパケット不要。受け入れ条件を確定
+- 2026-07-28 impl: 取得。task/T032 worktree で矩形選択・一括付与・改名・統合を実装する
 
 ## 差し戻し履歴（追記のみ）
