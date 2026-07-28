@@ -1233,7 +1233,9 @@ export function BoardView() {
             </form>
           )}
         <span class="board__hint">
-          {replaying ? "下のバーでステップ移動" : "上部の糊で移動 / 糸端で接続"}
+          {replaying
+            ? "下のバーでステップ移動"
+            : "上部の糊で移動 / 糸端で接続 / Shift＋空白ドラッグで複数選択"}
         </span>
       </div>
       {replaying && currentStep && stepIndex != null

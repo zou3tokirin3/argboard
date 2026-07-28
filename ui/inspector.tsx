@@ -476,7 +476,7 @@ export function Inspector() {
           </div>
         </div>
         <p class="inspector__hint">
-          Shift＋空白ドラッグで囲み、紙クリックで足し引き
+          Shift＋空白ドラッグで囲む。紙クリックで追加／もう一度で外す
         </p>
         <TagField
           cardId={multiIds[0]!}
