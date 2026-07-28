@@ -1,13 +1,13 @@
 ---
 id: T041
 title: カードにスクショ1枚を貼れるようにする
-status: backlog
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T041"
 template_ver: generic-0.2
 created: 2026-07-27
-updated: 2026-07-27
+updated: 2026-07-28
 ---
 
 ## 目的
@@ -45,7 +45,7 @@ updated: 2026-07-27
 - [ ] エクスポート zip をインポートすると画像込みで復元できる
 - [ ] 画像なしの既存 `.json` インポートが壊れない
 - [ ] PLAN の Won't／ストレージ契約／`image` 意味が更新されている
-- [ ] 見込み flow が PLAN §4 しきい値内。Won't 解除および超過見込みなら評価パケットGOが作業ログにある
+- [x] 見込み flow が PLAN §4 しきい値内。Won't 解除および超過見込みなら評価パケットGOが作業ログにある
 - [ ] 最新コミットで check / test / smoke が緑
 - [ ] 人間が「操作メモとして使える」と確認する（gate: human）
 
@@ -61,5 +61,12 @@ updated: 2026-07-27
 
 - 2026-07-27 human/planner: 設計会話を起票。1カード1枚・実行時は JSON参照+Blob・持ち出しは zip。
   PLAN §12 Won't 抵触のため **ready 前に評価パケット → 人間GO** が必要
+- 2026-07-28 planner: 評価パケット作成→GO待ち（`.dev-os/kanban/packets/T041.md`）。
+  stock 本体 5,378 / 操作 41 / 概念 90 / gzip 32,520B。
+  見込み flow=本体行 +480〜720 / 操作 +3〜4 / 概念 +1〜2 / gzip +5〜10KB / **Won't=Yes**
+- 2026-07-28 human: 評価パケット GO（Won't「ローカル画像取り込み」を本契約へ書き換え可。
+  承認指標: 本体行 +480〜720 / 操作 +3〜4 / 概念 +1〜2 / gzip +5〜10KB / Won't=Yes）→ ready
+- 2026-07-28 impl: 取得。見込み flow=本体行+480〜720 / 操作+3〜4 / 概念+1〜2 / gzip+5〜10KB / Won't=Yes（パケットGO済）。
+  worktree=.worktrees/T041（task/T041）で1カード1枚スクショを実装する
 
 ## 差し戻し履歴（追記のみ）
