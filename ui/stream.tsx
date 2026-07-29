@@ -5,6 +5,7 @@ import {
   focusHops,
   focusOrigin,
   isReplaying,
+  placedOnly,
   removeCard,
   search,
   selectCardFromStream,
@@ -142,10 +143,26 @@ export function Stream() {
           aria-pressed={unplacedOnly.value}
           title="ボードに未配置のカードだけを表示"
           onClick={() => {
-            unplacedOnly.value = !unplacedOnly.value;
+            const next = !unplacedOnly.value;
+            unplacedOnly.value = next;
+            if (next) placedOnly.value = false;
           }}
         >
           未配置のみ
+        </button>
+        <button
+          type="button"
+          class={`stream__filter-btn${placedOnly.value ? " is-active" : ""}`}
+          data-testid="stream-placed-only"
+          aria-pressed={placedOnly.value}
+          title="ボードに配置済みのカードだけを表示"
+          onClick={() => {
+            const next = !placedOnly.value;
+            placedOnly.value = next;
+            if (next) unplacedOnly.value = false;
+          }}
+        >
+          配置済のみ
         </button>
       </div>
       <TagFocusControls />

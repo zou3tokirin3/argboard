@@ -80,6 +80,8 @@ export const projectSummaries = signal<ProjectSummary[]>([]);
 export const search = signal("");
 /** Session-only: show unplaced stream cards only (T040). Not persisted. */
 export const unplacedOnly = signal(false);
+/** Session-only: show placed stream cards only (T047). Not persisted. */
+export const placedOnly = signal(false);
 export const selectedCardId = signal<string | null>(null);
 /** Session-only multi-select (T032). Primary is selectedCardId (last id). */
 export const selectedCardIds = signal<string[]>([]);
@@ -242,11 +244,10 @@ export const filteredCards = computed(() => {
   const current = viewProject.value;
   if (!current) return [];
   const query = search.value.trim().toLocaleLowerCase("ja");
-  const placed = unplacedOnly.value
-    ? new Set(current.boards[0]?.cardIds ?? [])
-    : null;
+  const boardCardIds = new Set(current.boards[0]?.cardIds ?? []);
   return current.cards.filter((card) => {
-    if (placed?.has(card.id)) return false;
+    if (unplacedOnly.value && boardCardIds.has(card.id)) return false;
+    if (placedOnly.value && !boardCardIds.has(card.id)) return false;
     if (!query) return true;
     return [card.title, card.body, card.url, ...(card.tags ?? [])]
       .filter(Boolean)
@@ -330,6 +331,7 @@ async function activateProject(next: Project): Promise<void> {
   clearReplay();
   search.value = "";
   unplacedOnly.value = false;
+  placedOnly.value = false;
   clearAllMediaObjectUrls();
   // Snapshot missing births before open so later edits can rewind text/labels.
   const birthed = withBirthEvents(next);
