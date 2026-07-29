@@ -24,6 +24,11 @@ export type ProjectEvent =
      * `""` clears to default medium.
      */
     size?: "m" | "l" | "";
+    /**
+     * Present only when role changed (omit keeps previous on replay).
+     * `""` clears to default finding.
+     */
+    role?: "finding" | "thought" | "";
   }
   | {
     type: "card_removed";

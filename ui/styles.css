@@ -282,8 +282,13 @@ body {
   border-color: var(--muted);
 }
 .save-status {
+  display: inline-block;
+  flex: 0 0 auto;
+  min-width: 11.5rem;
   color: var(--muted);
   font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
 }
 .save-status::before {
   content: "●";
@@ -654,6 +659,11 @@ kbd {
 .board-node--l .board-node__preview {
   -webkit-line-clamp: 4;
 }
+.inspector__heading-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .inspector__size-toggle {
   display: inline-flex;
   align-items: center;
@@ -879,24 +889,75 @@ kbd {
   background: var(--accent-soft);
   box-shadow: inset 3px 0 0 var(--accent);
 }
-.stream-card.is-thought .stream-card__meta span {
+.stream-card.is-thought .stream-card__meta-label,
+.stream-card.is-thought .stream-card__status {
   color: var(--accent);
 }
 .stream-card__main {
   display: block;
   width: 100%;
   border: 0;
-  padding: 14px 72px 10px 16px;
+  padding: 4px 16px 10px;
   background: transparent;
   text-align: left;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
 }
+.stream-card__meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 12px 16px 0;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.stream-card__meta-row time {
+  flex: 0 0 auto;
+}
+.stream-card__meta-label,
+.stream-card__meta-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-left: auto;
+}
+.stream-card__meta-tools {
+  flex: 0 0 auto;
+}
+.stream-card__meta-label {
+  overflow: hidden;
+  color: var(--link);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stream-card__status {
+  color: var(--link);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.stream-card__delete-inline {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: transparent;
+  color: var(--danger);
+  font: 500 11px/1.3 "IBM Plex Sans JP", sans-serif;
+  cursor: pointer;
+}
+.stream-card__delete-inline:hover {
+  background: var(--bg-soft);
+}
 .stream-card__url {
   display: inline-block;
-  max-width: calc(100% - 88px);
-  margin: 0 72px 12px 16px;
+  max-width: calc(100% - 32px);
+  margin: 0 16px 12px;
   overflow: hidden;
   color: var(--link);
   font-size: 12px;
@@ -911,14 +972,6 @@ kbd {
 }
 .stream-row {
   position: relative;
-}
-.stream-card__delete {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  margin: 0;
-  padding: 6px 10px;
-  font-size: 12px;
 }
 .stream-card__meta {
   display: flex;

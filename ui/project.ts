@@ -213,6 +213,10 @@ function applyEvent(
         if (event.size === "l") next.size = "l";
         else delete next.size;
       }
+      if ("role" in event) {
+        if (event.role === "thought") next.role = "thought";
+        else delete next.role;
+      }
       cards.set(event.cardId, next);
       break;
     }

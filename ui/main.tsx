@@ -5,18 +5,22 @@ import { Capture } from "./capture.tsx";
 import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import {
+  activeProjectId,
   addCard,
   appMode,
   connectCards,
   createProject,
   exportProject,
   flushSave,
+  hasProject,
   importProjectFromText,
   initialize,
   pickAndImportProject,
   placeCardOnBoard,
   project,
+  projectName,
   projectSummaries,
+  refreshProjectSummaries,
   removeCard,
   removeLink,
   renameProject,
@@ -27,6 +31,7 @@ import {
   setSideOpen,
   sideOpen,
   switchProject,
+  updateCardRole,
   updateLink,
 } from "./state.ts";
 import { Stream } from "./stream.tsx";
@@ -87,6 +92,10 @@ declare global {
           placeAt?: { x: number; y: number };
         },
       ) => Promise<void>;
+      updateCardRole: (
+        id: string,
+        role: "finding" | "thought",
+      ) => Promise<void>;
       createProject: (name?: string) => Promise<unknown>;
       importProjectFromText: (text: string) => Promise<unknown>;
       switchProject: (id: string) => Promise<void>;
@@ -102,10 +111,275 @@ declare global {
   }
 }
 
-function App() {
+function SaveStatusLabel() {
+  const status = saveStatus.value;
+  const label = status === "saving"
+    ? "保存中…"
+    : status === "error"
+    ? "保存できませんでした"
+    : "このブラウザに保存済み";
+  return (
+    <span class={`save-status is-${status}`} aria-live="polite">
+      {label}
+    </span>
+  );
+}
+
+function TopBar() {
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [projectRename, setProjectRename] = useState("");
+  const mode = appMode.value;
+  const renameSource = projectName.value;
+  const renameProjectId = activeProjectId.value;
 
+  useEffect(() => {
+    setProjectRename((prev) => (prev === renameSource ? prev : renameSource));
+  }, [renameProjectId, renameSource]);
+
+  useEffect(() => {
+    if (!projectMenuOpen) return;
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target as Element | null;
+      if (target?.closest("[data-project-menu-root]")) return;
+      setProjectMenuOpen(false);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setProjectMenuOpen(false);
+    }
+    globalThis.addEventListener("pointerdown", onPointerDown);
+    globalThis.addEventListener("keydown", onKeyDown);
+    return () => {
+      globalThis.removeEventListener("pointerdown", onPointerDown);
+      globalThis.removeEventListener("keydown", onKeyDown);
+    };
+  }, [projectMenuOpen]);
+
+  return (
+    <header class="topbar">
+      <div class="topbar__left">
+        <div
+          class={`project-menu ${projectMenuOpen ? "is-open" : ""}`}
+          data-project-menu-root
+        >
+          <button
+            type="button"
+            class="project-menu__toggle"
+            data-testid="project-menu-toggle"
+            aria-haspopup="menu"
+            aria-expanded={projectMenuOpen}
+            aria-controls="project-menu-panel"
+            onClick={() => {
+              const next = !projectMenuOpen;
+              setProjectMenuOpen(next);
+              if (next) void refreshProjectSummaries();
+            }}
+          >
+            プロジェクト
+          </button>
+          {projectMenuOpen
+            ? (
+              <div
+                id="project-menu-panel"
+                class="project-menu__panel"
+                role="menu"
+                aria-label="プロジェクト操作"
+              >
+                <label class="project-menu__field">
+                  <span>切替</span>
+                  <select
+                    data-testid="project-select"
+                    aria-label="プロジェクト切替"
+                    value={activeProjectId.value}
+                    onChange={(event) => {
+                      void switchProject(event.currentTarget.value);
+                      setProjectMenuOpen(false);
+                    }}
+                  >
+                    {projectSummaries.value
+                      .toSorted((left, right) =>
+                        right.updatedAt - left.updatedAt
+                      )
+                      .map((item) => {
+                        const when = new Date(item.updatedAt).toLocaleString(
+                          "ja",
+                          {
+                            month: "numeric",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        );
+                        return (
+                          <option key={item.id} value={item.id}>
+                            {item.name}（{item.cardCount}枚・{when}）
+                          </option>
+                        );
+                      })}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  class="project-menu__action"
+                  data-testid="project-create"
+                  role="menuitem"
+                  onClick={() => {
+                    void createProject();
+                    setProjectMenuOpen(false);
+                  }}
+                >
+                  新規作成
+                </button>
+                <form
+                  class="project-menu__rename"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void renameProject(projectRename);
+                    setProjectMenuOpen(false);
+                  }}
+                >
+                  <label class="project-menu__field">
+                    <span>名前変更</span>
+                    <input
+                      data-testid="project-rename-input"
+                      aria-label="プロジェクト名"
+                      value={projectRename}
+                      onInput={(event) =>
+                        setProjectRename(event.currentTarget.value)}
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    class="project-menu__action"
+                    data-testid="project-rename-save"
+                  >
+                    保存
+                  </button>
+                </form>
+              </div>
+            )
+            : null}
+        </div>
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true">A</span>
+          <div>
+            <span>ARGBoard</span>
+            <small>{projectName.value}</small>
+          </div>
+        </div>
+      </div>
+      <div class="topbar__actions">
+        <div class="mode-switch" role="tablist" aria-label="モード">
+          <button
+            type="button"
+            role="tab"
+            data-testid="mode-explore"
+            aria-selected={mode === "explore"}
+            class={mode === "explore" ? "is-active" : undefined}
+            onClick={() => setAppMode("explore")}
+          >
+            探索
+          </button>
+          <button
+            type="button"
+            role="tab"
+            data-testid="mode-contemplate"
+            aria-selected={mode === "contemplate"}
+            class={mode === "contemplate" ? "is-active" : undefined}
+            onClick={() => setAppMode("contemplate")}
+          >
+            考察
+          </button>
+        </div>
+        <SaveStatusLabel />
+        <button
+          type="button"
+          data-testid="export-btn"
+          onClick={() => {
+            void exportProject();
+          }}
+        >
+          JSONを書き出す
+        </button>
+        <button
+          type="button"
+          data-testid="import-btn"
+          onClick={pickAndImportProject}
+        >
+          JSONを読み込む
+        </button>
+      </div>
+    </header>
+  );
+}
+
+function ExploreWorkspace() {
+  return (
+    <>
+      <Capture />
+      <div class="workspace workspace--explore">
+        <Stream />
+      </div>
+    </>
+  );
+}
+
+function ContemplateWorkspace() {
+  const side = sideOpen.value;
+  return (
+    <div
+      class={`workspace workspace--contemplate ${side ? "is-side-open" : ""}`}
+    >
+      <aside
+        class="side-panel"
+        id="discovery-side"
+        aria-label="発見ログサイド"
+        aria-hidden={!side}
+        inert={!side || undefined}
+      >
+        <div class="side-panel__inner">
+          <Capture />
+          <Stream />
+        </div>
+      </aside>
+      <button
+        type="button"
+        class="side-toggle"
+        data-testid={side ? "side-close" : "side-open"}
+        aria-expanded={side}
+        aria-controls="discovery-side"
+        aria-label={side ? "発見ログを閉じる" : "発見ログを開く"}
+        title={side ? "発見ログを閉じる" : "発見ログを開く"}
+        onClick={() => setSideOpen(!side)}
+      >
+        <span aria-hidden="true">{side ? "<" : ">"}</span>
+      </button>
+      <div class="contemplate-main">
+        <BoardView />
+        <Inspector />
+      </div>
+    </div>
+  );
+}
+
+function AppShell() {
+  const mode = appMode.value;
+  return (
+    <main class={`app-shell mode-${mode}`}>
+      <InstallTip />
+      <TopBar />
+      {mode === "explore" ? <ExploreWorkspace /> : <ContemplateWorkspace />}
+    </main>
+  );
+}
+
+function ProjectBootstrap() {
+  if (!hasProject.value) {
+    return <main class="loading">読み込み中…</main>;
+  }
+  return <AppShell />;
+}
+
+function App() {
   useEffect(() => {
     initialize();
   }, []);
@@ -136,244 +410,7 @@ function App() {
     return () => globalThis.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  useEffect(() => {
-    const current = project.value?.name ?? "";
-    setProjectRename((prev) => (prev === current ? prev : current));
-  }, [project.value?.id, project.value?.name]);
-
-  useEffect(() => {
-    if (!projectMenuOpen) return;
-    function onPointerDown(event: PointerEvent) {
-      const target = event.target as Element | null;
-      if (target?.closest("[data-project-menu-root]")) return;
-      setProjectMenuOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setProjectMenuOpen(false);
-    }
-    globalThis.addEventListener("pointerdown", onPointerDown);
-    globalThis.addEventListener("keydown", onKeyDown);
-    return () => {
-      globalThis.removeEventListener("pointerdown", onPointerDown);
-      globalThis.removeEventListener("keydown", onKeyDown);
-    };
-  }, [projectMenuOpen]);
-
-  if (!project.value) {
-    return <main class="loading">読み込み中…</main>;
-  }
-
-  const mode = appMode.value;
-  const side = sideOpen.value;
-  const statusLabel = saveStatus.value === "saving"
-    ? "保存中…"
-    : saveStatus.value === "error"
-    ? "保存できませんでした"
-    : "このブラウザに保存済み";
-
-  return (
-    <main class={`app-shell mode-${mode}`}>
-      <InstallTip />
-      <header class="topbar">
-        <div class="topbar__left">
-          <div
-            class={`project-menu ${projectMenuOpen ? "is-open" : ""}`}
-            data-project-menu-root
-          >
-            <button
-              type="button"
-              class="project-menu__toggle"
-              data-testid="project-menu-toggle"
-              aria-haspopup="menu"
-              aria-expanded={projectMenuOpen}
-              aria-controls="project-menu-panel"
-              onClick={() => setProjectMenuOpen(!projectMenuOpen)}
-            >
-              プロジェクト
-            </button>
-            {projectMenuOpen
-              ? (
-                <div
-                  id="project-menu-panel"
-                  class="project-menu__panel"
-                  role="menu"
-                  aria-label="プロジェクト操作"
-                >
-                  <label class="project-menu__field">
-                    <span>切替</span>
-                    <select
-                      data-testid="project-select"
-                      aria-label="プロジェクト切替"
-                      value={project.value.id}
-                      onChange={(event) => {
-                        void switchProject(event.currentTarget.value);
-                        setProjectMenuOpen(false);
-                      }}
-                    >
-                      {projectSummaries.value
-                        .toSorted((left, right) =>
-                          right.updatedAt - left.updatedAt
-                        )
-                        .map((item) => {
-                          const when = new Date(item.updatedAt).toLocaleString(
-                            "ja",
-                            {
-                              month: "numeric",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            },
-                          );
-                          return (
-                            <option key={item.id} value={item.id}>
-                              {item.name}（{item.cardCount}枚・{when}）
-                            </option>
-                          );
-                        })}
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    class="project-menu__action"
-                    data-testid="project-create"
-                    role="menuitem"
-                    onClick={() => {
-                      void createProject();
-                      setProjectMenuOpen(false);
-                    }}
-                  >
-                    新規作成
-                  </button>
-                  <form
-                    class="project-menu__rename"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void renameProject(projectRename);
-                      setProjectMenuOpen(false);
-                    }}
-                  >
-                    <label class="project-menu__field">
-                      <span>名前変更</span>
-                      <input
-                        data-testid="project-rename-input"
-                        aria-label="プロジェクト名"
-                        value={projectRename}
-                        onInput={(event) =>
-                          setProjectRename(event.currentTarget.value)}
-                      />
-                    </label>
-                    <button
-                      type="submit"
-                      class="project-menu__action"
-                      data-testid="project-rename-save"
-                    >
-                      保存
-                    </button>
-                  </form>
-                </div>
-              )
-              : null}
-          </div>
-          <div class="brand">
-            <span class="brand__mark" aria-hidden="true">A</span>
-            <div>
-              <span>ARGBoard</span>
-              <small>{project.value.name}</small>
-            </div>
-          </div>
-        </div>
-        <div class="topbar__actions">
-          <div class="mode-switch" role="tablist" aria-label="モード">
-            <button
-              type="button"
-              role="tab"
-              data-testid="mode-explore"
-              aria-selected={mode === "explore"}
-              class={mode === "explore" ? "is-active" : undefined}
-              onClick={() => setAppMode("explore")}
-            >
-              探索
-            </button>
-            <button
-              type="button"
-              role="tab"
-              data-testid="mode-contemplate"
-              aria-selected={mode === "contemplate"}
-              class={mode === "contemplate" ? "is-active" : undefined}
-              onClick={() => setAppMode("contemplate")}
-            >
-              考察
-            </button>
-          </div>
-          <span class={`save-status is-${saveStatus.value}`}>
-            {statusLabel}
-          </span>
-          <button
-            type="button"
-            data-testid="export-btn"
-            onClick={() => {
-              void exportProject();
-            }}
-          >
-            JSONを書き出す
-          </button>
-          <button
-            type="button"
-            data-testid="import-btn"
-            onClick={pickAndImportProject}
-          >
-            JSONを読み込む
-          </button>
-        </div>
-      </header>
-
-      {mode === "explore"
-        ? (
-          <>
-            <Capture />
-            <div class="workspace workspace--explore">
-              <Stream />
-            </div>
-          </>
-        )
-        : (
-          <div
-            class={`workspace workspace--contemplate ${
-              side ? "is-side-open" : ""
-            }`}
-          >
-            <aside
-              class="side-panel"
-              id="discovery-side"
-              aria-label="発見ログサイド"
-              aria-hidden={!side}
-              inert={!side || undefined}
-            >
-              <div class="side-panel__inner">
-                <Capture />
-                <Stream />
-              </div>
-            </aside>
-            <button
-              type="button"
-              class="side-toggle"
-              data-testid={side ? "side-close" : "side-open"}
-              aria-expanded={side}
-              aria-controls="discovery-side"
-              aria-label={side ? "発見ログを閉じる" : "発見ログを開く"}
-              title={side ? "発見ログを閉じる" : "発見ログを開く"}
-              onClick={() => setSideOpen(!side)}
-            >
-              <span aria-hidden="true">{side ? "<" : ">"}</span>
-            </button>
-            <div class="contemplate-main">
-              <BoardView />
-              <Inspector />
-            </div>
-          </div>
-        )}
-    </main>
-  );
+  return <ProjectBootstrap />;
 }
 
 const isTest = new URLSearchParams(location.search).has("test");
@@ -384,6 +421,7 @@ if (isTest) {
     flushSave,
     getPersistenceRequestCount,
     addCard,
+    updateCardRole,
     createProject: async (name?: string) =>
       structuredClone(await createProject(name)),
     importProjectFromText: (text: string) =>

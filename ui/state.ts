@@ -77,6 +77,9 @@ function pickProjectId(summaries: ProjectSummary[]): string {
 
 export const project = signal<Project | null>(null);
 export const projectSummaries = signal<ProjectSummary[]>([]);
+export const hasProject = computed(() => project.value != null);
+export const projectName = computed(() => project.value?.name ?? "");
+export const activeProjectId = computed(() => project.value?.id ?? "");
 export const search = signal("");
 /** Session-only: show unplaced stream cards only (T040). Not persisted. */
 export const unplacedOnly = signal(false);
@@ -273,10 +276,32 @@ async function refreshSummaries(): Promise<void> {
   projectSummaries.value = await store.listProjects();
 }
 
+/** Refresh project list for the menu (not on every card edit). */
+export async function refreshProjectSummaries(): Promise<void> {
+  await refreshSummaries();
+}
+
 /** Serialize IndexedDB writes and always persist the latest in-memory project. */
 let saveChain: Promise<void> = Promise.resolve();
 let saveDirty = false;
 let saveGeneration = 0;
+const SAVE_INDICATOR_DELAY_MS = 450;
+let saveIndicatorTimer: ReturnType<typeof setTimeout> | undefined;
+
+function scheduleSavingIndicator(): void {
+  if (saveIndicatorTimer != null) clearTimeout(saveIndicatorTimer);
+  saveIndicatorTimer = setTimeout(() => {
+    saveIndicatorTimer = undefined;
+    saveStatus.value = "saving";
+  }, SAVE_INDICATOR_DELAY_MS);
+}
+
+function clearSavingIndicator(): void {
+  if (saveIndicatorTimer != null) {
+    clearTimeout(saveIndicatorTimer);
+    saveIndicatorTimer = undefined;
+  }
+}
 
 async function drainSaves(): Promise<void> {
   while (saveDirty) {
@@ -284,7 +309,6 @@ async function drainSaves(): Promise<void> {
     const latest = project.value;
     if (!latest) continue;
     await store.saveProject(latest);
-    await refreshSummaries();
   }
 }
 
@@ -292,7 +316,7 @@ async function persist(next: Project): Promise<void> {
   project.value = next;
   saveDirty = true;
   const myGeneration = ++saveGeneration;
-  saveStatus.value = "saving";
+  scheduleSavingIndicator();
 
   const task = saveChain.then(drainSaves);
   saveChain = task.catch((error) => {
@@ -301,9 +325,13 @@ async function persist(next: Project): Promise<void> {
 
   try {
     await task;
-    if (myGeneration === saveGeneration) saveStatus.value = "saved";
+    clearSavingIndicator();
+    if (myGeneration === saveGeneration && saveStatus.value !== "saved") {
+      saveStatus.value = "saved";
+    }
   } catch (error) {
     console.error(error);
+    clearSavingIndicator();
     if (myGeneration === saveGeneration) saveStatus.value = "error";
   }
 }
@@ -536,6 +564,42 @@ export async function updateCardTags(
     body: card.body,
     url: card.url,
     tags: nextTags ?? [],
+  }));
+}
+
+function cardRoleLabel(role: Card["role"]): "finding" | "thought" {
+  return role === "thought" ? "thought" : "finding";
+}
+
+/** Switch a card between finding and thought (T044). `"finding"` clears role. */
+export async function updateCardRole(
+  id: string,
+  role: "finding" | "thought",
+): Promise<void> {
+  const current = assertWritable();
+  if (!current) return;
+  const card = current.cards.find((item) => item.id === id);
+  if (!card) return;
+  const nextRole = cardRoleLabel(role === "thought" ? "thought" : undefined);
+  const prevRole = cardRoleLabel(card.role);
+  if (nextRole === prevRole) return;
+  const next = {
+    ...current,
+    cards: current.cards.map((item) => {
+      if (item.id !== id) return item;
+      if (nextRole === "thought") return { ...item, role: "thought" as const };
+      const { role: _drop, ...rest } = item;
+      return rest;
+    }),
+  };
+  await persist(appendEvent(next, {
+    type: "card_updated",
+    at: Date.now(),
+    cardId: id,
+    title: card.title,
+    body: card.body,
+    url: card.url,
+    role: nextRole === "thought" ? "thought" : "",
   }));
 }
 

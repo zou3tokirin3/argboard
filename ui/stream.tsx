@@ -1,3 +1,4 @@
+import { CardRoleToggle } from "./card-role-toggle.tsx";
 import {
   clearFocusView,
   expandFocusHops,
@@ -32,6 +33,30 @@ function sourceLabel(url: string): string {
   } catch {
     return url;
   }
+}
+
+function streamCardStatus(
+  card: { id: string; image?: string },
+  boardCardIds: Set<string>,
+): string {
+  const parts = [boardCardIds.has(card.id) ? "ボード済" : "未配置"];
+  if (isLocalMediaRef(card.image)) parts.push("画像");
+  return parts.join(" · ");
+}
+
+function streamMetaLabel(
+  card: { role?: "finding" | "thought" },
+  status: string,
+): string {
+  return `${card.role === "thought" ? "考察" : "発見"} · ${status}`;
+}
+
+function isMetaToolTarget(target: EventTarget | null): boolean {
+  return Boolean(
+    (target as HTMLElement | null)?.closest(
+      "button, .inspector__size-toggle, .stream-card__meta-tools",
+    ),
+  );
 }
 
 function TagFocusControls() {
@@ -170,6 +195,7 @@ export function Stream() {
         {filteredCards.value.map((card) => {
           const selected = selectedCardIds.value.includes(card.id) ||
             selectedCardId.value === card.id;
+          const status = streamCardStatus(card, boardCardIds);
           return (
             <div class="stream-row" key={card.id}>
               <div
@@ -180,6 +206,42 @@ export function Stream() {
                 data-card-id={card.id}
                 data-role={card.role === "thought" ? "thought" : "finding"}
               >
+                <div
+                  class="stream-card__meta-row"
+                  onClick={(event) => {
+                    if (isMetaToolTarget(event.target)) return;
+                    selectCardFromStream(card.id);
+                  }}
+                >
+                  <time>{timeFormatter.format(card.foundAt)}</time>
+                  {selected && !replaying
+                    ? (
+                      <span class="stream-card__meta-tools">
+                        <CardRoleToggle
+                          cardId={card.id}
+                          role={card.role}
+                          testIdPrefix="stream"
+                        />
+                        <span class="stream-card__status">{status}</span>
+                        <button
+                          type="button"
+                          class="stream-card__delete-inline"
+                          data-testid="stream-card-delete"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void removeCard(card.id);
+                          }}
+                        >
+                          削除
+                        </button>
+                      </span>
+                    )
+                    : (
+                      <span class="stream-card__meta-label">
+                        {streamMetaLabel(card, status)}
+                      </span>
+                    )}
+                </div>
                 <button
                   type="button"
                   class="stream-card__main"
@@ -194,14 +256,6 @@ export function Stream() {
                     globalThis.getSelection?.()?.removeAllRanges()}
                   onClick={() => selectCardFromStream(card.id)}
                 >
-                  <span class="stream-card__meta">
-                    <time>{timeFormatter.format(card.foundAt)}</time>
-                    <span>
-                      {card.role === "thought" ? "考察" : "発見"} ·{" "}
-                      {boardCardIds.has(card.id) ? "ボード済" : "未配置"}
-                      {isLocalMediaRef(card.image) ? " · 画像" : ""}
-                    </span>
-                  </span>
                   <span class="stream-card__body-row">
                     <span class="stream-card__text">
                       <strong>{card.title}</strong>
@@ -238,18 +292,6 @@ export function Stream() {
                   )
                   : null}
               </div>
-              {selected && !replaying
-                ? (
-                  <button
-                    type="button"
-                    class="inspector__danger stream-card__delete"
-                    data-testid="stream-card-delete"
-                    onClick={() => removeCard(card.id)}
-                  >
-                    削除
-                  </button>
-                )
-                : null}
             </div>
           );
         })}
