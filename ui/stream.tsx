@@ -6,12 +6,14 @@ import {
   focusHops,
   focusOrigin,
   isReplaying,
+  openExploreCompose,
   placedOnly,
   removeCard,
   search,
   selectCardFromStream,
   selectedCardId,
   selectedCardIds,
+  selectSingleCard,
   setFocusViewByTag,
   shrinkFocusHops,
   unplacedOnly,
@@ -270,10 +272,25 @@ export function Stream() {
                     </span>
                     {isLocalMediaRef(card.image)
                       ? (
-                        <MediaThumb
-                          image={card.image}
-                          className="stream-card__thumb"
-                        />
+                        <button
+                          type="button"
+                          class="stream-card__thumb-btn"
+                          data-testid="stream-card-thumb"
+                          title="追記モードで開く"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (isContemplate) return;
+                            if (selectedCardId.value !== card.id) {
+                              selectSingleCard(card.id);
+                            }
+                            openExploreCompose(card.id);
+                          }}
+                        >
+                          <MediaThumb
+                            image={card.image}
+                            className="stream-card__thumb"
+                          />
+                        </button>
                       )
                       : null}
                   </span>

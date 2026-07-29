@@ -33,6 +33,7 @@ import {
 import { attachTag, normalizeTag, replaceTag } from "./tags.ts";
 import type { CardSize } from "./node-size.ts";
 import { normalizeCardSize } from "./node-size.ts";
+import type { ParsedCapture } from "./capture-notation.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
@@ -107,6 +108,49 @@ export function setSelectedCards(ids: readonly string[]): void {
 export function clearCardSelection(): void {
   selectedCardIds.value = [];
   selectedCardId.value = null;
+}
+
+/** Explore compose (T045): editing an image card at top capture — separate from stream selection. */
+export const exploreComposeCardId = signal<string | null>(null);
+
+export const exploreComposeCard = computed(() => {
+  const id = exploreComposeCardId.value;
+  if (!id) return null;
+  return project.value?.cards.find((item) => item.id === id) ?? null;
+});
+
+export function openExploreCompose(cardId: string): void {
+  clearExploreImageDraft();
+  exploreComposeCardId.value = cardId;
+}
+
+export function closeExploreCompose(): void {
+  exploreComposeCardId.value = null;
+}
+
+/** Staged screenshot at top capture — not a card until committed (T045). */
+export type ExploreImageDraft = {
+  blob: Blob;
+  previewUrl: string;
+  title: string;
+  body: string;
+  url: string;
+};
+
+export const exploreImageDraft = signal<ExploreImageDraft | null>(null);
+
+export function clearExploreImageDraft(): void {
+  const draft = exploreImageDraft.value;
+  if (draft?.previewUrl) URL.revokeObjectURL(draft.previewUrl);
+  exploreImageDraft.value = null;
+}
+
+export function patchExploreImageDraft(
+  patch: Partial<Pick<ExploreImageDraft, "title" | "body" | "url">>,
+): void {
+  const draft = exploreImageDraft.value;
+  if (!draft) return;
+  exploreImageDraft.value = { ...draft, ...patch };
 }
 
 export function selectSingleCard(id: string): void {
@@ -375,6 +419,20 @@ async function activateProject(next: Project): Promise<void> {
 
 /** Select from the discovery stream; pan the board if the card is placed. */
 export function selectCardFromStream(cardId: string): void {
+  if (
+    selectedCardId.value === cardId &&
+    selectedCardIds.value.length === 1
+  ) {
+    clearCardSelection();
+    closeExploreCompose();
+    revealCardId.value = null;
+    return;
+  }
+  if (
+    exploreComposeCardId.value && exploreComposeCardId.value !== cardId
+  ) {
+    closeExploreCompose();
+  }
   selectSingleCard(cardId);
   const board = project.value?.boards[0];
   if (board?.cardIds.includes(cardId) && board.positions[cardId]) {
@@ -446,16 +504,16 @@ export async function addCard(
     body?: string;
     url?: string;
   },
-): Promise<void> {
+): Promise<string | null> {
   const cleanTitle = title.trim();
-  if (!cleanTitle) return;
+  if (!cleanTitle) return null;
   const body = options?.body?.trim() ? options.body.trim() : undefined;
   const url = options?.url?.trim() ? options.url.trim() : undefined;
 
   // Read + write memory must stay synchronous so overlapping captures
   // cannot both snapshot the same Project and drop a later card.
   const current = assertWritable();
-  if (!current) return;
+  if (!current) return null;
 
   const card: Card = {
     id: crypto.randomUUID(),
@@ -495,12 +553,130 @@ export async function addCard(
   }
 
   await saving;
+  return card.id;
+}
+
+/** Persist a card whose image blob is already compressed. */
+async function createCardWithCompressedImage(
+  compressed: Blob,
+  draft?: ParsedCapture,
+): Promise<string | null> {
+  const current = assertWritable();
+  if (!current) return null;
+  const mediaId = crypto.randomUUID();
+  const cardId = crypto.randomUUID();
+  await store.putMedia({
+    id: mediaId,
+    projectId: current.id,
+    blob: compressed,
+  });
+  const title = draft?.title.trim() || "（無題）";
+  const body = draft?.body?.trim() ? draft.body.trim() : undefined;
+  const url = draft?.url?.trim() ? draft.url.trim() : undefined;
+  const card: Card = {
+    id: cardId,
+    title,
+    foundAt: Date.now(),
+    image: mediaId,
+    ...(body ? { body } : {}),
+    ...(url ? { url } : {}),
+  };
+  let next = appendEvent(
+    { ...current, cards: [...current.cards, card] },
+    { type: "card_added", at: card.foundAt, card },
+  );
+  next = appendEvent(next, {
+    type: "card_updated",
+    at: Date.now(),
+    cardId,
+    title: card.title,
+    body: card.body,
+    url: card.url,
+    image: mediaId,
+  });
+  const saving = persist(next);
+  if (!persistenceRequested) {
+    persistenceRequested = true;
+    void store.requestPersistence().catch(() => false);
+  }
+  await saving;
+  selectSingleCard(cardId);
+  return cardId;
+}
+
+/** Create a finding card with a screenshot (file import etc.). */
+export async function addCardWithImage(
+  source: Blob,
+  draft?: ParsedCapture,
+): Promise<string | null> {
+  if (!source.type.startsWith("image/")) {
+    throw new Error("画像ファイルを選んでください");
+  }
+  const compressed = await compressImage(source);
+  return createCardWithCompressedImage(compressed, draft);
+}
+
+/** Stage a screenshot at the top capture — user commits title/body later. */
+export async function stageExploreImage(
+  source: Blob,
+  parsed?: ParsedCapture,
+): Promise<void> {
+  if (!source.type.startsWith("image/")) {
+    throw new Error("画像ファイルを選んでください");
+  }
+  closeExploreCompose();
+  const compressed = await compressImage(source);
+  clearExploreImageDraft();
+  exploreImageDraft.value = {
+    blob: compressed,
+    previewUrl: URL.createObjectURL(compressed),
+    title: parsed?.title ?? "",
+    body: parsed?.body ?? "",
+    url: parsed?.url ?? "",
+  };
+}
+
+/** Turn the staged screenshot into a card. */
+export async function commitExploreImageDraft(): Promise<string | null> {
+  const draft = exploreImageDraft.value;
+  if (!draft) return null;
+  const parsed: ParsedCapture = {
+    title: draft.title.trim() || "（無題）",
+    ...(draft.body.trim() ? { body: draft.body.trim() } : {}),
+    ...(draft.url.trim() ? { url: draft.url.trim() } : {}),
+  };
+  const blob = draft.blob;
+  clearExploreImageDraft();
+  return await createCardWithCompressedImage(blob, parsed);
+}
+
+/**
+ * Explore-mode image paste from the top capture area.
+ * Compose open → replace that card's image; otherwise stage for commit.
+ */
+export async function pasteExploreImage(
+  source: Blob,
+  draft?: ParsedCapture,
+): Promise<string | null> {
+  const current = assertWritable();
+  if (!current) return null;
+  const composeId = exploreComposeCardId.value;
+  if (composeId && current.cards.some((item) => item.id === composeId)) {
+    await setCardImage(composeId, source);
+    return composeId;
+  }
+  await stageExploreImage(source, draft);
+  return null;
 }
 
 export async function setAppMode(mode: AppMode): Promise<void> {
   const current = project.value;
   if (!current || (current.ui?.mode ?? "explore") === mode) return;
   if (mode === "explore") clearReplay();
+  else {
+    closeExploreCompose();
+    clearExploreImageDraft();
+  }
   await persist(withUi(current, { mode }));
 }
 
@@ -792,9 +968,8 @@ export async function clearCardImage(cardId: string): Promise<void> {
     image: "",
   }));
   await gcMediaIfOrphan(previous, next.cards);
+  if (exploreComposeCardId.value === cardId) closeExploreCompose();
 }
-
-/** Resolve a local media id to an object URL (cached). */
 export async function resolveMediaUrl(
   image: string | undefined,
 ): Promise<string | null> {
@@ -1025,6 +1200,7 @@ export async function removeCard(cardId: string): Promise<void> {
     setSelectedCards(selectedCardIds.value.filter((id) => id !== cardId));
   }
   if (revealCardId.value === cardId) revealCardId.value = null;
+  if (exploreComposeCardId.value === cardId) closeExploreCompose();
   const origin = focusOrigin.value;
   if (origin?.kind === "card" && origin.cardId === cardId) clearFocusView();
   clearTagFocusIfEmpty(next.cards);

@@ -2,19 +2,29 @@ import { render } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
+import { readCaptureDraft } from "./capture-draft.ts";
+import { imageBlobFromClipboard } from "./clipboard-image.ts";
 import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import {
   activeProjectId,
   addCard,
   appMode,
+  clearExploreImageDraft,
+  closeExploreCompose,
+  commitExploreImageDraft,
   connectCards,
   createProject,
+  exploreComposeCardId,
+  exploreImageDraft,
   exportProject,
   flushSave,
   hasProject,
   importProjectFromText,
   initialize,
+  isReplaying,
+  pasteExploreImage,
+  patchExploreImageDraft,
   pickAndImportProject,
   placeCardOnBoard,
   project,
@@ -91,7 +101,7 @@ declare global {
           role?: "finding" | "thought";
           placeAt?: { x: number; y: number };
         },
-      ) => Promise<void>;
+      ) => Promise<string | null>;
       updateCardRole: (
         id: string,
         role: "finding" | "thought",
@@ -107,6 +117,14 @@ declare global {
         patch: { label?: string; kind?: "connects" | "contradicts" },
       ) => Promise<void>;
       setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
+      commitExploreImageDraft: () => Promise<string | null>;
+      patchExploreImageDraft: (
+        patch: { title?: string; body?: string; url?: string },
+      ) => void;
+      pasteExploreImage: (
+        blob: Blob,
+        draft?: { title: string; body?: string; url?: string },
+      ) => Promise<string | null>;
     };
   }
 }
@@ -313,9 +331,60 @@ function TopBar() {
 }
 
 function ExploreWorkspace() {
+  useEffect(() => {
+    function onPaste(event: ClipboardEvent) {
+      if (appMode.value !== "explore") return;
+      if (isReplaying.value) return;
+      const blob = imageBlobFromClipboard(event);
+      if (!blob) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, [contenteditable=true]")) {
+        if (!target.closest(".capture-block")) return;
+      }
+      event.preventDefault();
+      const draft = readCaptureDraft() ?? undefined;
+      void pasteExploreImage(blob, draft ?? undefined);
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (appMode.value !== "explore") return;
+      if (event.key !== "Escape") return;
+      if (exploreImageDraft.value) {
+        event.preventDefault();
+        clearExploreImageDraft();
+        return;
+      }
+      if (!exploreComposeCardId.value) return;
+      event.preventDefault();
+      closeExploreCompose();
+    }
+    function onPointerDown(event: PointerEvent) {
+      if (appMode.value !== "explore") return;
+      const target = event.target as Element | null;
+      if (exploreImageDraft.value) {
+        if (target?.closest(".capture-image-staging")) return;
+        if (target?.closest('[data-testid="capture-image-slot"]')) return;
+        if (target?.closest('[data-testid="capture-image-pick"]')) return;
+        return;
+      }
+      if (!exploreComposeCardId.value) return;
+      if (target?.closest(".capture-compose")) return;
+      if (target?.closest('[data-testid="stream-card-thumb"]')) return;
+      if (target?.closest('[data-testid="capture-input"]')) return;
+      closeExploreCompose();
+    }
+    globalThis.addEventListener("paste", onPaste);
+    globalThis.addEventListener("keydown", onKeyDown);
+    globalThis.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      globalThis.removeEventListener("paste", onPaste);
+      globalThis.removeEventListener("keydown", onKeyDown);
+      globalThis.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, []);
+
   return (
     <>
-      <Capture />
+      <Capture explore />
       <div class="workspace workspace--explore">
         <Stream />
       </div>
@@ -432,6 +501,9 @@ if (isTest) {
     connectCards,
     updateLink,
     setAppMode,
+    pasteExploreImage,
+    commitExploreImageDraft,
+    patchExploreImageDraft,
   };
   document.documentElement.dataset.test = "true";
 } else if ("serviceWorker" in navigator) {

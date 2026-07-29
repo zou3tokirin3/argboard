@@ -388,6 +388,177 @@ body {
   color: var(--ink);
   font: 500 12px/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
+.capture-block--explore {
+  width: min(720px, calc(100% - 48px));
+}
+.capture-block--staging {
+  width: min(920px, calc(100% - 32px));
+}
+.capture__image-slot {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+}
+.capture__image-pick {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+.capture__image-pick:hover:not(:disabled) {
+  border-color: var(--muted);
+  color: var(--ink);
+}
+.capture__image-slot:hover,
+.capture__image-slot:focus {
+  outline: 0;
+  border-color: var(--accent);
+  color: var(--ink);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.capture-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--bg-soft);
+}
+.capture-compose__row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.capture-compose__fields {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.capture-compose__title,
+.capture-compose__body,
+.capture-compose__url {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  padding: 8px 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+.capture-compose__title {
+  font-size: 15px;
+  font-weight: 500;
+}
+.capture-compose__body {
+  min-height: 72px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.capture-compose__url {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+}
+.capture-compose__title:focus,
+.capture-compose__body:focus,
+.capture-compose__url:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.capture-compose__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.capture-compose__submit {
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-box);
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+.capture-compose__submit:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.capture-compose__submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.capture-compose__cancel {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  padding: 6px 10px;
+  background: var(--bg);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.capture-compose__cancel:hover:not(:disabled) {
+  border-color: var(--muted);
+  color: var(--ink);
+}
+.capture-image-staging {
+  gap: 12px;
+}
+.capture-image-staging__preview {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--bg);
+}
+.capture-image-staging__preview img {
+  display: block;
+  width: 100%;
+  max-height: min(52vh, 520px);
+  object-fit: contain;
+}
+.capture-block--explore:has(.capture:focus-within) {
+  border-radius: var(--radius-box);
+}
+.stream-card__thumb-btn {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--radius-box);
+}
+.stream-card__thumb-btn:hover .stream-card__thumb,
+.stream-card__thumb-btn:focus-visible .stream-card__thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 .board__toolbar .capture.board__thought {
   width: auto;
   flex: 1;
@@ -533,6 +704,96 @@ kbd {
   outline: 0;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.card-image-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-image-field--compact > span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.card-image-field__drop {
+  min-height: 88px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.card-image-field__drop:focus {
+  outline: 0;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.card-image-field.has-image .card-image-field__drop {
+  border-style: solid;
+}
+.card-image-field__preview {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  background: var(--panel);
+}
+.card-image-field--inline {
+  flex: 0 0 96px;
+  width: 96px;
+}
+.card-image-field--inline .card-image-field__drop {
+  min-height: 96px;
+  width: 96px;
+}
+.card-image-field--inline .card-image-field__preview {
+  max-height: 140px;
+}
+.card-image-field__actions--mini {
+  flex-direction: column;
+  gap: 2px;
+}
+.card-image-field__actions--mini button {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.card-image-field__actions--mini button:hover:not(:disabled) {
+  color: var(--ink);
+}
+.card-image-field__hint {
+  margin: 0;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  text-align: center;
+}
+.card-image-field__actions {
+  display: flex;
+  gap: 8px;
+}
+.card-image-field__actions button {
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  padding: 6px 10px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.card-image-field__actions button:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+.card-image-field__actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .inspector__image-drop {
   min-height: 88px;

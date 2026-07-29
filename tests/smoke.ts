@@ -462,6 +462,55 @@ try {
 
     await page.waitForSelector('[data-testid="link-line"]');
     await page.waitForSelector('[data-testid="board-node"]');
+
+    // 探索モード: 画像ペースト → ステージング → 確定でカード化
+    const imgStamp = `img-${Date.now()}`;
+    await page.evaluate(async (title: string) => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
+          pasteExploreImage: (blob: Blob) => Promise<string | null>;
+          commitExploreImageDraft: () => Promise<string | null>;
+          patchExploreImageDraft: (
+            patch: { title?: string; body?: string; url?: string },
+          ) => void;
+          getState: () => {
+            cards: { id: string; title: string; image?: string }[];
+          };
+        };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      await api.setAppMode("explore");
+      const before = api.getState().cards.length;
+      const canvas = document.createElement("canvas");
+      canvas.width = 2;
+      canvas.height = 2;
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+      if (!blob) throw new Error("canvas toBlob failed");
+      const earlyId = await api.pasteExploreImage(blob);
+      if (earlyId != null) throw new Error("paste should stage, not create");
+      if (api.getState().cards.length !== before) {
+        throw new Error("card created before commit");
+      }
+      if (!document.querySelector('[data-testid="capture-image-staging"]')) {
+        throw new Error("staging UI missing");
+      }
+      const titleInput = document.querySelector(
+        '[data-testid="capture-image-staging-title"]',
+      );
+      if (!titleInput) throw new Error("staging title input missing");
+      api.patchExploreImageDraft({ title });
+      const cardId = await api.commitExploreImageDraft();
+      if (!cardId) throw new Error("commit returned null");
+      const card = api.getState().cards.find((item) => item.id === cardId);
+      if (!card?.image) throw new Error("committed card has no image ref");
+      if (card.title !== title) {
+        throw new Error(`unexpected title: ${card.title}`);
+      }
+    }, { args: [imgStamp] });
+    await page.waitForSelector('[data-testid="capture-input"]');
   } finally {
     await browser.close();
   }
