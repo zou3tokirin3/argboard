@@ -75,6 +75,33 @@ export function detachTag(
   return next.length ? next : undefined;
 }
 
+/** Tags present on every selected card (first card's order). */
+export function commonTagsAmong(
+  cards: ReadonlyArray<{ id: string; tags?: string[] }>,
+  ids: readonly string[],
+): string[] {
+  if (ids.length === 0) return [];
+  const selected = ids
+    .map((id) => cards.find((card) => card.id === id))
+    .filter((card): card is { id: string; tags?: string[] } => card != null);
+  if (selected.length !== ids.length) return [];
+  const [first, ...rest] = selected;
+  const common = new Set(
+    (first!.tags ?? []).map(normalizeTag).filter(Boolean),
+  );
+  for (const card of rest) {
+    const names = new Set(
+      (card.tags ?? []).map(normalizeTag).filter(Boolean),
+    );
+    for (const tag of common) {
+      if (!names.has(tag)) common.delete(tag);
+    }
+  }
+  return (first!.tags ?? [])
+    .map(normalizeTag)
+    .filter((tag) => tag && common.has(tag));
+}
+
 /**
  * Replace one tag with another on a card's list (rename or merge).
  * Dedupes; returns undefined when the list becomes empty.

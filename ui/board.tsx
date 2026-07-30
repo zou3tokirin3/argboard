@@ -4,14 +4,14 @@ import {
   clearCardSelection,
   clearFocusView,
   clearReplay,
-  commitCardPlacement,
+  commitCardPlacements,
   connectCards,
   expandFocusHops,
   flushSave,
   focusHops,
   focusOrigin,
   isReplaying,
-  moveCardOnBoardLocal,
+  moveCardsOnBoardLocal,
   placeCardOnBoard,
   project,
   replayIndex,
@@ -74,10 +74,10 @@ type Drag =
   | {
     type: "node";
     cardId: string;
+    cardIds: string[];
     offsetX: number;
     offsetY: number;
-    originX: number;
-    originY: number;
+    originPositions: Record<string, { x: number; y: number }>;
   }
   | { type: "link"; fromId: string; targetId: string | null }
   | {
@@ -915,18 +915,26 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     event.stopPropagation();
     event.preventDefault();
     clearTextSelection();
-    selectSingleCard(cardId);
+    selectedLinkId.value = null;
+    const multi = selectedCardIds.value;
+    const bulk = multi.length >= 2 && multi.includes(cardId);
+    if (!bulk) selectSingleCard(cardId);
     if (isReplaying.value) return;
     const world = clientToWorld(event.clientX, event.clientY);
-    const position = primaryBoard(viewProject.value)?.positions[cardId] ??
-      { x: 0, y: 0 };
+    const positions = primaryBoard(viewProject.value)?.positions ?? {};
+    const position = positions[cardId] ?? { x: 0, y: 0 };
+    const cardIds = bulk ? multi : [cardId];
+    const originPositions: Record<string, { x: number; y: number }> = {};
+    for (const id of cardIds) {
+      originPositions[id] = positions[id] ?? { x: 0, y: 0 };
+    }
     dragRef.current = {
       type: "node",
       cardId,
+      cardIds,
       offsetX: world.x - position.x,
       offsetY: world.y - position.y,
-      originX: position.x,
-      originY: position.y,
+      originPositions,
     };
     canvasRef.current?.setPointerCapture(event.pointerId);
   }
@@ -971,10 +979,14 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     }
     if (drag.type === "node") {
       const world = clientToWorld(event.clientX, event.clientY);
-      moveCardOnBoardLocal(
-        drag.cardId,
-        world.x - drag.offsetX,
-        world.y - drag.offsetY,
+      const anchorX = world.x - drag.offsetX;
+      const anchorY = world.y - drag.offsetY;
+      const origin = drag.originPositions[drag.cardId] ?? { x: 0, y: 0 };
+      moveCardsOnBoardLocal(
+        drag.cardIds,
+        drag.originPositions,
+        anchorX - origin.x,
+        anchorY - origin.y,
       );
       return;
     }
@@ -1024,14 +1036,15 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
       return;
     }
     if (drag.type === "node") {
-      const pos = primaryBoard(project.value)?.positions[drag.cardId];
-      if (
-        pos && (pos.x !== drag.originX || pos.y !== drag.originY)
-      ) {
-        await commitCardPlacement(drag.cardId);
-      } else {
-        await flushSave();
-      }
+      const positions = primaryBoard(project.value)?.positions ?? {};
+      const moved = drag.cardIds.filter((id) => {
+        const pos = positions[id];
+        const origin = drag.originPositions[id];
+        return pos && origin &&
+          (pos.x !== origin.x || pos.y !== origin.y);
+      });
+      if (moved.length > 0) await commitCardPlacements(moved);
+      else await flushSave();
       return;
     }
     if (drag.type === "marquee") {
@@ -1267,7 +1280,7 @@ export function BoardView() {
         <span class="board__hint">
           {replaying
             ? "下のバーでステップ移動"
-            : "上部の糊で移動 / 糸端で接続 / Shift＋空白ドラッグで複数選択"}
+            : "糊付け帯をドラッグで移動（複数選択中はまとめて） / 糸端で接続 / Shift＋空白で囲む"}
         </span>
       </div>
       {replaying && currentStep && stepIndex != null

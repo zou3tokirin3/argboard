@@ -2,6 +2,7 @@ import {
   attachTag,
   buildTagSuggestions,
   collectTagUsage,
+  commonTagsAmong,
   detachTag,
   fitTagsOneLine,
   normalizeTag,
@@ -87,6 +88,25 @@ Deno.test("replaceTag renames and merges with dedupe", () => {
   }
   const missing = replaceTag(["十七"], "音声", "拠点");
   if (missing.changed) throw new Error("missing source should no-op");
+});
+
+Deno.test("commonTagsAmong returns tags shared by every selected card", () => {
+  const a = "a";
+  const b = "b";
+  const c = "c";
+  const cards = [
+    { id: a, tags: ["十七", "音声", "拠点"] },
+    { id: b, tags: ["音声", "十七"] },
+    { id: c, tags: ["メモ"] },
+  ];
+  const ab = commonTagsAmong(cards, [a, b]);
+  if (ab.join(",") !== "十七,音声") {
+    throw new Error(`ab common: ${ab.join(",")}`);
+  }
+  const abc = commonTagsAmong(cards, [a, b, c]);
+  if (abc.length !== 0) throw new Error("abc should have no common tag");
+  const ac = commonTagsAmong(cards, [a, c]);
+  if (ac.length !== 0) throw new Error("ac should have no common tag");
 });
 
 Deno.test("fitTagsOneLine keeps all when width is enough", () => {

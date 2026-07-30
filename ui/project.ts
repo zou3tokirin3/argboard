@@ -506,6 +506,22 @@ export function applyPlaceCardOnBoard(
   }));
 }
 
+/** Move several board cards at once. Skips unknown cards; returns null if none apply. */
+export function applyMoveCardsOnBoard(
+  project: Project,
+  moves: ReadonlyArray<{ cardId: string; x: number; y: number }>,
+): Project | null {
+  let next = project;
+  let any = false;
+  for (const { cardId, x, y } of moves) {
+    const applied = applyPlaceCardOnBoard(next, cardId, x, y);
+    if (!applied) continue;
+    next = applied;
+    any = true;
+  }
+  return any ? next : null;
+}
+
 /** Create a link between two board cards. Returns null when invalid / duplicate. */
 export function applyConnectCards(
   project: Project,

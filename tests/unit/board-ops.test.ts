@@ -1,5 +1,6 @@
 import {
   applyConnectCards,
+  applyMoveCardsOnBoard,
   applyPlaceCardOnBoard,
   applyRemoveCard,
   applySetBoardViewport,
@@ -28,6 +29,32 @@ Deno.test("applyPlaceCardOnBoard rejects unknown cards", () => {
   const project = createEmptyProject("ボード", 1);
   const next = applyPlaceCardOnBoard(project, "missing", 0, 0);
   if (next !== null) throw new Error("unknown card must be rejected");
+});
+
+Deno.test("applyMoveCardsOnBoard moves several cards preserving layout", () => {
+  const a = crypto.randomUUID();
+  const b = crypto.randomUUID();
+  let project = createEmptyProject("ボード", 1);
+  project = {
+    ...project,
+    cards: [
+      { id: a, title: "A", foundAt: 1 },
+      { id: b, title: "B", foundAt: 2 },
+    ],
+  };
+  project = applyPlaceCardOnBoard(project, a, 10, 20)!;
+  project = applyPlaceCardOnBoard(project, b, 110, 220)!;
+  const moved = applyMoveCardsOnBoard(project, [
+    { cardId: a, x: 30, y: 40 },
+    { cardId: b, x: 130, y: 240 },
+  ]);
+  if (!moved) throw new Error("bulk move should succeed");
+  if (moved.boards[0]?.positions[a]?.x !== 30) {
+    throw new Error("card A x mismatch");
+  }
+  if (moved.boards[0]?.positions[b]?.y !== 240) {
+    throw new Error("card B y mismatch");
+  }
 });
 
 Deno.test("applyConnectCards creates connects link once", () => {

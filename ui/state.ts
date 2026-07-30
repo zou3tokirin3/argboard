@@ -17,6 +17,7 @@ import {
 import {
   appendEvent,
   applyConnectCards,
+  applyMoveCardsOnBoard,
   applyPlaceCardOnBoard,
   applyRemoveCard,
   applyRemoveLink,
@@ -30,7 +31,7 @@ import {
   viewThrough,
   withBirthEvents,
 } from "./project.ts";
-import { attachTag, normalizeTag, replaceTag } from "./tags.ts";
+import { attachTag, detachTag, normalizeTag, replaceTag } from "./tags.ts";
 import type { CardSize } from "./node-size.ts";
 import { normalizeCardSize } from "./node-size.ts";
 import type { ParsedCapture } from "./capture-notation.ts";
@@ -835,6 +836,30 @@ export async function attachTagToCards(
   }
 }
 
+/** Remove a tag from many cards in one persist (T048). Skips cards without the tag. */
+export async function detachTagFromCards(
+  ids: readonly string[],
+  name: string,
+): Promise<void> {
+  const current = assertWritable();
+  if (!current || !normalizeTag(name) || ids.length === 0) return;
+  const tag = normalizeTag(name);
+  let next = current;
+  let any = false;
+  for (const id of ids) {
+    const card = next.cards.find((item) => item.id === id);
+    if (!card) continue;
+    if (!card.tags?.some((item) => normalizeTag(item) === tag)) continue;
+    const tags = detachTag(card.tags, tag);
+    any = true;
+    next = patchCardTags(next, card, tags);
+  }
+  if (any) {
+    clearTagFocusIfEmpty(next.cards);
+    await persist(next);
+  }
+}
+
 /** Rename or merge a tag across all cards (T032). Same op: replace `from` with `to`. */
 export async function renameProjectTag(
   from: string,
@@ -1107,20 +1132,32 @@ export async function placeCardOnBoard(
 
 /** Persist a finished board drag (final position only). */
 export async function commitCardPlacement(cardId: string): Promise<void> {
+  await commitCardPlacements([cardId]);
+}
+
+/** Persist finished board drags for several cards (one event each, single write). */
+export async function commitCardPlacements(
+  cardIds: readonly string[],
+): Promise<void> {
   const current = assertWritable();
   if (!current) return;
-  const pos = current.boards[0]?.positions[cardId];
-  if (!pos) {
-    await flushSave();
-    return;
+  const at = Date.now();
+  let next = current;
+  let any = false;
+  for (const cardId of cardIds) {
+    const pos = next.boards[0]?.positions[cardId];
+    if (!pos) continue;
+    next = appendEvent(next, {
+      type: "card_placed",
+      at,
+      cardId,
+      x: pos.x,
+      y: pos.y,
+    });
+    any = true;
   }
-  await persist(appendEvent(current, {
-    type: "card_placed",
-    at: Date.now(),
-    cardId,
-    x: pos.x,
-    y: pos.y,
-  }));
+  if (any) await persist(next);
+  else await flushSave();
 }
 
 export async function connectCards(
@@ -1233,6 +1270,23 @@ export function moveCardOnBoardLocal(
   const current = assertWritable();
   if (!current) return;
   const next = applyPlaceCardOnBoard(current, cardId, x, y);
+  if (next) patchProjectLocal(next);
+}
+
+/** Drag frames: move cards by delta from captured origins (T046 bulk move). */
+export function moveCardsOnBoardLocal(
+  cardIds: readonly string[],
+  origins: Readonly<Record<string, { x: number; y: number }>>,
+  dx: number,
+  dy: number,
+): void {
+  const current = assertWritable();
+  if (!current) return;
+  const moves = cardIds.map((cardId) => {
+    const origin = origins[cardId] ?? { x: 0, y: 0 };
+    return { cardId, x: origin.x + dx, y: origin.y + dy };
+  });
+  const next = applyMoveCardsOnBoard(current, moves);
   if (next) patchProjectLocal(next);
 }
 

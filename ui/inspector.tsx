@@ -5,6 +5,7 @@ import {
   attachTagToCards,
   clearCardSelection,
   clearReplay,
+  detachTagFromCards,
   enterReplay,
   isReplaying,
   mergeProjectTags,
@@ -26,6 +27,7 @@ import {
   attachTag,
   buildTagSuggestions,
   collectTagUsage,
+  commonTagsAmong,
   detachTag,
   normalizeTag,
   TAG_KIND_LIMIT,
@@ -145,14 +147,14 @@ function TagField(props: {
     <div class="inspector__field inspector__tags">
       <span>
         {bulk
-          ? `タグを一括付与（${ids.length}枚）`
+          ? `タグ（${ids.length}枚・共通のみ外せる）`
           : `タグ（上限${TAG_KIND_LIMIT}・新規は候補から）`}
       </span>
-      {!bulk
+      {attached.length > 0
         ? (
           <div class="inspector__tag-chips">
             {attached.map((tag) => {
-              const unsettled = (counts.get(tag) ?? 1) === 1;
+              const unsettled = !bulk && (counts.get(tag) ?? 1) === 1;
               return (
                 <span
                   key={tag}
@@ -183,11 +185,15 @@ function TagField(props: {
                     type="button"
                     class="inspector__tag-chip-remove"
                     disabled={props.disabled}
-                    aria-label={`「${tag}」を外す`}
+                    aria-label={bulk
+                      ? `「${tag}」を選んだカードすべてから外す`
+                      : `「${tag}」を外す`}
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      if (!props.disabled) {
+                      if (props.disabled) return;
+                      if (bulk) void detachTagFromCards(ids, tag);
+                      else {
                         void updateCardTags(
                           props.cardId,
                           detachTag(attached, tag) ?? [],
@@ -344,6 +350,10 @@ export function Inspector() {
   }
 
   if (multiIds.length > 1) {
+    const commonTags = commonTagsAmong(
+      viewProject.value?.cards ?? [],
+      multiIds,
+    );
     return (
       <aside class="inspector" aria-label="複数カードの整理">
         <div class="section-heading">
@@ -353,12 +363,12 @@ export function Inspector() {
           </div>
         </div>
         <p class="inspector__hint">
-          Shift＋空白ドラッグで囲む。紙クリックで追加／もう一度で外す
+          Shift＋空白ドラッグで囲む。紙クリックで追加／もう一度で外す。糊付け帯でまとめて移動
         </p>
         <TagField
           cardId={multiIds[0]!}
           cardIds={multiIds}
-          tags={[]}
+          tags={commonTags}
           disabled={replaying}
         />
         <HistoryEntry />
