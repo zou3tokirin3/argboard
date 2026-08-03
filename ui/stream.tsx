@@ -1,6 +1,10 @@
+import { useRef } from "preact/hooks";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
+import { DigClearViaButton, DigStartButton } from "./digging-controls.tsx";
 import {
+  clearCardFoundVia,
   clearFocusView,
+  diggingCardId,
   expandFocusHops,
   filteredCards,
   focusHops,
@@ -16,11 +20,14 @@ import {
   selectSingleCard,
   setFocusViewByTag,
   shrinkFocusHops,
+  startDigging,
   unplacedOnly,
   viewProject,
 } from "./state.ts";
 import { MediaThumb } from "./media-thumb.tsx";
 import { isLocalMediaRef } from "./media.ts";
+import { cardFoundViaDepth } from "./project.ts";
+import { StreamStickyTrail } from "./stream-sticky-trail.tsx";
 import { collectTagUsage } from "./tags.ts";
 import { CARD_MIME } from "./types.ts";
 
@@ -49,14 +56,48 @@ function streamCardStatus(
 function streamMetaLabel(
   card: { role?: "finding" | "thought" },
   status: string,
+  childCount: number,
 ): string {
-  return `${card.role === "thought" ? "考察" : "発見"} · ${status}`;
+  const role = card.role === "thought" ? "考察" : "発見";
+  const branch = childCount > 0 ? ` · 枝${childCount}` : "";
+  return `${role} · ${status}${branch}`;
+}
+
+function FoundViaLink(props: {
+  parentId: string;
+  parentTitle: string | undefined;
+  onSelect: (id: string) => void;
+}) {
+  const label = props.parentTitle ?? "（削除済み）";
+  if (!props.parentTitle) {
+    return (
+      <span class="stream-card__via stream-card__via--missing">
+        <span class="stream-card__via-mark" aria-hidden="true">↳</span>
+        {label}
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      class="stream-card__via"
+      data-testid="stream-card-via"
+      title={`発見元: ${label}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        props.onSelect(props.parentId);
+      }}
+    >
+      <span class="stream-card__via-mark" aria-hidden="true">↳</span>
+      <span class="stream-card__via-title">{label}</span>
+    </button>
+  );
 }
 
 function isMetaToolTarget(target: EventTarget | null): boolean {
   return Boolean(
     (target as HTMLElement | null)?.closest(
-      "button, .inspector__size-toggle, .stream-card__meta-tools",
+      "button, .inspector__size-toggle, .stream-card__meta-tools, .dig-act",
     ),
   );
 }
@@ -137,6 +178,19 @@ export function Stream() {
   const boardCardIds = new Set(current?.boards[0]?.cardIds ?? []);
   const isContemplate = (current?.ui?.mode ?? "explore") === "contemplate";
   const canDrag = isContemplate && !replaying;
+  const cards = current?.cards ?? [];
+  const cardById = new Map(cards.map((item) => [item.id, item]));
+  const visibleCards = filteredCards.value;
+  const visibleIds = new Set(visibleCards.map((item) => item.id));
+  const childCountByParent = new Map<string, number>();
+  for (const card of visibleCards) {
+    if (!card.foundVia || !visibleIds.has(card.foundVia)) continue;
+    childCountByParent.set(
+      card.foundVia,
+      (childCountByParent.get(card.foundVia) ?? 0) + 1,
+    );
+  }
+  const listRef = useRef<HTMLDivElement>(null);
 
   return (
     <section class="stream" aria-label="発見ログ">
@@ -193,16 +247,36 @@ export function Stream() {
         </button>
       </div>
       <TagFocusControls />
-      <div class="stream__list">
-        {filteredCards.value.map((card) => {
+      <div class="stream__list" ref={listRef}>
+        <StreamStickyTrail
+          listRef={listRef}
+          visibleCards={visibleCards}
+          cardById={cardById}
+          visibleIds={visibleIds}
+        />
+        {visibleCards.map((card) => {
           const selected = selectedCardIds.value.includes(card.id) ||
             selectedCardId.value === card.id;
           const status = streamCardStatus(card, boardCardIds);
+          const digging = diggingCardId.value === card.id;
+          const viaCard = card.foundVia
+            ? current?.cards.find((item) => item.id === card.foundVia)
+            : undefined;
+          const childCount = childCountByParent.get(card.id) ?? 0;
+          const digDepth = cardFoundViaDepth(card, cardById, 12, visibleIds);
           return (
-            <div class="stream-row" key={card.id}>
+            <div
+              class="stream-row"
+              key={card.id}
+              data-card-id={card.id}
+              data-dig-depth={digDepth}
+              style={{ "--dig-depth": String(digDepth) }}
+            >
               <div
                 class={`stream-card ${selected ? "is-selected" : ""} ${
                   card.role === "thought" ? "is-thought" : ""
+                } ${card.foundVia ? "has-via" : ""} ${
+                  childCount > 0 ? "has-children" : ""
                 } ${canDrag ? "is-draggable" : ""}`}
                 data-testid="stream-card"
                 data-card-id={card.id}
@@ -224,6 +298,26 @@ export function Stream() {
                           role={card.role}
                           testIdPrefix="stream"
                         />
+                        <DigStartButton
+                          active={digging}
+                          onClick={digging ? undefined : (event) => {
+                            event.stopPropagation();
+                            startDigging(card.id);
+                          }}
+                        />
+                        {card.foundVia
+                          ? (
+                            <DigClearViaButton
+                              title={viaCard
+                                ? `「${viaCard.title}」からの発見を埋める`
+                                : "間違えて掘った分を埋める"}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                void clearCardFoundVia(card.id);
+                              }}
+                            />
+                          )
+                          : null}
                         <span class="stream-card__status">{status}</span>
                         <button
                           type="button"
@@ -240,10 +334,19 @@ export function Stream() {
                     )
                     : (
                       <span class="stream-card__meta-label">
-                        {streamMetaLabel(card, status)}
+                        {streamMetaLabel(card, status, childCount)}
                       </span>
                     )}
                 </div>
+                {card.foundVia
+                  ? (
+                    <FoundViaLink
+                      parentId={card.foundVia}
+                      parentTitle={viaCard?.title}
+                      onSelect={selectCardFromStream}
+                    />
+                  )
+                  : null}
                 <button
                   type="button"
                   class="stream-card__main"

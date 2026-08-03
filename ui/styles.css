@@ -338,6 +338,130 @@ body {
   width: min(680px, calc(100% - 48px));
   margin: 14px auto 8px;
 }
+.capture__digging {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line-strong));
+  border-bottom: 0;
+  border-radius: var(--radius-box) var(--radius-box) 0 0;
+  background: color-mix(in srgb, var(--warn) 8%, var(--bg-soft));
+}
+.capture__digging-source {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.capture__digging-badge {
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+.capture__digging-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 14px/1.3 "IBM Plex Sans JP", sans-serif;
+  color: var(--ink);
+}
+.capture-block--digging .capture {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line-strong));
+  background: var(--bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.dig-act {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 2px solid color-mix(in srgb, var(--warn) 55%, var(--line-strong));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--warn) 10%, var(--bg));
+  color: var(--warn);
+  cursor: pointer;
+}
+.dig-act:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.dig-act:disabled:hover {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line-strong));
+  background: color-mix(in srgb, var(--warn) 8%, var(--bg));
+}
+.dig-act svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+.dig-act .dig-shovel-handle {
+  stroke: #b45309;
+}
+.dig-act .dig-shovel-neck,
+.dig-act .dig-shovel-blade-edge {
+  stroke: #64748b;
+}
+.dig-act .dig-shovel-blade {
+  fill: #94a3b8;
+}
+.dig-act.is-active .dig-shovel-handle {
+  stroke: #fde68a;
+}
+.dig-act.is-active .dig-shovel-neck,
+.dig-act.is-active .dig-shovel-blade-edge {
+  stroke: #e2e8f0;
+}
+.dig-act.is-active .dig-shovel-blade {
+  fill: #f8fafc;
+}
+.dig-act .dig-fill-ground {
+  stroke: #a16207;
+}
+.dig-act .dig-fill-mound {
+  fill: #78716c;
+}
+.dig-act .dig-fill-tool,
+.dig-act .dig-fill-tool-neck {
+  stroke: #b45309;
+}
+.dig-act--fill:not(:disabled):hover .dig-fill-mound {
+  fill: #57534e;
+}
+.dig-act--fill {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line-strong));
+  background: color-mix(in srgb, var(--warn) 8%, var(--bg));
+}
+.dig-act--fill:hover:not(:disabled) {
+  border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 16%, var(--bg));
+}
+.dig-act:hover:not(:disabled) {
+  border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 18%, var(--bg));
+}
+.dig-act.is-active {
+  border-color: var(--warn);
+  background: var(--warn);
+  color: #fff;
+  cursor: default;
+}
+.dig-act--stop {
+  border-color: var(--line-strong);
+  background: var(--bg);
+  color: var(--muted);
+}
+.dig-act--stop:hover:not(:disabled) {
+  border-color: var(--warn);
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, var(--bg));
+}
 .capture {
   width: 100%;
   height: 48px;
@@ -1137,6 +1261,73 @@ kbd {
   overflow: auto;
   padding: 0 0 16px;
 }
+.stream__sticky-trail {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin: 0 0 2px;
+  padding: 7px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line));
+  background: color-mix(in srgb, var(--warn) 10%, var(--bg));
+  box-shadow: 0 2px 6px rgb(0 0 0 / 6%);
+}
+.stream__sticky-trail-mark {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--warn);
+  color: #fff;
+  flex: 0 0 auto;
+}
+.stream__sticky-trail-mark svg {
+  width: 12px;
+  height: 12px;
+}
+.stream__sticky-trail-mark .dig-shovel-handle {
+  stroke: #fde68a;
+}
+.stream__sticky-trail-mark .dig-shovel-neck,
+.stream__sticky-trail-mark .dig-shovel-blade-edge {
+  stroke: #e2e8f0;
+}
+.stream__sticky-trail-mark .dig-shovel-blade {
+  fill: #f8fafc;
+}
+.stream__sticky-trail-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.stream__sticky-trail-sep {
+  color: color-mix(in srgb, var(--warn) 70%, var(--muted));
+  font: 600 11px/1 "IBM Plex Sans JP", sans-serif;
+}
+.stream__sticky-trail-btn {
+  max-width: 12rem;
+  margin: 0;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line-strong));
+  border-radius: var(--radius-box);
+  background: var(--bg);
+  color: var(--ink);
+  font: 600 12px/1.3 "IBM Plex Sans JP", sans-serif;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.stream__sticky-trail-btn:hover {
+  border-color: var(--warn);
+  color: color-mix(in srgb, var(--warn) 85%, var(--ink));
+  background: color-mix(in srgb, var(--warn) 8%, var(--bg));
+}
 .stream-card {
   width: 100%;
   border-bottom: 1px solid var(--line-strong);
@@ -1153,6 +1344,44 @@ kbd {
 .stream-card.is-thought .stream-card__meta-label,
 .stream-card.is-thought .stream-card__status {
   color: var(--accent);
+}
+.stream-card.has-via.is-selected {
+  box-shadow: inset 3px 0 0 var(--warn);
+}
+.stream-card__via {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: calc(100% - 32px);
+  margin: 0 16px 6px;
+  padding: 4px 8px;
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, var(--line));
+  border-radius: var(--radius-box);
+  background: color-mix(in srgb, var(--warn) 6%, var(--bg-soft));
+  color: color-mix(in srgb, var(--warn) 85%, var(--ink));
+  font: 500 11px/1.3 "IBM Plex Sans JP", sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.stream-card__via:hover {
+  border-color: color-mix(in srgb, var(--warn) 55%, var(--line-strong));
+  background: color-mix(in srgb, var(--warn) 12%, var(--bg-soft));
+}
+.stream-card__via--missing {
+  cursor: default;
+  color: var(--muted);
+  background: var(--bg-soft);
+  border-color: var(--line);
+}
+.stream-card__via-mark {
+  flex: 0 0 auto;
+  color: var(--warn);
+  font: 700 12px/1 "IBM Plex Mono", monospace;
+}
+.stream-card__via-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .stream-card__main {
   display: block;
@@ -1232,7 +1461,30 @@ kbd {
   color: var(--accent);
 }
 .stream-row {
+  --dig-step: 20px;
+  --dig-depth: 0;
   position: relative;
+  padding-left: calc(10px + var(--dig-depth) * var(--dig-step));
+}
+.stream-row[data-dig-depth]:not([data-dig-depth="0"])::before {
+  content: "";
+  position: absolute;
+  left: calc(10px + (var(--dig-depth) - 1) * var(--dig-step) + 5px);
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--warn) 40%, transparent);
+}
+.stream-row[data-dig-depth]:not([data-dig-depth="0"])::after {
+  content: "";
+  position: absolute;
+  left: calc(10px + (var(--dig-depth) - 1) * var(--dig-step) + 5px);
+  top: 20px;
+  width: 11px;
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--warn) 40%, transparent);
 }
 .stream-card__meta {
   display: flex;

@@ -46,7 +46,8 @@ export type ProjectEvent =
     kind: Link["kind"];
   }
   | { type: "link_removed"; at: number; link: Link }
-  | { type: "card_placed"; at: number; cardId: string; x: number; y: number };
+  | { type: "card_placed"; at: number; cardId: string; x: number; y: number }
+  | { type: "found_via_cleared"; at: number; cardId: string };
 
 export type Project = {
   version: 1;
@@ -73,6 +74,8 @@ export type Card = {
   /** Board display size (T022). Omit or `"m"` = default; `"l"` = large. */
   size?: "m" | "l";
   foundAt: number;
+  /** Parent card id when captured while digging (T050). Immutable after capture. */
+  foundVia?: string;
 };
 
 export type Link = {

@@ -28,6 +28,7 @@ import {
   type FocusOrigin,
   parseProjectJson,
   replaySteps,
+  sortCardsByFoundViaTree,
   viewThrough,
   withBirthEvents,
 } from "./project.ts";
@@ -87,6 +88,8 @@ export const search = signal("");
 export const unplacedOnly = signal(false);
 /** Session-only: show placed stream cards only (T047). Not persisted. */
 export const placedOnly = signal(false);
+/** Session-only: card id whose captures get foundVia (T050). Not persisted. */
+export const diggingCardId = signal<string | null>(null);
 export const selectedCardId = signal<string | null>(null);
 /** Session-only multi-select (T032). Primary is selectedCardId (last id). */
 export const selectedCardIds = signal<string[]>([]);
@@ -119,6 +122,43 @@ export const exploreComposeCard = computed(() => {
   if (!id) return null;
   return project.value?.cards.find((item) => item.id === id) ?? null;
 });
+
+export function stopDigging(): void {
+  diggingCardId.value = null;
+}
+
+/** Start or switch digging source (T050). Session-only. */
+export function startDigging(cardId: string): void {
+  if (!project.value?.cards.some((item) => item.id === cardId)) return;
+  diggingCardId.value = cardId;
+}
+
+function resolveDiggingFoundVia(): string | undefined {
+  const id = diggingCardId.value;
+  if (!id) return undefined;
+  if (!project.value?.cards.some((item) => item.id === id)) return undefined;
+  return id;
+}
+
+export async function clearCardFoundVia(cardId: string): Promise<void> {
+  const current = assertWritable();
+  if (!current) return;
+  const card = current.cards.find((item) => item.id === cardId);
+  if (!card?.foundVia) return;
+  const next = {
+    ...current,
+    cards: current.cards.map((item) => {
+      if (item.id !== cardId) return item;
+      const { foundVia: _removed, ...rest } = item;
+      return rest;
+    }),
+  };
+  await persist(appendEvent(next, {
+    type: "found_via_cleared",
+    at: Date.now(),
+    cardId,
+  }));
+}
 
 export function openExploreCompose(cardId: string): void {
   clearExploreImageDraft();
@@ -293,14 +333,15 @@ export const filteredCards = computed(() => {
   if (!current) return [];
   const query = search.value.trim().toLocaleLowerCase("ja");
   const boardCardIds = new Set(current.boards[0]?.cardIds ?? []);
-  return current.cards.filter((card) => {
+  const filtered = current.cards.filter((card) => {
     if (unplacedOnly.value && boardCardIds.has(card.id)) return false;
     if (placedOnly.value && !boardCardIds.has(card.id)) return false;
     if (!query) return true;
     return [card.title, card.body, card.url, ...(card.tags ?? [])]
       .filter(Boolean)
       .some((value) => value!.toLocaleLowerCase("ja").includes(query));
-  }).toSorted((left, right) => right.foundAt - left.foundAt);
+  });
+  return sortCardsByFoundViaTree(filtered);
 });
 
 export const selectedCard = computed(() => {
@@ -405,6 +446,7 @@ async function activateProject(next: Project): Promise<void> {
   search.value = "";
   unplacedOnly.value = false;
   placedOnly.value = false;
+  stopDigging();
   clearAllMediaObjectUrls();
   // Snapshot missing births before open so later edits can rewind text/labels.
   const birthed = withBirthEvents(next);
@@ -516,6 +558,7 @@ export async function addCard(
   const current = assertWritable();
   if (!current) return null;
 
+  const foundVia = resolveDiggingFoundVia();
   const card: Card = {
     id: crypto.randomUUID(),
     title: cleanTitle,
@@ -523,6 +566,7 @@ export async function addCard(
     ...(options?.role === "thought" ? { role: "thought" as const } : {}),
     ...(body ? { body } : {}),
     ...(url ? { url } : {}),
+    ...(foundVia ? { foundVia } : {}),
   };
   let next = appendEvent(
     { ...current, cards: [...current.cards, card] },
@@ -574,6 +618,7 @@ async function createCardWithCompressedImage(
   const title = draft?.title.trim() || "（無題）";
   const body = draft?.body?.trim() ? draft.body.trim() : undefined;
   const url = draft?.url?.trim() ? draft.url.trim() : undefined;
+  const foundVia = resolveDiggingFoundVia();
   const card: Card = {
     id: cardId,
     title,
@@ -581,6 +626,7 @@ async function createCardWithCompressedImage(
     image: mediaId,
     ...(body ? { body } : {}),
     ...(url ? { url } : {}),
+    ...(foundVia ? { foundVia } : {}),
   };
   let next = appendEvent(
     { ...current, cards: [...current.cards, card] },
@@ -1238,6 +1284,7 @@ export async function removeCard(cardId: string): Promise<void> {
   }
   if (revealCardId.value === cardId) revealCardId.value = null;
   if (exploreComposeCardId.value === cardId) closeExploreCompose();
+  if (diggingCardId.value === cardId) stopDigging();
   const origin = focusOrigin.value;
   if (origin?.kind === "card" && origin.cardId === cardId) clearFocusView();
   clearTagFocusIfEmpty(next.cards);

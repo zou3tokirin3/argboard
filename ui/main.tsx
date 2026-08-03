@@ -10,6 +10,7 @@ import {
   activeProjectId,
   addCard,
   appMode,
+  clearCardFoundVia,
   clearExploreImageDraft,
   closeExploreCompose,
   commitExploreImageDraft,
@@ -40,6 +41,8 @@ import {
   setAppMode,
   setSideOpen,
   sideOpen,
+  startDigging,
+  stopDigging,
   switchProject,
   updateCardRole,
   updateLink,
@@ -125,6 +128,9 @@ declare global {
         blob: Blob,
         draft?: { title: string; body?: string; url?: string },
       ) => Promise<string | null>;
+      startDigging: (cardId: string) => void;
+      stopDigging: () => void;
+      clearCardFoundVia: (cardId: string) => Promise<void>;
     };
   }
 }
@@ -504,6 +510,9 @@ if (isTest) {
     pasteExploreImage,
     commitExploreImageDraft,
     patchExploreImageDraft,
+    startDigging,
+    stopDigging,
+    clearCardFoundVia,
   };
   document.documentElement.dataset.test = "true";
 } else if ("serviceWorker" in navigator) {

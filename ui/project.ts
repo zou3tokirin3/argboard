@@ -252,6 +252,14 @@ function applyEvent(
       positions[event.cardId] = { x: event.x, y: event.y };
       cardIds.add(event.cardId);
       break;
+    case "found_via_cleared": {
+      const prev = cards.get(event.cardId);
+      if (!prev?.foundVia) break;
+      const next = { ...prev };
+      delete next.foundVia;
+      cards.set(event.cardId, next);
+      break;
+    }
   }
 }
 
@@ -358,6 +366,8 @@ function labelForEvent(project: Project, event: ProjectEvent): string | null {
     }
     case "link_removed":
       return "糸 · 削除";
+    case "found_via_cleared":
+      return `発見元を外す · ${titleForCard(project, event.cardId)}`;
   }
 }
 
@@ -461,6 +471,82 @@ export function focusReachableIds(
     .filter((c) => (c.tags ?? []).some((t) => normalizeTag(t) === tag))
     .map((c) => c.id);
   return reachableFromCardIds(links, seeds, Math.max(0, hops - 1));
+}
+
+/**
+ * Flatten cards for stream display: parent then its subtree (dig order),
+ * roots newest-first. Global foundAt order is intentionally not preserved.
+ */
+export function sortCardsByFoundViaTree(cards: readonly Card[]): Card[] {
+  if (cards.length === 0) return [];
+  const byId = new Map(cards.map((item) => [item.id, item]));
+  const children = new Map<string, Card[]>();
+  const roots: Card[] = [];
+
+  for (const card of cards) {
+    const parentId = card.foundVia;
+    if (parentId && byId.has(parentId)) {
+      const siblings = children.get(parentId) ?? [];
+      siblings.push(card);
+      children.set(parentId, siblings);
+    } else {
+      roots.push(card);
+    }
+  }
+
+  const out: Card[] = [];
+  const visit = (card: Card): void => {
+    out.push(card);
+    const siblings = (children.get(card.id) ?? []).toSorted((left, right) =>
+      left.foundAt - right.foundAt
+    );
+    for (const child of siblings) visit(child);
+  };
+
+  for (
+    const root of roots.toSorted((left, right) => right.foundAt - left.foundAt)
+  ) {
+    visit(root);
+  }
+  return out;
+}
+
+/** How many foundVia hops from a visible root (T050 display / T051 tree). */
+export function cardFoundViaDepth(
+  card: { id: string; foundVia?: string },
+  byId: ReadonlyMap<string, { foundVia?: string }>,
+  max = 12,
+  visibleIds?: ReadonlySet<string>,
+): number {
+  let depth = 0;
+  let parentId = card.foundVia;
+  const seen = new Set<string>([card.id]);
+  while (parentId && byId.has(parentId) && !seen.has(parentId) && depth < max) {
+    if (visibleIds && !visibleIds.has(parentId)) break;
+    seen.add(parentId);
+    depth += 1;
+    parentId = byId.get(parentId)?.foundVia;
+  }
+  return depth;
+}
+
+/** Ancestors from root → immediate parent (visible set only). */
+export function foundViaAncestorChain(
+  card: { foundVia?: string },
+  byId: ReadonlyMap<string, { foundVia?: string; title: string; id: string }>,
+  visibleIds?: ReadonlySet<string>,
+): Array<{ id: string; title: string; foundVia?: string }> {
+  const chain: Array<{ id: string; title: string; foundVia?: string }> = [];
+  let parentId = card.foundVia;
+  const seen = new Set<string>();
+  while (parentId && byId.has(parentId) && !seen.has(parentId)) {
+    if (visibleIds && !visibleIds.has(parentId)) break;
+    seen.add(parentId);
+    const parent = byId.get(parentId)!;
+    chain.unshift(parent);
+    parentId = parent.foundVia;
+  }
+  return chain;
 }
 
 export function parseProjectJson(text: string): Project {

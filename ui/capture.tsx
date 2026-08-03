@@ -3,6 +3,7 @@ import { readCaptureDraft } from "./capture-draft.ts";
 import { CardImageField } from "./card-image-field.tsx";
 import { parseCaptureLine } from "./capture-notation.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
+import { DigShovelIcon, DigStopButton } from "./digging-controls.tsx";
 import {
   imageBlobFromClipboard,
   imageBlobFromDataTransfer,
@@ -13,11 +14,14 @@ import {
   clearExploreImageDraft,
   closeExploreCompose,
   commitExploreImageDraft,
+  diggingCardId,
   exploreComposeCard,
   exploreImageDraft,
   isReplaying,
   pasteExploreImage,
   patchExploreImageDraft,
+  project,
+  stopDigging,
   updateCard,
 } from "./state.ts";
 
@@ -56,6 +60,32 @@ function pushHistory(lines: string[], line: string): string[] {
   if (!clean) return lines;
   if (lines[lines.length - 1] === clean) return lines;
   return [...lines, clean].slice(-HISTORY_MAX);
+}
+
+function CaptureDiggingBar() {
+  const diggingId = diggingCardId.value;
+  if (!diggingId) return null;
+  const card = project.value?.cards.find((item) => item.id === diggingId);
+  if (!card) return null;
+  return (
+    <div
+      class="capture__digging"
+      data-testid="capture-digging-bar"
+      aria-label={`掘り中: ${card.title}`}
+      aria-live="polite"
+    >
+      <span class="capture__digging-source">
+        <span
+          class="dig-act is-active capture__digging-badge"
+          aria-hidden="true"
+        >
+          <DigShovelIcon />
+        </span>
+        <strong class="capture__digging-title">{card.title}</strong>
+      </span>
+      <DigStopButton onClick={() => stopDigging()} />
+    </div>
+  );
 }
 
 function CaptureImageSlot(props: {
@@ -329,6 +359,10 @@ export function Capture(props: { explore?: boolean }) {
   const composeCard = exploreComposeCard.value;
   const inCompose = explore && composeCard &&
     isLocalMediaRef(composeCard.image);
+  const diggingCard = diggingCardId.value
+    ? project.value?.cards.find((item) => item.id === diggingCardId.value)
+    : undefined;
+  const digging = Boolean(diggingCard);
   const input = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState(readHistory);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -428,12 +462,15 @@ export function Capture(props: { explore?: boolean }) {
     <div
       class={`capture-block${explore ? " capture-block--explore" : ""}${
         staging ? " capture-block--staging" : ""
-      }${inCompose ? " capture-block--compose" : ""}`}
+      }${inCompose ? " capture-block--compose" : ""}${
+        digging ? " capture-block--digging" : ""
+      }`}
       onDragOver={explore ? onImageDragOver : undefined}
       onDrop={explore ? onImageDrop : undefined}
     >
       {staging ? <ExploreImageStaging /> : null}
       {inCompose ? <ExploreCompose /> : null}
+      {!staging && digging ? <CaptureDiggingBar /> : null}
       {!staging
         ? (
           <form class="capture" onSubmit={submit}>
@@ -446,6 +483,8 @@ export function Capture(props: { explore?: boolean }) {
               autocomplete="off"
               placeholder={inCompose
                 ? "1行入力に戻る…"
+                : diggingCard
+                ? `「${diggingCard.title}」から見つけたこと…`
                 : "見つけたことを1行で…"}
               onKeyDown={onHistoryKey}
               onFocus={explore ? onCaptureFocus : undefined}
