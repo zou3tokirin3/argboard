@@ -1211,6 +1211,27 @@ kbd {
 .stream__filter-btn.is-active {
   font-weight: 600;
 }
+.stream__branch-toggle {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--bg-soft);
+  color: var(--warn);
+  font: 700 11px/1 "IBM Plex Mono", monospace;
+  cursor: pointer;
+}
+.stream__branch-toggle:hover {
+  border-color: color-mix(in srgb, var(--warn) 55%, var(--line-strong));
+  background: color-mix(in srgb, var(--warn) 10%, var(--bg-soft));
+}
+.stream-row--tree[data-dig-depth]:not([data-dig-depth="0"])::before,
+.stream-row--tree[data-dig-depth]:not([data-dig-depth="0"])::after {
+  display: none;
+}
 .stream__tag-focus {
   display: flex;
   flex-direction: column;

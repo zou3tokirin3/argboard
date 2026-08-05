@@ -511,6 +511,60 @@ export function sortCardsByFoundViaTree(cards: readonly Card[]): Card[] {
   return out;
 }
 
+export type FoundViaForest = {
+  roots: Card[];
+  childrenByParent: Map<string, Card[]>;
+};
+
+/** Build foundVia parent→children forest for stream tree view (T051). */
+export function buildFoundViaForest(
+  cards: readonly Card[],
+): FoundViaForest {
+  const byId = new Map(cards.map((item) => [item.id, item]));
+  const childrenByParent = new Map<string, Card[]>();
+  const roots: Card[] = [];
+
+  for (const card of cards) {
+    const parentId = card.foundVia;
+    if (parentId && byId.has(parentId)) {
+      const siblings = childrenByParent.get(parentId) ?? [];
+      siblings.push(card);
+      childrenByParent.set(parentId, siblings);
+    } else {
+      roots.push(card);
+    }
+  }
+
+  for (const [parentId, siblings] of childrenByParent) {
+    childrenByParent.set(
+      parentId,
+      siblings.toSorted((left, right) => left.foundAt - right.foundAt),
+    );
+  }
+
+  return {
+    roots: roots.toSorted((left, right) => right.foundAt - left.foundAt),
+    childrenByParent,
+  };
+}
+
+/** Depth-first order of cards visible in a collapsed tree (T051 sticky trail). */
+export function flattenFoundViaForest(
+  forest: FoundViaForest,
+  collapsed: ReadonlySet<string>,
+): Card[] {
+  const out: Card[] = [];
+  const visit = (card: Card): void => {
+    out.push(card);
+    if (collapsed.has(card.id)) return;
+    for (const child of forest.childrenByParent.get(card.id) ?? []) {
+      visit(child);
+    }
+  };
+  for (const root of forest.roots) visit(root);
+  return out;
+}
+
 /** How many foundVia hops from a visible root (T050 display / T051 tree). */
 export function cardFoundViaDepth(
   card: { id: string; foundVia?: string },

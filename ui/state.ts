@@ -88,6 +88,10 @@ export const search = signal("");
 export const unplacedOnly = signal(false);
 /** Session-only: show placed stream cards only (T047). Not persisted. */
 export const placedOnly = signal(false);
+/** Session-only: nest stream by foundVia with collapse (T051). Default flat. */
+export const streamTreeView = signal(false);
+/** Session-only: collapsed parent card ids in tree view (T051). Not persisted. */
+export const collapsedStreamBranches = signal<ReadonlySet<string>>(new Set());
 /** Session-only: card id whose captures get foundVia (T050). Not persisted. */
 export const diggingCardId = signal<string | null>(null);
 export const selectedCardId = signal<string | null>(null);
@@ -125,6 +129,43 @@ export const exploreComposeCard = computed(() => {
 
 export function stopDigging(): void {
   diggingCardId.value = null;
+}
+
+export function toggleStreamTreeView(): void {
+  streamTreeView.value = !streamTreeView.value;
+}
+
+export function toggleStreamBranchCollapsed(cardId: string): void {
+  const next = new Set(collapsedStreamBranches.value);
+  if (next.has(cardId)) next.delete(cardId);
+  else next.add(cardId);
+  collapsedStreamBranches.value = next;
+}
+
+function expandStreamBranches(cardIds: readonly string[]): void {
+  if (cardIds.length === 0) return;
+  const next = new Set(collapsedStreamBranches.value);
+  let changed = false;
+  for (const id of cardIds) {
+    if (next.delete(id)) changed = true;
+  }
+  if (changed) collapsedStreamBranches.value = next;
+}
+
+/** Open ancestor branches so a newly captured child stays visible (T051). */
+function expandFoundViaAncestors(parentId: string | undefined): void {
+  if (!parentId || !streamTreeView.value) return;
+  const cards = project.value?.cards ?? [];
+  const byId = new Map(cards.map((item) => [item.id, item]));
+  const toExpand: string[] = [];
+  let id: string | undefined = parentId;
+  const seen = new Set<string>();
+  while (id && byId.has(id) && !seen.has(id)) {
+    seen.add(id);
+    toExpand.push(id);
+    id = byId.get(id)?.foundVia;
+  }
+  expandStreamBranches(toExpand);
 }
 
 /** Start or switch digging source (T050). Session-only. */
@@ -341,6 +382,7 @@ export const filteredCards = computed(() => {
       .filter(Boolean)
       .some((value) => value!.toLocaleLowerCase("ja").includes(query));
   });
+  if (streamTreeView.value) return filtered;
   return sortCardsByFoundViaTree(filtered);
 });
 
@@ -590,6 +632,7 @@ export async function addCard(
   }
   // persist() writes project.value synchronously before any await.
   const saving = persist(next);
+  expandFoundViaAncestors(foundVia);
 
   if (!persistenceRequested) {
     persistenceRequested = true;
@@ -642,6 +685,7 @@ async function createCardWithCompressedImage(
     image: mediaId,
   });
   const saving = persist(next);
+  expandFoundViaAncestors(foundVia);
   if (!persistenceRequested) {
     persistenceRequested = true;
     void store.requestPersistence().catch(() => false);

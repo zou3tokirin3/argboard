@@ -1,7 +1,9 @@
 import {
   appendEvent,
+  buildFoundViaForest,
   cardFoundViaDepth,
   createEmptyProject,
+  flattenFoundViaForest,
   sortCardsByFoundViaTree,
   viewThrough,
 } from "../../ui/project.ts";
@@ -88,6 +90,34 @@ Deno.test("cardFoundViaDepth counts foundVia hops", () => {
   }
   if (cardFoundViaDepth({ id: leaf, foundVia: mid }, byId) !== 2) {
     throw new Error("grandchild depth must be 2");
+  }
+});
+
+Deno.test("buildFoundViaForest nests under filtered parents only", () => {
+  const parent = { id: "p", title: "資料", foundAt: 100 };
+  const child = { id: "c", title: "枝", foundAt: 200, foundVia: "p" };
+  const orphan = { id: "o", title: "親なし", foundAt: 150 };
+  const forest = buildFoundViaForest([child, orphan]);
+  if (forest.roots.map((item) => item.id).join(",") !== "c,o") {
+    throw new Error("Missing filtered parent makes child a root");
+  }
+  const nested = buildFoundViaForest([parent, child, orphan]);
+  if (
+    (nested.childrenByParent.get("p") ?? []).map((item) => item.id).join(
+      ",",
+    ) !== "c"
+  ) {
+    throw new Error("Visible parent must nest its child");
+  }
+});
+
+Deno.test("flattenFoundViaForest skips collapsed subtrees", () => {
+  const parent = { id: "p", title: "資料", foundAt: 100 };
+  const child = { id: "c", title: "枝", foundAt: 200, foundVia: "p" };
+  const forest = buildFoundViaForest([parent, child]);
+  const flat = flattenFoundViaForest(forest, new Set(["p"]));
+  if (flat.map((item) => item.id).join(",") !== "p") {
+    throw new Error("Collapsed parent must hide descendants");
   }
 });
 
