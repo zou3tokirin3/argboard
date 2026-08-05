@@ -511,6 +511,33 @@ try {
       }
     }, { args: [imgStamp] });
     await page.waitForSelector('[data-testid="capture-input"]');
+
+    // 探索モード: 選択中カードにインライン title input が出る（保存は人間確認）
+    const titleStamp = `inline-edit-${Date.now()}`;
+    await page.evaluate(async (from: string) => {
+      const api = (globalThis as typeof globalThis & {
+        __argboardTest?: {
+          setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
+          addCard: (title: string) => Promise<string | null>;
+          selectSingleCard: (cardId: string) => void;
+        };
+      }).__argboardTest;
+      if (!api) throw new Error("Test hooks were not installed");
+      await api.setAppMode("explore");
+      const cardId = await api.addCard(from);
+      if (!cardId) throw new Error("addCard failed");
+      api.selectSingleCard(cardId);
+      const deadline = Date.now() + 5_000;
+      while (Date.now() < deadline) {
+        if (
+          document.querySelector('[data-testid="stream-card-title-input"]')
+        ) {
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      throw new Error("stream title input missing");
+    }, { args: [titleStamp] });
   } finally {
     await browser.close();
   }

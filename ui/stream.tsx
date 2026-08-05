@@ -1,4 +1,4 @@
-import { useRef } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { DigClearViaButton, DigStartButton } from "./digging-controls.tsx";
 import {
@@ -31,6 +31,7 @@ import {
   toggleStreamBranchCollapsed,
   toggleStreamTreeView,
   unplacedOnly,
+  updateCard,
   viewProject,
 } from "./state.ts";
 import { MediaThumb } from "./media-thumb.tsx";
@@ -106,8 +107,65 @@ function FoundViaLink(props: {
 function isMetaToolTarget(target: EventTarget | null): boolean {
   return Boolean(
     (target as HTMLElement | null)?.closest(
-      "button, .inspector__size-toggle, .stream-card__meta-tools, .dig-act, .stream__branch-toggle",
+      "button, .inspector__size-toggle, .stream-card__meta-tools, .dig-act, .stream__branch-toggle, .stream-card__title-input",
     ),
+  );
+}
+
+function StreamCardTitle(props: {
+  card: Pick<Card, "id" | "title" | "body" | "url">;
+  editable: boolean;
+}) {
+  const { card, editable } = props;
+  const [draft, setDraft] = useState(card.title);
+
+  useEffect(() => {
+    setDraft(card.title);
+  }, [card.id, card.title]);
+
+  if (!editable) {
+    return <strong>{card.title}</strong>;
+  }
+
+  async function commit(nextTitle?: string) {
+    const next = (nextTitle ?? draft).trim();
+    if (!next) {
+      setDraft(card.title);
+      return;
+    }
+    if (next === card.title) return;
+    await updateCard(card.id, {
+      title: next,
+      body: card.body,
+      url: card.url,
+    });
+  }
+
+  return (
+    <input
+      type="text"
+      class="stream-card__title-input"
+      data-testid="stream-card-title-input"
+      value={draft}
+      aria-label="タイトル"
+      onInput={(event) => setDraft(event.currentTarget.value)}
+      onClick={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === "Enter") {
+          event.preventDefault();
+          void commit(event.currentTarget.value);
+          event.currentTarget.blur();
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setDraft(card.title);
+          event.currentTarget.blur();
+        }
+      }}
+      onBlur={(event) => void commit(event.currentTarget.value)}
+    />
   );
 }
 
@@ -146,6 +204,7 @@ function StreamCardRow(props: StreamCardRowProps) {
   const viaCard = card.foundVia
     ? allCards.find((item) => item.id === card.foundVia)
     : undefined;
+  const canEditTitle = selected && !replaying && !isContemplate;
 
   return (
     <div
@@ -247,56 +306,101 @@ function StreamCardRow(props: StreamCardRowProps) {
             />
           )
           : null}
-        <button
-          type="button"
-          class="stream-card__main"
-          draggable={canDrag}
-          onDragStart={(event) => {
-            if (!canDrag) return;
-            globalThis.getSelection?.()?.removeAllRanges();
-            event.dataTransfer?.setData(CARD_MIME, card.id);
-            event.dataTransfer!.effectAllowed = "copy";
-          }}
-          onDragEnd={() => globalThis.getSelection?.()?.removeAllRanges()}
-          onClick={() => selectCardFromStream(card.id)}
-        >
-          <span class="stream-card__body-row">
-            <span class="stream-card__text">
-              <strong>{card.title}</strong>
-              {card.body ? <small>{card.body}</small> : null}
-              {card.tags?.length
-                ? (
-                  <span class="tags">
-                    {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
-                  </span>
-                )
-                : null}
-            </span>
-            {isLocalMediaRef(card.image)
-              ? (
-                <button
-                  type="button"
-                  class="stream-card__thumb-btn"
-                  data-testid="stream-card-thumb"
-                  title="追記モードで開く"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    if (isContemplate) return;
-                    if (selectedCardId.value !== card.id) {
-                      selectSingleCard(card.id);
-                    }
-                    openExploreCompose(card.id);
-                  }}
-                >
-                  <MediaThumb
-                    image={card.image}
-                    className="stream-card__thumb"
-                  />
-                </button>
-              )
-              : null}
-          </span>
-        </button>
+        {canEditTitle
+          ? (
+            <div
+              class="stream-card__main stream-card__main--editable"
+              onClick={() => selectCardFromStream(card.id)}
+            >
+              <span class="stream-card__body-row">
+                <span class="stream-card__text">
+                  <StreamCardTitle card={card} editable />
+                  {card.body ? <small>{card.body}</small> : null}
+                  {card.tags?.length
+                    ? (
+                      <span class="tags">
+                        {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
+                      </span>
+                    )
+                    : null}
+                </span>
+                {isLocalMediaRef(card.image)
+                  ? (
+                    <button
+                      type="button"
+                      class="stream-card__thumb-btn"
+                      data-testid="stream-card-thumb"
+                      title="追記モードで開く"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (selectedCardId.value !== card.id) {
+                          selectSingleCard(card.id);
+                        }
+                        openExploreCompose(card.id);
+                      }}
+                    >
+                      <MediaThumb
+                        image={card.image}
+                        className="stream-card__thumb"
+                      />
+                    </button>
+                  )
+                  : null}
+              </span>
+            </div>
+          )
+          : (
+            <button
+              type="button"
+              class="stream-card__main"
+              draggable={canDrag}
+              onDragStart={(event) => {
+                if (!canDrag) return;
+                globalThis.getSelection?.()?.removeAllRanges();
+                event.dataTransfer?.setData(CARD_MIME, card.id);
+                event.dataTransfer!.effectAllowed = "copy";
+              }}
+              onDragEnd={() => globalThis.getSelection?.()?.removeAllRanges()}
+              onClick={() => selectCardFromStream(card.id)}
+            >
+              <span class="stream-card__body-row">
+                <span class="stream-card__text">
+                  <StreamCardTitle card={card} editable={false} />
+                  {card.body ? <small>{card.body}</small> : null}
+                  {card.tags?.length
+                    ? (
+                      <span class="tags">
+                        {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
+                      </span>
+                    )
+                    : null}
+                </span>
+                {isLocalMediaRef(card.image)
+                  ? (
+                    <button
+                      type="button"
+                      class="stream-card__thumb-btn"
+                      data-testid="stream-card-thumb"
+                      title="追記モードで開く"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (isContemplate) return;
+                        if (selectedCardId.value !== card.id) {
+                          selectSingleCard(card.id);
+                        }
+                        openExploreCompose(card.id);
+                      }}
+                    >
+                      <MediaThumb
+                        image={card.image}
+                        className="stream-card__thumb"
+                      />
+                    </button>
+                  )
+                  : null}
+              </span>
+            </button>
+          )}
         {card.url
           ? (
             <a

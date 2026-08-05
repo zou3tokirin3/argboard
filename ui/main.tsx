@@ -36,8 +36,10 @@ import {
   removeLink,
   renameProject,
   saveStatus,
+  selectCardFromStream,
   selectedCardId,
   selectedLinkId,
+  selectSingleCard,
   setAppMode,
   setSideOpen,
   sideOpen,
@@ -131,6 +133,8 @@ declare global {
       startDigging: (cardId: string) => void;
       stopDigging: () => void;
       clearCardFoundVia: (cardId: string) => Promise<void>;
+      selectCardFromStream: (cardId: string) => void;
+      selectSingleCard: (cardId: string) => void;
     };
   }
 }
@@ -513,6 +517,8 @@ if (isTest) {
     startDigging,
     stopDigging,
     clearCardFoundVia,
+    selectCardFromStream,
+    selectSingleCard,
   };
   document.documentElement.dataset.test = "true";
 } else if ("serviceWorker" in navigator) {
