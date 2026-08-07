@@ -87,6 +87,10 @@ export const search = signal("");
 export const unplacedOnly = signal(false);
 /** Session-only: show placed stream cards only (T047). Not persisted. */
 export const placedOnly = signal(false);
+/** Session-only: show finding stream cards only (T055). Not persisted. */
+export const findingOnly = signal(false);
+/** Session-only: show thought stream cards only (T055). Not persisted. */
+export const thoughtOnly = signal(false);
 /** Session-only: collapsed parent card ids in tree view (T051). Not persisted. */
 export const collapsedStreamBranches = signal<ReadonlySet<string>>(new Set());
 /** Session-only: card id whose captures get foundVia (T050). Not persisted. */
@@ -400,6 +404,8 @@ export const filteredCards = computed(() => {
   const filtered = current.cards.filter((card) => {
     if (unplacedOnly.value && boardCardIds.has(card.id)) return false;
     if (placedOnly.value && !boardCardIds.has(card.id)) return false;
+    if (findingOnly.value && card.role === "thought") return false;
+    if (thoughtOnly.value && card.role !== "thought") return false;
     if (!query) return true;
     return [card.title, card.body, card.url, ...(card.tags ?? [])]
       .filter(Boolean)
@@ -510,6 +516,8 @@ async function activateProject(next: Project): Promise<void> {
   search.value = "";
   unplacedOnly.value = false;
   placedOnly.value = false;
+  findingOnly.value = false;
+  thoughtOnly.value = false;
   stopDigging();
   clearAllMediaObjectUrls();
   // Snapshot missing births before open so later edits can rewind text/labels.

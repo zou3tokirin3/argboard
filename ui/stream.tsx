@@ -11,6 +11,7 @@ import {
   exploreComposeCard,
   exploreComposeCardId,
   filteredCards,
+  findingOnly,
   focusHops,
   focusOrigin,
   isReplaying,
@@ -25,6 +26,7 @@ import {
   setFocusViewByTag,
   shrinkFocusHops,
   startDigging,
+  thoughtOnly,
   toggleStreamBranchCollapsed,
   unplacedOnly,
   updateCard,
@@ -605,6 +607,34 @@ export function Stream() {
             }}
           >
             配置済のみ
+          </button>
+          <button
+            type="button"
+            class={`stream__filter-btn${findingOnly.value ? " is-active" : ""}`}
+            data-testid="stream-finding-only"
+            aria-pressed={findingOnly.value}
+            title="発見カードだけを表示"
+            onClick={() => {
+              const next = !findingOnly.value;
+              findingOnly.value = next;
+              if (next) thoughtOnly.value = false;
+            }}
+          >
+            発見のみ
+          </button>
+          <button
+            type="button"
+            class={`stream__filter-btn${thoughtOnly.value ? " is-active" : ""}`}
+            data-testid="stream-thought-only"
+            aria-pressed={thoughtOnly.value}
+            title="考察カードだけを表示"
+            onClick={() => {
+              const next = !thoughtOnly.value;
+              thoughtOnly.value = next;
+              if (next) findingOnly.value = false;
+            }}
+          >
+            考察のみ
           </button>
         </div>
         <TagFocusControls />
