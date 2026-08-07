@@ -28,7 +28,6 @@ import {
   type FocusOrigin,
   parseProjectJson,
   replaySteps,
-  sortCardsByFoundViaTree,
   viewThrough,
   withBirthEvents,
 } from "./project.ts";
@@ -88,8 +87,6 @@ export const search = signal("");
 export const unplacedOnly = signal(false);
 /** Session-only: show placed stream cards only (T047). Not persisted. */
 export const placedOnly = signal(false);
-/** Session-only: nest stream by foundVia with collapse (T051). Default flat. */
-export const streamTreeView = signal(false);
 /** Session-only: collapsed parent card ids in tree view (T051). Not persisted. */
 export const collapsedStreamBranches = signal<ReadonlySet<string>>(new Set());
 /** Session-only: card id whose captures get foundVia (T050). Not persisted. */
@@ -137,10 +134,6 @@ export function stopDigging(): void {
   diggingCardId.value = null;
 }
 
-export function toggleStreamTreeView(): void {
-  streamTreeView.value = !streamTreeView.value;
-}
-
 export function toggleStreamBranchCollapsed(cardId: string): void {
   const next = new Set(collapsedStreamBranches.value);
   if (next.has(cardId)) next.delete(cardId);
@@ -160,7 +153,7 @@ function expandStreamBranches(cardIds: readonly string[]): void {
 
 /** Open ancestor branches so a newly captured child stays visible (T051). */
 function expandFoundViaAncestors(parentId: string | undefined): void {
-  if (!parentId || !streamTreeView.value) return;
+  if (!parentId) return;
   const cards = project.value?.cards ?? [];
   const byId = new Map(cards.map((item) => [item.id, item]));
   const toExpand: string[] = [];
@@ -412,8 +405,7 @@ export const filteredCards = computed(() => {
       .filter(Boolean)
       .some((value) => value!.toLocaleLowerCase("ja").includes(query));
   });
-  if (streamTreeView.value) return filtered;
-  return sortCardsByFoundViaTree(filtered);
+  return filtered;
 });
 
 export const selectedCard = computed(() => {

@@ -1,11 +1,7 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { DigClearViaButton, DigStartButton } from "./digging-controls.tsx";
-import {
-  buildFoundViaForest,
-  cardFoundViaDepth,
-  flattenFoundViaForest,
-} from "./project.ts";
+import { buildFoundViaForest, flattenFoundViaForest } from "./project.ts";
 import {
   clearCardFoundVia,
   clearFocusView,
@@ -29,9 +25,7 @@ import {
   setFocusViewByTag,
   shrinkFocusHops,
   startDigging,
-  streamTreeView,
   toggleStreamBranchCollapsed,
-  toggleStreamTreeView,
   unplacedOnly,
   updateCard,
   viewProject,
@@ -73,37 +67,6 @@ function streamMetaLabel(
   const role = card.role === "thought" ? "考察" : "発見";
   const branch = childCount > 0 ? ` · 枝${childCount}` : "";
   return `${role} · ${status}${branch}`;
-}
-
-function FoundViaLink(props: {
-  parentId: string;
-  parentTitle: string | undefined;
-  onSelect: (id: string) => void;
-}) {
-  const label = props.parentTitle ?? "（削除済み）";
-  if (!props.parentTitle) {
-    return (
-      <span class="stream-card__via stream-card__via--missing">
-        <span class="stream-card__via-mark" aria-hidden="true">↳</span>
-        {label}
-      </span>
-    );
-  }
-  return (
-    <button
-      type="button"
-      class="stream-card__via"
-      data-testid="stream-card-via"
-      title={`発見元: ${label}`}
-      onClick={(event) => {
-        event.stopPropagation();
-        props.onSelect(props.parentId);
-      }}
-    >
-      <span class="stream-card__via-mark" aria-hidden="true">↳</span>
-      <span class="stream-card__via-title">{label}</span>
-    </button>
-  );
 }
 
 function isMetaToolTarget(target: EventTarget | null): boolean {
@@ -174,7 +137,6 @@ function StreamCardTitle(props: {
 type StreamCardRowProps = {
   card: Card;
   depth: number;
-  treeView: boolean;
   branchCollapsed: boolean;
   childCount: number;
   boardCardIds: Set<string>;
@@ -189,7 +151,6 @@ function StreamCardRow(props: StreamCardRowProps) {
   const {
     card,
     depth,
-    treeView,
     branchCollapsed,
     childCount,
     boardCardIds,
@@ -210,7 +171,7 @@ function StreamCardRow(props: StreamCardRowProps) {
 
   return (
     <div
-      class={`stream-row${treeView ? " stream-row--tree" : ""}`}
+      class="stream-row stream-row--tree"
       data-card-id={card.id}
       data-dig-depth={depth}
       style={{ "--dig-depth": String(depth) }}
@@ -218,9 +179,9 @@ function StreamCardRow(props: StreamCardRowProps) {
       <div
         class={`stream-card ${selected ? "is-selected" : ""} ${
           card.role === "thought" ? "is-thought" : ""
-        } ${!treeView && card.foundVia ? "has-via" : ""} ${
-          childCount > 0 ? "has-children" : ""
-        } ${canDrag ? "is-draggable" : ""}`}
+        } ${childCount > 0 ? "has-children" : ""} ${
+          canDrag ? "is-draggable" : ""
+        }`}
         data-testid="stream-card"
         data-card-id={card.id}
         data-role={card.role === "thought" ? "thought" : "finding"}
@@ -232,7 +193,7 @@ function StreamCardRow(props: StreamCardRowProps) {
             selectCardFromStream(card.id);
           }}
         >
-          {treeView && childCount > 0
+          {childCount > 0
             ? (
               <button
                 type="button"
@@ -249,6 +210,11 @@ function StreamCardRow(props: StreamCardRowProps) {
                 {branchCollapsed ? "▸" : "▾"}
               </button>
             )
+            : depth > 0
+            ? <span class="stream-tree__leaf-spacer" aria-hidden="true" />
+            : null}
+          {depth > 0
+            ? <span class="stream-tree__nest-mark" aria-hidden="true">↳</span>
             : null}
           <time>{timeFormatter.format(card.foundAt)}</time>
           {selected && !replaying
@@ -299,15 +265,6 @@ function StreamCardRow(props: StreamCardRowProps) {
               </span>
             )}
         </div>
-        {!treeView && card.foundVia
-          ? (
-            <FoundViaLink
-              parentId={card.foundVia}
-              parentTitle={viaCard?.title}
-              onSelect={selectCardFromStream}
-            />
-          )
-          : null}
         {canEditTitle
           ? (
             <div
@@ -527,7 +484,6 @@ function StreamTreeBranch(props: StreamTreeBranchProps) {
       <StreamCardRow
         card={card}
         depth={depth}
-        treeView
         branchCollapsed={branchCollapsed}
         childCount={childCount}
         boardCardIds={boardCardIds}
@@ -537,21 +493,27 @@ function StreamTreeBranch(props: StreamTreeBranchProps) {
         allCards={allCards}
         onToggleBranch={() => toggleStreamBranchCollapsed(card.id)}
       />
-      {children.map((child) => (
-        <StreamTreeBranch
-          key={child.id}
-          card={child}
-          depth={depth + 1}
-          forest={forest}
-          collapsed={collapsed}
-          childCountByParent={childCountByParent}
-          boardCardIds={boardCardIds}
-          canDrag={canDrag}
-          replaying={replaying}
-          isContemplate={isContemplate}
-          allCards={allCards}
-        />
-      ))}
+      {children.length > 0
+        ? (
+          <div class="stream-tree__branch" data-branch-depth={depth + 1}>
+            {children.map((child) => (
+              <StreamTreeBranch
+                key={child.id}
+                card={child}
+                depth={depth + 1}
+                forest={forest}
+                collapsed={collapsed}
+                childCountByParent={childCountByParent}
+                boardCardIds={boardCardIds}
+                canDrag={canDrag}
+                replaying={replaying}
+                isContemplate={isContemplate}
+                allCards={allCards}
+              />
+            ))}
+          </div>
+        )
+        : null}
     </>
   );
 }
@@ -566,7 +528,6 @@ export function Stream() {
   const cardById = new Map(cards.map((item) => [item.id, item]));
   const filtered = filteredCards.value;
   const visibleIds = new Set(filtered.map((item) => item.id));
-  const treeView = streamTreeView.value;
   const collapsed = collapsedStreamBranches.value;
   const childCountByParent = new Map<string, number>();
   for (const card of filtered) {
@@ -576,10 +537,8 @@ export function Stream() {
       (childCountByParent.get(card.foundVia) ?? 0) + 1,
     );
   }
-  const forest = treeView ? buildFoundViaForest(filtered) : null;
-  const displayCards = treeView && forest
-    ? flattenFoundViaForest(forest, collapsed)
-    : filtered;
+  const forest = buildFoundViaForest(filtered);
+  const displayCards = flattenFoundViaForest(forest, collapsed);
   const listRef = useRef<HTMLDivElement>(null);
   const imageReferenceActive = Boolean(
     exploreComposeCardId.value &&
@@ -647,16 +606,6 @@ export function Stream() {
           >
             配置済のみ
           </button>
-          <button
-            type="button"
-            class={`stream__filter-btn${treeView ? " is-active" : ""}`}
-            data-testid="stream-tree-view"
-            aria-pressed={treeView}
-            title="発見元の親子で入れ子表示し、枝を畳める"
-            onClick={() => toggleStreamTreeView()}
-          >
-            ツリー
-          </button>
         </div>
         <TagFocusControls />
         <div class="stream__list" ref={listRef}>
@@ -666,46 +615,21 @@ export function Stream() {
             cardById={cardById}
             visibleIds={visibleIds}
           />
-          {treeView && forest
-            ? forest.roots.map((card) => (
-              <StreamTreeBranch
-                key={card.id}
-                card={card}
-                depth={0}
-                forest={forest}
-                collapsed={collapsed}
-                childCountByParent={childCountByParent}
-                boardCardIds={boardCardIds}
-                canDrag={canDrag}
-                replaying={replaying}
-                isContemplate={isContemplate}
-                allCards={cards}
-              />
-            ))
-            : filtered.map((card) => {
-              const childCount = childCountByParent.get(card.id) ?? 0;
-              const digDepth = cardFoundViaDepth(
-                card,
-                cardById,
-                12,
-                visibleIds,
-              );
-              return (
-                <StreamCardRow
-                  key={card.id}
-                  card={card}
-                  depth={digDepth}
-                  treeView={false}
-                  branchCollapsed={false}
-                  childCount={childCount}
-                  boardCardIds={boardCardIds}
-                  canDrag={canDrag}
-                  replaying={replaying}
-                  isContemplate={isContemplate}
-                  allCards={cards}
-                />
-              );
-            })}
+          {forest.roots.map((card) => (
+            <StreamTreeBranch
+              key={card.id}
+              card={card}
+              depth={0}
+              forest={forest}
+              collapsed={collapsed}
+              childCountByParent={childCountByParent}
+              boardCardIds={boardCardIds}
+              canDrag={canDrag}
+              replaying={replaying}
+              isContemplate={isContemplate}
+              allCards={cards}
+            />
+          ))}
         </div>
       </div>
     </section>

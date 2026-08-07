@@ -1324,6 +1324,54 @@ kbd {
   border-color: color-mix(in srgb, var(--warn) 55%, var(--line-strong));
   background: color-mix(in srgb, var(--warn) 10%, var(--bg-soft));
 }
+.stream-tree__leaf-spacer {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+}
+.stream-tree__nest-mark {
+  flex: 0 0 auto;
+  color: var(--warn);
+  font: 700 12px/1 "IBM Plex Mono", monospace;
+}
+.stream-tree__branch {
+  margin-left: 6px;
+  padding-left: 16px;
+  border-left: 2px solid color-mix(in srgb, var(--warn) 55%, var(--line));
+}
+.stream-tree__branch .stream-tree__branch {
+  border-left-color: color-mix(in srgb, var(--warn) 42%, var(--line));
+}
+.stream-tree__branch .stream-tree__branch .stream-tree__branch {
+  border-left-color: color-mix(in srgb, var(--warn) 30%, var(--line));
+}
+.stream-row--tree {
+  padding-left: 10px;
+}
+.stream-tree__branch > .stream-row--tree {
+  position: relative;
+}
+.stream-tree__branch > .stream-row--tree::before {
+  content: "";
+  display: block;
+  position: absolute;
+  left: -16px;
+  top: 19px;
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--warn) 55%, var(--line));
+  pointer-events: none;
+}
+.stream-tree__branch .stream-tree__branch > .stream-row--tree::before {
+  background: color-mix(in srgb, var(--warn) 42%, var(--line));
+}
+.stream-tree__branch .stream-tree__branch .stream-tree__branch > .stream-row--tree::before {
+  background: color-mix(in srgb, var(--warn) 30%, var(--line));
+}
+.stream-row--tree .stream-card.has-children:not(.is-selected) {
+  background: color-mix(in srgb, var(--warn) 5%, transparent);
+}
 .stream-row--tree[data-dig-depth]:not([data-dig-depth="0"])::before,
 .stream-row--tree[data-dig-depth]:not([data-dig-depth="0"])::after {
   display: none;
