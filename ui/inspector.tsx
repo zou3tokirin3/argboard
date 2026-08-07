@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { CardImageField } from "./card-image-field.tsx";
+import { isLocalMediaRef } from "./media.ts";
 import {
   attachTagToCards,
   clearCardSelection,
@@ -9,6 +10,7 @@ import {
   enterReplay,
   isReplaying,
   mergeProjectTags,
+  openExploreCompose,
   removeCard,
   removeLink,
   renameProjectTag,
@@ -506,6 +508,19 @@ export function Inspector() {
           variant="compact"
           testId="inspector-image"
         />
+        {isLocalMediaRef(card.image)
+          ? (
+            <button
+              type="button"
+              class="inspector__image-reference"
+              data-testid="inspector-image-reference"
+              disabled={replaying}
+              onClick={() => openExploreCompose(card.id)}
+            >
+              大きく見ながら書く
+            </button>
+          )
+          : null}
       </div>
       <TagField
         cardId={card.id}

@@ -94,6 +94,12 @@ export const streamTreeView = signal(false);
 export const collapsedStreamBranches = signal<ReadonlySet<string>>(new Set());
 /** Session-only: card id whose captures get foundVia (T050). Not persisted. */
 export const diggingCardId = signal<string | null>(null);
+
+/** While viewing a reference image: dig = finding + foundVia, thought = 考察カード. */
+export type ImageReferenceCaptureMode = "dig" | "thought";
+export const imageReferenceCaptureMode = signal<ImageReferenceCaptureMode>(
+  "dig",
+);
 export const selectedCardId = signal<string | null>(null);
 /** Session-only multi-select (T032). Primary is selectedCardId (last id). */
 export const selectedCardIds = signal<string[]>([]);
@@ -118,7 +124,7 @@ export function clearCardSelection(): void {
   selectedCardId.value = null;
 }
 
-/** Explore compose (T045): editing an image card at top capture — separate from stream selection. */
+/** Explore image reference (T054): large preview while capturing from that card. */
 export const exploreComposeCardId = signal<string | null>(null);
 
 export const exploreComposeCard = computed(() => {
@@ -201,13 +207,37 @@ export async function clearCardFoundVia(cardId: string): Promise<void> {
   }));
 }
 
-export function openExploreCompose(cardId: string): void {
+export function openExploreCompose(
+  cardId: string,
+  options?: { mode?: ImageReferenceCaptureMode },
+): void {
+  if (!project.value?.cards.some((item) => item.id === cardId)) return;
   clearExploreImageDraft();
   exploreComposeCardId.value = cardId;
+  const contemplate = (project.value?.ui?.mode ?? "explore") === "contemplate";
+  const mode = options?.mode ?? (contemplate ? "thought" : "dig");
+  imageReferenceCaptureMode.value = mode;
+  if (mode === "dig") startDigging(cardId);
+  else if (diggingCardId.value === cardId) stopDigging();
+  if (contemplate && !(project.value?.ui?.sideOpen ?? false)) {
+    void setSideOpen(true);
+  }
+}
+
+export function setImageReferenceCaptureMode(
+  mode: ImageReferenceCaptureMode,
+): void {
+  imageReferenceCaptureMode.value = mode;
+  const refId = exploreComposeCardId.value;
+  if (!refId) return;
+  if (mode === "dig") startDigging(refId);
+  else if (diggingCardId.value === refId) stopDigging();
 }
 
 export function closeExploreCompose(): void {
+  const id = exploreComposeCardId.value;
   exploreComposeCardId.value = null;
+  if (id && diggingCardId.value === id) stopDigging();
 }
 
 /** Staged screenshot at top capture — not a card until committed (T045). */
@@ -741,21 +771,12 @@ export async function commitExploreImageDraft(): Promise<string | null> {
   return await createCardWithCompressedImage(blob, parsed);
 }
 
-/**
- * Explore-mode image paste from the top capture area.
- * Compose open → replace that card's image; otherwise stage for commit.
- */
+/** Explore-mode image paste from the top capture area — always stages a new card. */
 export async function pasteExploreImage(
   source: Blob,
   draft?: ParsedCapture,
 ): Promise<string | null> {
-  const current = assertWritable();
-  if (!current) return null;
-  const composeId = exploreComposeCardId.value;
-  if (composeId && current.cards.some((item) => item.id === composeId)) {
-    await setCardImage(composeId, source);
-    return composeId;
-  }
+  if (!assertWritable()) return null;
   await stageExploreImage(source, draft);
   return null;
 }

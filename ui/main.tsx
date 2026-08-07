@@ -377,9 +377,8 @@ function ExploreWorkspace() {
         return;
       }
       if (!exploreComposeCardId.value) return;
-      if (target?.closest(".capture-compose")) return;
+      if (target?.closest(".capture-block")) return;
       if (target?.closest('[data-testid="stream-card-thumb"]')) return;
-      if (target?.closest('[data-testid="capture-input"]')) return;
       closeExploreCompose();
     }
     globalThis.addEventListener("paste", onPaste);
@@ -404,6 +403,31 @@ function ExploreWorkspace() {
 
 function ContemplateWorkspace() {
   const side = sideOpen.value;
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (appMode.value !== "contemplate") return;
+      if (event.key !== "Escape") return;
+      if (!exploreComposeCardId.value) return;
+      event.preventDefault();
+      closeExploreCompose();
+    }
+    function onPointerDown(event: PointerEvent) {
+      if (appMode.value !== "contemplate") return;
+      if (!exploreComposeCardId.value) return;
+      const target = event.target as Element | null;
+      if (target?.closest(".capture-block")) return;
+      if (target?.closest('[data-testid="stream-card-thumb"]')) return;
+      if (target?.closest(".inspector")) return;
+      closeExploreCompose();
+    }
+    globalThis.addEventListener("keydown", onKeyDown);
+    globalThis.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      globalThis.removeEventListener("keydown", onKeyDown);
+      globalThis.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, []);
+
   return (
     <div
       class={`workspace workspace--contemplate ${side ? "is-side-open" : ""}`}

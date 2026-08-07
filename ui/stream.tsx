@@ -12,6 +12,8 @@ import {
   collapsedStreamBranches,
   diggingCardId,
   expandFocusHops,
+  exploreComposeCard,
+  exploreComposeCardId,
   filteredCards,
   focusHops,
   focusOrigin,
@@ -330,7 +332,7 @@ function StreamCardRow(props: StreamCardRowProps) {
                       type="button"
                       class="stream-card__thumb-btn"
                       data-testid="stream-card-thumb"
-                      title="追記モードで開く"
+                      title="大きく見ながら書く"
                       onClick={(event) => {
                         event.stopPropagation();
                         if (selectedCardId.value !== card.id) {
@@ -381,10 +383,9 @@ function StreamCardRow(props: StreamCardRowProps) {
                       type="button"
                       class="stream-card__thumb-btn"
                       data-testid="stream-card-thumb"
-                      title="追記モードで開く"
+                      title="大きく見ながら書く"
                       onClick={(event) => {
                         event.stopPropagation();
-                        if (isContemplate) return;
                         if (selectedCardId.value !== card.id) {
                           selectSingleCard(card.id);
                         }
@@ -580,114 +581,132 @@ export function Stream() {
     ? flattenFoundViaForest(forest, collapsed)
     : filtered;
   const listRef = useRef<HTMLDivElement>(null);
+  const imageReferenceActive = Boolean(
+    exploreComposeCardId.value &&
+      exploreComposeCard.value &&
+      isLocalMediaRef(exploreComposeCard.value.image),
+  );
 
   return (
     <section class="stream" aria-label="発見ログ">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">タイムライン</span>
-          <h2>発見ログ</h2>
+      <div
+        class={`stream__chrome${imageReferenceActive ? " is-dimmed" : ""}`}
+        inert={imageReferenceActive ? true : undefined}
+        aria-hidden={imageReferenceActive ? true : undefined}
+      >
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">タイムライン</span>
+            <h2>発見ログ</h2>
+          </div>
+          <span class="count">{current?.cards.length ?? 0}</span>
         </div>
-        <span class="count">{current?.cards.length ?? 0}</span>
-      </div>
-      <label class="search">
-        <span aria-hidden="true">⌕</span>
-        <input
-          type="search"
-          value={search.value}
-          onInput={(event) => {
-            search.value = event.currentTarget.value;
-            if (!search.value.trim() && focusOrigin.value?.kind === "tag") {
-              clearFocusView();
-            }
-          }}
-          placeholder="手がかりを検索"
-          aria-label="手がかりを検索"
-        />
-      </label>
-      <div class="stream__filters">
-        <button
-          type="button"
-          class={`stream__filter-btn${unplacedOnly.value ? " is-active" : ""}`}
-          data-testid="stream-unplaced-only"
-          aria-pressed={unplacedOnly.value}
-          title="ボードに未配置のカードだけを表示"
-          onClick={() => {
-            const next = !unplacedOnly.value;
-            unplacedOnly.value = next;
-            if (next) placedOnly.value = false;
-          }}
-        >
-          未配置のみ
-        </button>
-        <button
-          type="button"
-          class={`stream__filter-btn${placedOnly.value ? " is-active" : ""}`}
-          data-testid="stream-placed-only"
-          aria-pressed={placedOnly.value}
-          title="ボードに配置済みのカードだけを表示"
-          onClick={() => {
-            const next = !placedOnly.value;
-            placedOnly.value = next;
-            if (next) unplacedOnly.value = false;
-          }}
-        >
-          配置済のみ
-        </button>
-        <button
-          type="button"
-          class={`stream__filter-btn${treeView ? " is-active" : ""}`}
-          data-testid="stream-tree-view"
-          aria-pressed={treeView}
-          title="発見元の親子で入れ子表示し、枝を畳める"
-          onClick={() => toggleStreamTreeView()}
-        >
-          ツリー
-        </button>
-      </div>
-      <TagFocusControls />
-      <div class="stream__list" ref={listRef}>
-        <StreamStickyTrail
-          listRef={listRef}
-          visibleCards={displayCards}
-          cardById={cardById}
-          visibleIds={visibleIds}
-        />
-        {treeView && forest
-          ? forest.roots.map((card) => (
-            <StreamTreeBranch
-              key={card.id}
-              card={card}
-              depth={0}
-              forest={forest}
-              collapsed={collapsed}
-              childCountByParent={childCountByParent}
-              boardCardIds={boardCardIds}
-              canDrag={canDrag}
-              replaying={replaying}
-              isContemplate={isContemplate}
-              allCards={cards}
-            />
-          ))
-          : filtered.map((card) => {
-            const childCount = childCountByParent.get(card.id) ?? 0;
-            const digDepth = cardFoundViaDepth(card, cardById, 12, visibleIds);
-            return (
-              <StreamCardRow
+        <label class="search">
+          <span aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            value={search.value}
+            onInput={(event) => {
+              search.value = event.currentTarget.value;
+              if (!search.value.trim() && focusOrigin.value?.kind === "tag") {
+                clearFocusView();
+              }
+            }}
+            placeholder="手がかりを検索"
+            aria-label="手がかりを検索"
+          />
+        </label>
+        <div class="stream__filters">
+          <button
+            type="button"
+            class={`stream__filter-btn${
+              unplacedOnly.value ? " is-active" : ""
+            }`}
+            data-testid="stream-unplaced-only"
+            aria-pressed={unplacedOnly.value}
+            title="ボードに未配置のカードだけを表示"
+            onClick={() => {
+              const next = !unplacedOnly.value;
+              unplacedOnly.value = next;
+              if (next) placedOnly.value = false;
+            }}
+          >
+            未配置のみ
+          </button>
+          <button
+            type="button"
+            class={`stream__filter-btn${placedOnly.value ? " is-active" : ""}`}
+            data-testid="stream-placed-only"
+            aria-pressed={placedOnly.value}
+            title="ボードに配置済みのカードだけを表示"
+            onClick={() => {
+              const next = !placedOnly.value;
+              placedOnly.value = next;
+              if (next) unplacedOnly.value = false;
+            }}
+          >
+            配置済のみ
+          </button>
+          <button
+            type="button"
+            class={`stream__filter-btn${treeView ? " is-active" : ""}`}
+            data-testid="stream-tree-view"
+            aria-pressed={treeView}
+            title="発見元の親子で入れ子表示し、枝を畳める"
+            onClick={() => toggleStreamTreeView()}
+          >
+            ツリー
+          </button>
+        </div>
+        <TagFocusControls />
+        <div class="stream__list" ref={listRef}>
+          <StreamStickyTrail
+            listRef={listRef}
+            visibleCards={displayCards}
+            cardById={cardById}
+            visibleIds={visibleIds}
+          />
+          {treeView && forest
+            ? forest.roots.map((card) => (
+              <StreamTreeBranch
                 key={card.id}
                 card={card}
-                depth={digDepth}
-                treeView={false}
-                branchCollapsed={false}
-                childCount={childCount}
+                depth={0}
+                forest={forest}
+                collapsed={collapsed}
+                childCountByParent={childCountByParent}
                 boardCardIds={boardCardIds}
                 canDrag={canDrag}
                 replaying={replaying}
                 isContemplate={isContemplate}
                 allCards={cards}
               />
-            );
-          })}
+            ))
+            : filtered.map((card) => {
+              const childCount = childCountByParent.get(card.id) ?? 0;
+              const digDepth = cardFoundViaDepth(
+                card,
+                cardById,
+                12,
+                visibleIds,
+              );
+              return (
+                <StreamCardRow
+                  key={card.id}
+                  card={card}
+                  depth={digDepth}
+                  treeView={false}
+                  branchCollapsed={false}
+                  childCount={childCount}
+                  boardCardIds={boardCardIds}
+                  canDrag={canDrag}
+                  replaying={replaying}
+                  isContemplate={isContemplate}
+                  allCards={cards}
+                />
+              );
+            })}
+        </div>
       </div>
     </section>
   );
