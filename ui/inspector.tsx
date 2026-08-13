@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { CardImageField } from "./card-image-field.tsx";
 import { isLocalMediaRef } from "./media.ts";
@@ -6,6 +6,7 @@ import {
   attachTagToCards,
   clearCardSelection,
   clearReplay,
+  consumeInspectorTitleFocus,
   detachTagFromCards,
   enterReplay,
   isReplaying,
@@ -281,6 +282,7 @@ export function Inspector() {
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
+  const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTitle(card?.title ?? "");
@@ -291,6 +293,20 @@ export function Inspector() {
   useEffect(() => {
     setLabel(link?.label ?? "");
   }, [link?.id, link?.label]);
+
+  useEffect(() => {
+    if (!card?.id) return;
+    if (!consumeInspectorTitleFocus()) return;
+    const focusTitle = () => {
+      const input = titleRef.current;
+      if (!input || isReplaying.value) return;
+      input.focus();
+      input.select();
+    };
+    focusTitle();
+    const frame = requestAnimationFrame(focusTitle);
+    return () => cancelAnimationFrame(frame);
+  }, [card?.id]);
 
   if (link) {
     return (
@@ -469,6 +485,7 @@ export function Inspector() {
       <label class="inspector__field">
         <span>タイトル</span>
         <input
+          ref={titleRef}
           type="text"
           data-testid="inspector-title"
           value={title}

@@ -26,6 +26,7 @@ import {
   setReplayIndex,
   setSelectedCards,
   shrinkFocusHops,
+  spawnThoughtFromLink,
   stepReplay,
   toggleCardInSelection,
   viewProject,
@@ -1061,7 +1062,14 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     const dropId = drag.targetId ?? hitNode(world.x, world.y, drag.fromId);
     if (dropId) {
       await connectCards(drag.fromId, dropId);
+      return;
     }
+    if (hitNode(world.x, world.y) === drag.fromId) return;
+    await spawnThoughtFromLink(
+      drag.fromId,
+      world.x - DEFAULT_DIMS.w / 2,
+      world.y - DEFAULT_DIMS.h / 2,
+    );
   }
 
   function onWheel(event: WheelEvent) {

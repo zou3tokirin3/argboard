@@ -4,8 +4,10 @@ import {
   applyPlaceCardOnBoard,
   applyRemoveCard,
   applySetBoardViewport,
+  applySpawnThoughtFromLink,
   applyUpdateLink,
   createEmptyProject,
+  EMPTY_THOUGHT_TITLE,
 } from "../../ui/project.ts";
 
 Deno.test("applyPlaceCardOnBoard adds a card and position", () => {
@@ -139,6 +141,69 @@ Deno.test("thought cards share board placement", () => {
   ) {
     throw new Error("thought must place like finding");
   }
+});
+
+Deno.test("applySpawnThoughtFromLink creates thought and connects", () => {
+  const fromId = crypto.randomUUID();
+  const thoughtId = crypto.randomUUID();
+  let project = createEmptyProject("ボード", 1);
+  project = {
+    ...project,
+    cards: [{ id: fromId, title: "発見", foundAt: 1 }],
+  };
+  project = applyPlaceCardOnBoard(project, fromId, 0, 0)!;
+  const next = applySpawnThoughtFromLink(
+    project,
+    fromId,
+    thoughtId,
+    180,
+    40,
+    99,
+  );
+  if (!next) throw new Error("spawn should succeed");
+  const thought = next.cards.find((card) => card.id === thoughtId);
+  if (!thought || thought.role !== "thought") {
+    throw new Error("spawned card must be thought");
+  }
+  if (thought.title !== EMPTY_THOUGHT_TITLE) {
+    throw new Error("spawned title must be placeholder");
+  }
+  if (thought.foundAt !== 99) throw new Error("foundAt must use given at");
+  if (next.boards[0]?.positions[thoughtId]?.x !== 180) {
+    throw new Error("thought must sit at drop x");
+  }
+  const link = next.links.find((item) =>
+    item.from === fromId && item.to === thoughtId
+  );
+  if (!link || link.kind !== "connects") {
+    throw new Error("usual connects thread must be added");
+  }
+});
+
+Deno.test("applySpawnThoughtFromLink rejects unknown origin", () => {
+  const thoughtId = crypto.randomUUID();
+  const project = createEmptyProject("ボード", 1);
+  const next = applySpawnThoughtFromLink(
+    project,
+    "missing",
+    thoughtId,
+    0,
+    0,
+    1,
+  );
+  if (next !== null) throw new Error("unknown origin must be rejected");
+});
+
+Deno.test("applySpawnThoughtFromLink rejects existing thought id", () => {
+  const fromId = crypto.randomUUID();
+  let project = createEmptyProject("ボード", 1);
+  project = {
+    ...project,
+    cards: [{ id: fromId, title: "発見", foundAt: 1 }],
+  };
+  project = applyPlaceCardOnBoard(project, fromId, 0, 0)!;
+  const next = applySpawnThoughtFromLink(project, fromId, fromId, 10, 10, 1);
+  if (next !== null) throw new Error("self spawn must be rejected");
 });
 
 Deno.test("applyRemoveCard cascades card links and placement", () => {
