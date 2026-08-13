@@ -662,6 +662,38 @@ export function applyMoveCardsOnBoard(
   return any ? next : null;
 }
 
+/** Placeholder heading for a thought spawned from an empty-canvas link drop. */
+export const EMPTY_THOUGHT_TITLE = "考察";
+
+/** Add a thought at (x, y) and connect fromId → that thought. Null when invalid. */
+export function applySpawnThoughtFromLink(
+  project: Project,
+  fromId: string,
+  thoughtId: string,
+  x: number,
+  y: number,
+  at: number,
+): Project | null {
+  if (fromId === thoughtId) return null;
+  const board = project.boards[0];
+  if (!board?.cardIds.includes(fromId)) return null;
+  if (project.cards.some((card) => card.id === thoughtId)) return null;
+  const card: Card = {
+    id: thoughtId,
+    title: EMPTY_THOUGHT_TITLE,
+    role: "thought",
+    foundAt: at,
+  };
+  const placed = applyPlaceCardOnBoard(
+    { ...project, cards: [...project.cards, card] },
+    thoughtId,
+    x,
+    y,
+  );
+  if (!placed) return null;
+  return applyConnectCards(placed, fromId, thoughtId);
+}
+
 /** Create a link between two board cards. Returns null when invalid / duplicate. */
 export function applyConnectCards(
   project: Project,

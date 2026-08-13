@@ -43,6 +43,7 @@ import {
   setAppMode,
   setSideOpen,
   sideOpen,
+  spawnThoughtFromLink,
   startDigging,
   stopDigging,
   switchProject,
@@ -117,6 +118,11 @@ declare global {
       listProjects: () => unknown;
       placeCardOnBoard: (cardId: string, x: number, y: number) => Promise<void>;
       connectCards: (fromId: string, toId: string) => Promise<void>;
+      spawnThoughtFromLink: (
+        fromId: string,
+        x: number,
+        y: number,
+      ) => Promise<string | null>;
       updateLink: (
         linkId: string,
         patch: { label?: string; kind?: "connects" | "contradicts" },
@@ -533,6 +539,7 @@ if (isTest) {
     listProjects: () => structuredClone(projectSummaries.value),
     placeCardOnBoard,
     connectCards,
+    spawnThoughtFromLink,
     updateLink,
     setAppMode,
     pasteExploreImage,

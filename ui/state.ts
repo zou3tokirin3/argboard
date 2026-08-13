@@ -22,6 +22,7 @@ import {
   applyRemoveCard,
   applyRemoveLink,
   applySetBoardViewport,
+  applySpawnThoughtFromLink,
   applyUpdateLink,
   createDemoProject,
   createEmptyProject,
@@ -264,6 +265,19 @@ export function patchExploreImageDraft(
 
 export function selectSingleCard(id: string): void {
   setSelectedCards([id]);
+}
+
+let inspectorTitleFocusPending = false;
+
+/** Ask the inspector to focus+select the title after the next card paint. */
+export function requestInspectorTitleFocus(): void {
+  inspectorTitleFocusPending = true;
+}
+
+export function consumeInspectorTitleFocus(): boolean {
+  const pending = inspectorTitleFocusPending;
+  inspectorTitleFocusPending = false;
+  return pending;
 }
 
 /** Toggle membership when a multi-selection already exists. */
@@ -1269,6 +1283,46 @@ export async function commitCardPlacements(
   }
   if (any) await persist(next);
   else await flushSave();
+}
+
+export async function spawnThoughtFromLink(
+  fromId: string,
+  x: number,
+  y: number,
+): Promise<string | null> {
+  const current = assertWritable();
+  if (!current) return null;
+  const thoughtId = crypto.randomUUID();
+  const at = Date.now();
+  const next = applySpawnThoughtFromLink(
+    current,
+    fromId,
+    thoughtId,
+    x,
+    y,
+    at,
+  );
+  if (!next) return null;
+  const card = next.cards.find((item) => item.id === thoughtId);
+  const link = next.links.find((item) =>
+    !current.links.some((known) => known.id === item.id)
+  );
+  if (!card || !link) return null;
+  let logged = appendEvent(next, { type: "card_added", at, card });
+  logged = appendEvent(logged, {
+    type: "card_placed",
+    at,
+    cardId: thoughtId,
+    x,
+    y,
+  });
+  logged = appendEvent(logged, { type: "link_added", at, link });
+  const saving = persist(logged);
+  selectedLinkId.value = null;
+  selectSingleCard(thoughtId);
+  requestInspectorTitleFocus();
+  await saving;
+  return thoughtId;
 }
 
 export async function connectCards(
