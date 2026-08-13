@@ -1,10 +1,10 @@
 ---
 id: T057
 title: 糸を空に引っ張って考察カードを作れるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T057"
 template_ver: generic-0.2
 created: 2026-08-13
 updated: 2026-08-13
@@ -61,5 +61,6 @@ T029（考察カード最小仕様）・T012（role:thought）・T037（board dr
 - 2026-08-13 planner: T028昇格Aと区別し「空ドロップ→考察生成＋糸」として T057 起票
 - 2026-08-13 planner: 人間「T057実装して」により ready。タイトル確定=プレースホルダー「考察」＋インスペクタ全選択。
   元カード上リリースはキャンセル。見込み flow 本体行 +40〜90 / 操作 +0 / 概念 +0 / gzip +1KB未満 / Won't=No。しきい値内のためパケットなし
+- 2026-08-13 impl: 取得。task/T057 worktree で空ドロップ→考察生成＋糸を実装する
 
 ## 差し戻し履歴（追記のみ）
