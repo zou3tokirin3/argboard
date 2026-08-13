@@ -1,7 +1,7 @@
 ---
 id: T057
 title: 糸を空に引っ張って考察カードを作れるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T057"
@@ -45,7 +45,7 @@ T029（考察カード最小仕様）・T012（role:thought）・T037（board dr
 - [x] flow しきい値（本体行 +200 / 操作 +3 / 概念 +2 / gzip +8KB / Won't）を意識し、
   超過見込みなら評価パケットへの人間GOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「糸を引っ張るだけで考察が立てられ、元カードとつながっている」と確認する
+- [x] 人間が「糸を引っ張るだけで考察が立てられ、元カードとつながっている」と確認する
 
 ## このカードでやらない
 
@@ -63,5 +63,6 @@ T029（考察カード最小仕様）・T012（role:thought）・T037（board dr
   元カード上リリースはキャンセル。見込み flow 本体行 +40〜90 / 操作 +0 / 概念 +0 / gzip +1KB未満 / Won't=No。しきい値内のためパケットなし
 - 2026-08-13 impl: 取得。task/T057 worktree で空ドロップ→考察生成＋糸を実装する
 - 2026-08-13 impl: 実装完了（10a59f8）。実測 flow 本体+114 / 操作+0 / 概念+0 / gzip+0.5KB。check/test/smoke 緑。人間実機確認待ち → review
+- 2026-08-13 human: 動き良さそう → done。task/T057 merge・worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
