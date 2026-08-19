@@ -1,10 +1,10 @@
 ---
 id: T059
 title: 画像を見ながら書いた考察も資料の子として残す
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T059"
 template_ver: generic-0.2
 created: 2026-08-19
 updated: 2026-08-19
@@ -66,5 +66,6 @@ T012 / T029（`role:"thought"`）・T051（ツリー表示）
   T029 の「入れ子は糸」は意味づけ網の話として維持し、書いた経路は別。T059 を ready。
   見込み flow 本体行 +30〜80 / 操作 +0 / 概念 +0 / gzip +1KB未満 / Won't=No
   （新フィールドなし。T050 GO 済みの `foundVia` を考察キャプチャにも付ける）。しきい値内のためパケットなし
+- 2026-08-19 impl: 取得。task/T059 worktree で画像参照中の考察にも foundVia を残す
 
 ## 差し戻し履歴（追記のみ）
