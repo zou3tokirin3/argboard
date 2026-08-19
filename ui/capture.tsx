@@ -294,7 +294,7 @@ function CaptureIntentToggle(props: {
         data-testid="capture-intent-dig"
         aria-pressed={props.mode === "dig"}
         aria-label="掘る"
-        title="発見として掘る（発見元を記録）"
+        title="発見として追加"
         disabled={disabled}
         onClick={() => props.onChange("dig")}
       >
@@ -306,7 +306,7 @@ function CaptureIntentToggle(props: {
         data-testid="capture-intent-thought"
         aria-pressed={props.mode === "thought"}
         aria-label="考察"
-        title="考察カードとして追加"
+        title="考察として追加"
         disabled={disabled}
         onClick={() => props.onChange("thought")}
       >

@@ -97,7 +97,7 @@ export const collapsedStreamBranches = signal<ReadonlySet<string>>(new Set());
 /** Session-only: card id whose captures get foundVia (T050). Not persisted. */
 export const diggingCardId = signal<string | null>(null);
 
-/** While viewing a reference image: dig = finding + foundVia, thought = 考察カード. */
+/** While viewing a reference image: dig = finding, thought = 考察. Both keep foundVia. */
 export type ImageReferenceCaptureMode = "dig" | "thought";
 export const imageReferenceCaptureMode = signal<ImageReferenceCaptureMode>(
   "dig",
@@ -215,8 +215,7 @@ export function openExploreCompose(
   const contemplate = (project.value?.ui?.mode ?? "explore") === "contemplate";
   const mode = options?.mode ?? (contemplate ? "thought" : "dig");
   imageReferenceCaptureMode.value = mode;
-  if (mode === "dig") startDigging(cardId);
-  else if (diggingCardId.value === cardId) stopDigging();
+  startDigging(cardId);
   if (contemplate && !(project.value?.ui?.sideOpen ?? false)) {
     void setSideOpen(true);
   }
@@ -229,7 +228,6 @@ export function setImageReferenceCaptureMode(
   const refId = exploreComposeCardId.value;
   if (!refId) return;
   if (mode === "dig") startDigging(refId);
-  else if (diggingCardId.value === refId) stopDigging();
 }
 
 export function closeExploreCompose(): void {
