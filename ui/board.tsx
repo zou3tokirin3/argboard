@@ -17,10 +17,11 @@ import {
   replayIndex,
   replayStepList,
   revealCardId,
+  revealCardInStream,
+  selectCardFromBoard,
   selectedCardId,
   selectedCardIds,
   selectedLinkId,
-  selectSingleCard,
   setBoardViewportLocal,
   setFocusView,
   setReplayIndex,
@@ -906,8 +907,11 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     selectedLinkId.value = null;
     if (selectedCardIds.value.length > 0) {
       toggleCardInSelection(cardId);
+      if (selectedCardIds.value.includes(cardId)) {
+        revealCardInStream(cardId);
+      }
     } else {
-      selectSingleCard(cardId);
+      selectCardFromBoard(cardId);
     }
   }
 
@@ -919,7 +923,7 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     selectedLinkId.value = null;
     const multi = selectedCardIds.value;
     const bulk = multi.length >= 2 && multi.includes(cardId);
-    if (!bulk) selectSingleCard(cardId);
+    if (!bulk) selectCardFromBoard(cardId);
     if (isReplaying.value) return;
     const world = clientToWorld(event.clientX, event.clientY);
     const positions = primaryBoard(viewProject.value)?.positions ?? {};

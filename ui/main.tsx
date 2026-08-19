@@ -36,6 +36,7 @@ import {
   removeLink,
   renameProject,
   saveStatus,
+  selectCardFromBoard,
   selectCardFromStream,
   selectedCardId,
   selectedLinkId,
@@ -140,6 +141,7 @@ declare global {
       stopDigging: () => void;
       clearCardFoundVia: (cardId: string) => Promise<void>;
       selectCardFromStream: (cardId: string) => void;
+      selectCardFromBoard: (cardId: string) => void;
       selectSingleCard: (cardId: string) => void;
     };
   }
@@ -549,6 +551,7 @@ if (isTest) {
     stopDigging,
     clearCardFoundVia,
     selectCardFromStream,
+    selectCardFromBoard,
     selectSingleCard,
   };
   document.documentElement.dataset.test = "true";

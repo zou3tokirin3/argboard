@@ -267,6 +267,24 @@ export function selectSingleCard(id: string): void {
   setSelectedCards([id]);
 }
 
+/** Session-only: board asked the stream to scroll this card into view. */
+export const revealStreamCardId = signal<string | null>(null);
+
+/** Expand collapsed ancestors and ask the discovery log to show this card. */
+export function revealCardInStream(cardId: string): void {
+  const current = viewProject.value ?? project.value;
+  const card = current?.cards.find((item) => item.id === cardId);
+  if (!card) return;
+  expandFoundViaAncestors(card.foundVia);
+  revealStreamCardId.value = cardId;
+}
+
+/** Select from the board; scroll the discovery log to the same card. */
+export function selectCardFromBoard(cardId: string): void {
+  selectSingleCard(cardId);
+  revealCardInStream(cardId);
+}
+
 let inspectorTitleFocusPending = false;
 
 /** Ask the inspector to focus+select the title after the next card paint. */

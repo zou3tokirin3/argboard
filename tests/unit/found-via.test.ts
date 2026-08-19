@@ -4,6 +4,7 @@ import {
   cardFoundViaDepth,
   createEmptyProject,
   flattenFoundViaForest,
+  foundViaAncestorChain,
   sortCardsByFoundViaTree,
   viewThrough,
 } from "../../ui/project.ts";
@@ -118,6 +119,20 @@ Deno.test("flattenFoundViaForest skips collapsed subtrees", () => {
   const flat = flattenFoundViaForest(forest, new Set(["p"]));
   if (flat.map((item) => item.id).join(",") !== "p") {
     throw new Error("Collapsed parent must hide descendants");
+  }
+});
+
+Deno.test("foundViaAncestorChain lists parents a board reveal must expand", () => {
+  const byId = new Map([
+    ["root", { id: "root", title: "根" }],
+    ["mid", { id: "mid", title: "中", foundVia: "root" }],
+    ["leaf", { id: "leaf", title: "葉", foundVia: "mid" }],
+  ]);
+  const chain = foundViaAncestorChain({ foundVia: "mid" }, byId);
+  if (chain.map((item) => item.id).join(",") !== "root,mid") {
+    throw new Error(
+      `Expected root,mid to expand, got ${chain.map((item) => item.id)}`,
+    );
   }
 });
 

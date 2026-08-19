@@ -18,6 +18,7 @@ import {
   openExploreCompose,
   placedOnly,
   removeCard,
+  revealStreamCardId,
   search,
   selectCardFromStream,
   selectedCardId,
@@ -77,6 +78,23 @@ function isMetaToolTarget(target: EventTarget | null): boolean {
       "button, .inspector__size-toggle, .stream-card__meta-tools, .dig-act, .stream__branch-toggle, .stream-card__title-input",
     ),
   );
+}
+
+function scrollStreamRowIntoView(list: HTMLElement, cardId: string): boolean {
+  if (list.clientHeight <= 0) return false;
+  const row = list.querySelector<HTMLElement>(
+    `.stream-row[data-card-id="${CSS.escape(cardId)}"]`,
+  );
+  if (!row) return false;
+  const listRect = list.getBoundingClientRect();
+  const rowRect = row.getBoundingClientRect();
+  const delta = (rowRect.top + rowRect.height / 2) -
+    (listRect.top + listRect.height / 2);
+  list.scrollTo({
+    top: list.scrollTop + delta,
+    behavior: "smooth",
+  });
+  return true;
 }
 
 function StreamCardTitle(props: {
@@ -542,11 +560,25 @@ export function Stream() {
   const forest = buildFoundViaForest(filtered);
   const displayCards = flattenFoundViaForest(forest, collapsed);
   const listRef = useRef<HTMLDivElement>(null);
+  const revealId = revealStreamCardId.value;
   const imageReferenceActive = Boolean(
     exploreComposeCardId.value &&
       exploreComposeCard.value &&
       isLocalMediaRef(exploreComposeCard.value.image),
   );
+
+  useEffect(() => {
+    if (!revealId) return;
+    // Clear immediately so the same card can be revealed again; do NOT cancel
+    // a follow-up rAF in this effect's cleanup when revealId becomes null.
+    revealStreamCardId.value = null;
+    const list = listRef.current;
+    if (!list) return;
+    if (scrollStreamRowIntoView(list, revealId)) return;
+    requestAnimationFrame(() => {
+      scrollStreamRowIntoView(list, revealId);
+    });
+  }, [revealId]);
 
   return (
     <section class="stream" aria-label="発見ログ">
