@@ -351,7 +351,7 @@ function ExploreImageReference() {
 
   if (!card || !isLocalMediaRef(card.image)) return null;
 
-  const digging = captureMode === "dig" && diggingId === card.id;
+  const digging = diggingId === card.id;
 
   return (
     <div
@@ -388,13 +388,7 @@ function ExploreImageReference() {
           {digging
             ? (
               <span class="capture-image-reference__digging-label">
-                から掘り中
-              </span>
-            )
-            : captureMode === "thought"
-            ? (
-              <span class="capture-image-reference__digging-label">
-                を見ながら考察
+                {captureMode === "thought" ? "を見ながら考察" : "から掘り中"}
               </span>
             )
             : null}
@@ -404,7 +398,9 @@ function ExploreImageReference() {
           disabled={replaying}
           onChange={setImageReferenceCaptureMode}
         />
-        {digging ? <DigStopButton onClick={() => stopDigging()} /> : null}
+        {digging && captureMode === "dig"
+          ? <DigStopButton onClick={() => stopDigging()} />
+          : null}
         <button
           type="button"
           class="capture-compose__cancel"
