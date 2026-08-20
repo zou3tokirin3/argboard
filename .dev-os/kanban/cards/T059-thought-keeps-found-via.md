@@ -1,7 +1,7 @@
 ---
 id: T059
 title: 画像を見ながら書いた考察も資料の子として残す
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T059"
@@ -49,7 +49,7 @@ T012 / T029（`role:"thought"`）・T051（ツリー表示）
 - [x] smoke を6本目に足さない。unit で thought + `foundVia` を固定する
 - [x] flow しきい値の見込みを作業ログに書く。超過見込みなら評価パケットへの人間GOがある
 - [x] check / test / smoke が緑
-- [ ] 人間が「画像を見ながら書いた考察が、資料の下に事実と並ぶ」と確認する
+- [x] 人間が「画像を見ながら書いた考察が、資料の下に事実と並ぶ」と確認する
 
 ## このカードでやらない
 
@@ -73,6 +73,7 @@ T012 / T029（`role:"thought"`）・T051（ツリー表示）
 - 2026-08-20 impl: rework取得。考察でも掘り中表示を残し、running の main ビルドへ載せる
 - 2026-08-20 impl: 掘り中バッジを考察でも出す（f440284）。check/test/smoke 緑。
   localhost:8000 の bundle を T059 に差し替え。ハードリロードして確認待ち → review
+- 2026-08-20 human: オッケー動いた → done。task/T059 merge・worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
 
