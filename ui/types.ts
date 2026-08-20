@@ -74,7 +74,7 @@ export type Card = {
   /** Board display size (T022). Omit or `"m"` = default; `"l"` = large. */
   size?: "m" | "l";
   foundAt: number;
-  /** Parent card id when captured while digging (T050). Immutable after capture. */
+  /** Parent card id when captured from a viewed source (T050 / T059). Immutable after capture. */
   foundVia?: string;
 };
 

@@ -136,6 +136,35 @@ Deno.test("foundViaAncestorChain lists parents a board reveal must expand", () =
   }
 });
 
+Deno.test("thought card keeps foundVia through card_added replay", () => {
+  const parentId = crypto.randomUUID();
+  const childId = crypto.randomUUID();
+  const parent: Card = { id: parentId, title: "資料", foundAt: 100 };
+  const child: Card = {
+    id: childId,
+    title: "推測",
+    role: "thought",
+    foundAt: 200,
+    foundVia: parentId,
+  };
+  let project = createEmptyProject("考察の経路", 50);
+  project = appendEvent(
+    { ...project, cards: [parent, child] },
+    { type: "card_added", at: 100, card: parent },
+  );
+  project = appendEvent(project, {
+    type: "card_added",
+    at: 200,
+    card: child,
+  });
+  const live = viewThrough(project, 1).cards.find((item) =>
+    item.id === childId
+  );
+  if (live?.role !== "thought" || live.foundVia !== parentId) {
+    throw new Error("thought must keep foundVia on replay");
+  }
+});
+
 Deno.test("import JSON without foundVia stays valid", () => {
   const card: Card = { id: "a", title: "旧", foundAt: 10 };
   const project = createEmptyProject("legacy", 1);

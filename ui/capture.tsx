@@ -294,7 +294,7 @@ function CaptureIntentToggle(props: {
         data-testid="capture-intent-dig"
         aria-pressed={props.mode === "dig"}
         aria-label="掘る"
-        title="発見として掘る（発見元を記録）"
+        title="発見として追加"
         disabled={disabled}
         onClick={() => props.onChange("dig")}
       >
@@ -306,7 +306,7 @@ function CaptureIntentToggle(props: {
         data-testid="capture-intent-thought"
         aria-pressed={props.mode === "thought"}
         aria-label="考察"
-        title="考察カードとして追加"
+        title="考察として追加"
         disabled={disabled}
         onClick={() => props.onChange("thought")}
       >
@@ -351,7 +351,7 @@ function ExploreImageReference() {
 
   if (!card || !isLocalMediaRef(card.image)) return null;
 
-  const digging = captureMode === "dig" && diggingId === card.id;
+  const digging = diggingId === card.id;
 
   return (
     <div
@@ -388,13 +388,7 @@ function ExploreImageReference() {
           {digging
             ? (
               <span class="capture-image-reference__digging-label">
-                から掘り中
-              </span>
-            )
-            : captureMode === "thought"
-            ? (
-              <span class="capture-image-reference__digging-label">
-                を見ながら考察
+                {captureMode === "thought" ? "を見ながら考察" : "から掘り中"}
               </span>
             )
             : null}
@@ -404,7 +398,9 @@ function ExploreImageReference() {
           disabled={replaying}
           onChange={setImageReferenceCaptureMode}
         />
-        {digging ? <DigStopButton onClick={() => stopDigging()} /> : null}
+        {digging && captureMode === "dig"
+          ? <DigStopButton onClick={() => stopDigging()} />
+          : null}
         <button
           type="button"
           class="capture-compose__cancel"
