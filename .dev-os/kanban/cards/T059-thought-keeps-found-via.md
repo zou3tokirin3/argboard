@@ -1,13 +1,13 @@
 ---
 id: T059
 title: 画像を見ながら書いた考察も資料の子として残す
-status: review
+status: doing
 owner: impl
 gate: human
 branch: "task/T059"
 template_ver: generic-0.2
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-20
 ---
 
 ## 目的
@@ -70,5 +70,8 @@ T012 / T029（`role:"thought"`）・T051（ツリー表示）
 - 2026-08-19 impl: 実装完了（7b86d1a）。画像参照は考察でも startDigging。切替は role のみ。
   実測 flow 本体 TS/TSX -2 / 操作 +0 / 概念 +0 / gzip -42B / テスト +98 / スモーク 5。
   しきい値内。check/test/smoke 緑。人間実機確認待ち → review
+- 2026-08-20 impl: rework取得。考察でも掘り中表示を残し、running の main ビルドへ載せる
 
 ## 差し戻し履歴（追記のみ）
+
+- 2026-08-20 human: 出来事は掘る状態になるが、思考が掘る状態にならない。一番上に思考が来る → rework
