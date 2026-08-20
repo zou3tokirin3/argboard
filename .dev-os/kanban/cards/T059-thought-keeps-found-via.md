@@ -1,7 +1,7 @@
 ---
 id: T059
 title: 画像を見ながら書いた考察も資料の子として残す
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T059"
@@ -71,6 +71,8 @@ T012 / T029（`role:"thought"`）・T051（ツリー表示）
   実測 flow 本体 TS/TSX -2 / 操作 +0 / 概念 +0 / gzip -42B / テスト +98 / スモーク 5。
   しきい値内。check/test/smoke 緑。人間実機確認待ち → review
 - 2026-08-20 impl: rework取得。考察でも掘り中表示を残し、running の main ビルドへ載せる
+- 2026-08-20 impl: 掘り中バッジを考察でも出す（f440284）。check/test/smoke 緑。
+  localhost:8000 の bundle を T059 に差し替え。ハードリロードして確認待ち → review
 
 ## 差し戻し履歴（追記のみ）
 
