@@ -1,7 +1,7 @@
 ---
 id: T060
 title: 画像を見ながら書くプレビューの高さを自分の画面で変えられるようにする
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T060"
@@ -74,6 +74,8 @@ T041（1枚制限。本カードは表示だけ）
 - 2026-08-21 human: 画像大きさ変えるの出てこない。今どのバージョンを開いているかタイトル等で分かるようにして
 - 2026-08-21 impl: rework取得。localhost:8000 は main の `deno task dev`（T060 未含み）。
   ローカル serve のタブと画面に git ブランチを出す
+- 2026-08-21 impl: ブランチ表示は main の serve.ts へ（タブ＋左上ブランド）。T060 のつまみは少し見やすくした。
+  T060 確認は http://localhost:8001/ （タイトルが ARGBoard · task/T060）→ review
 
 ## 差し戻し履歴（追記のみ）
 
