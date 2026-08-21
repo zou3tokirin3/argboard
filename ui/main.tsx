@@ -298,7 +298,7 @@ function TopBar() {
         <div class="brand">
           <span class="brand__mark" aria-hidden="true">A</span>
           <div>
-            <span>ARGBoard</span>
+            <span>{document.title}</span>
             <small>{projectName.value}</small>
           </div>
         </div>
