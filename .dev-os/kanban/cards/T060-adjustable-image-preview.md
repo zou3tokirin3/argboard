@@ -1,10 +1,10 @@
 ---
 id: T060
 title: 画像を見ながら書くプレビューの高さを自分の画面で変えられるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T060"
 template_ver: generic-0.2
 created: 2026-08-19
 updated: 2026-08-21
@@ -67,5 +67,6 @@ T041（1枚制限。本カードは表示だけ）
 - 2026-08-21 planner: 操作 **A**（プレビュー下辺ドラッグ）。記憶は localStorage、
   探索／思考サイドは別キー。staging は対象外。見込み flow=本体 +80〜140 / 操作 +1
   （リサイズつまみ） / 概念 +0 / gzip +2KB未満 / Won't=No。しきい値内のためパケットなし → ready
+- 2026-08-21 impl: 取得。task/T060 worktree で画像参照プレビューの高さをドラッグ調整する
 
 ## 差し戻し履歴（追記のみ）
