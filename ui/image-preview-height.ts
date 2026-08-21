@@ -7,12 +7,11 @@ export type PreviewHeightStore = {
 
 export const PREVIEW_HEIGHT_KEY = "argboard.imagePreviewHeight";
 export const PREVIEW_MIN_PX = 96;
-export const PREVIEW_RESERVE_PX = 160;
-
-const DEFAULTS: Record<PreviewSurface, { vh: number; cap: number }> = {
+const RESERVE_PX = 160;
+const DEFAULTS = {
   explore: { vh: 0.52, cap: 520 },
   side: { vh: 0.36, cap: 280 },
-};
+} as const;
 
 function browserStore(): PreviewHeightStore | null {
   try {
@@ -22,21 +21,19 @@ function browserStore(): PreviewHeightStore | null {
   }
 }
 
-export function defaultPreviewHeight(
-  surface: PreviewSurface,
-  viewportHeight: number,
-): number {
+export function defaultPreviewHeight(surface: PreviewSurface, vh: number) {
   const spec = DEFAULTS[surface];
-  return Math.round(Math.min(spec.vh * viewportHeight, spec.cap));
+  return Math.round(Math.min(spec.vh * vh, spec.cap));
 }
 
-export function maxPreviewHeight(viewportHeight: number): number {
-  return Math.max(PREVIEW_MIN_PX, viewportHeight - PREVIEW_RESERVE_PX);
+export function maxPreviewHeight(vh: number) {
+  return Math.max(PREVIEW_MIN_PX, vh - RESERVE_PX);
 }
 
-export function clampPreviewHeight(px: number, viewportHeight: number): number {
-  const max = maxPreviewHeight(viewportHeight);
-  return Math.round(Math.min(max, Math.max(PREVIEW_MIN_PX, px)));
+export function clampPreviewHeight(px: number, vh: number) {
+  return Math.round(
+    Math.min(maxPreviewHeight(vh), Math.max(PREVIEW_MIN_PX, px)),
+  );
 }
 
 export function readStoredPreviewHeights(
@@ -63,11 +60,13 @@ export function writeStoredPreviewHeight(
   surface: PreviewSurface,
   px: number,
   store: PreviewHeightStore | null = browserStore(),
-): void {
+) {
   if (!store) return;
   try {
-    const next = { ...readStoredPreviewHeights(store), [surface]: px };
-    store.setItem(PREVIEW_HEIGHT_KEY, JSON.stringify(next));
+    store.setItem(
+      PREVIEW_HEIGHT_KEY,
+      JSON.stringify({ ...readStoredPreviewHeights(store), [surface]: px }),
+    );
   } catch {
     // Quota or privacy mode: remember height in this session only.
   }
@@ -75,12 +74,12 @@ export function writeStoredPreviewHeight(
 
 export function resolvePreviewHeight(
   surface: PreviewSurface,
-  viewportHeight: number,
+  vh: number,
   store: PreviewHeightStore | null = browserStore(),
-): number {
+) {
   const stored = readStoredPreviewHeights(store)[surface];
-  const raw = typeof stored === "number"
-    ? stored
-    : defaultPreviewHeight(surface, viewportHeight);
-  return clampPreviewHeight(raw, viewportHeight);
+  return clampPreviewHeight(
+    typeof stored === "number" ? stored : defaultPreviewHeight(surface, vh),
+    vh,
+  );
 }

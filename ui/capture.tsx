@@ -431,7 +431,8 @@ function ExploreImageReference(props: { explore?: boolean }) {
           class="capture-image-reference__resize"
           role="separator"
           aria-orientation="horizontal"
-          aria-label="プレビューの高さ"
+          aria-label="プレビューの高さをドラッグで変える"
+          title="ドラッグで高さを変える"
           aria-valuenow={previewHeight}
           aria-valuemin={PREVIEW_MIN_PX}
           aria-valuemax={maxPreviewHeight(globalThis.innerHeight)}

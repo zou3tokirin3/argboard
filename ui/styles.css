@@ -681,7 +681,7 @@ body {
 .capture-image-reference__resize {
   position: absolute;
   inset: auto 0 0;
-  height: 12px;
+  height: 14px;
   cursor: ns-resize;
   touch-action: none;
 }
@@ -689,12 +689,12 @@ body {
   content: "";
   position: absolute;
   left: 50%;
-  bottom: 3px;
-  width: 36px;
-  height: 3px;
-  margin-left: -18px;
+  bottom: 4px;
+  width: 44px;
+  height: 4px;
+  margin-left: -22px;
   border-radius: 2px;
-  background: var(--line-strong);
+  background: var(--muted);
 }
 .capture-image-reference__resize:hover::after,
 .capture-image-reference__resize:focus-visible::after {
