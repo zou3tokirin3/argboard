@@ -1,7 +1,7 @@
 ---
 id: T058
 title: インスペクタでタグ欄をタイトルの直後へ上げる
-status: doing
+status: review
 owner: agent
 gate: human
 branch: task/T058
@@ -57,5 +57,6 @@ updated: 2026-08-21
 - 2026-08-13 human: 右パネルでタグをもう少し上（タイトルの次あたり）に → 起票
 - 2026-08-21 planner: ready。単一選択の並びを「タイトル→タグ→出典→メモ→画像→つながり」に確定
 - 2026-08-21 agent: doing 取得。flow 見込みは並び替えのみ（しきい値内）
+- 2026-08-21 agent: 単一選択の TagField をタイトル直後へ移動。check/test/smoke 緑 → review
 
 ## 差し戻し履歴（追記のみ）
