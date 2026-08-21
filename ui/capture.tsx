@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { readCaptureDraft } from "./capture-draft.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
+import {
+  clampPreviewHeight,
+  maxPreviewHeight,
+  PREVIEW_MIN_PX,
+  resolvePreviewHeight,
+  writeStoredPreviewHeight,
+} from "./image-preview-height.ts";
+import type { PreviewSurface } from "./image-preview-height.ts";
 import { DigShovelIcon, DigStopButton } from "./digging-controls.tsx";
 import {
   imageBlobFromClipboard,
@@ -328,12 +336,17 @@ function CaptureIntentToggle(props: {
   );
 }
 
-function ExploreImageReference() {
+function ExploreImageReference(props: { explore?: boolean }) {
+  const surface: PreviewSurface = props.explore ? "explore" : "side";
   const card = exploreComposeCard.value;
   const replaying = isReplaying.value;
   const captureMode = imageReferenceCaptureMode.value;
   const diggingId = diggingCardId.value;
   const [url, setUrl] = useState<string | null>(null);
+  const [previewHeight, setPreviewHeight] = useState(() =>
+    resolvePreviewHeight(surface, globalThis.innerHeight)
+  );
+  const dragRef = useRef<{ startY: number; startH: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -349,6 +362,49 @@ function ExploreImageReference() {
     };
   }, [card?.id, card?.image]);
 
+  function persistHeight(next: number) {
+    setPreviewHeight(next);
+    writeStoredPreviewHeight(surface, next);
+  }
+
+  function heightFromDrag(clientY: number): number | null {
+    const drag = dragRef.current;
+    if (!drag) return null;
+    return clampPreviewHeight(
+      drag.startH + (clientY - drag.startY),
+      globalThis.innerHeight,
+    );
+  }
+
+  function onResizePointerDown(event: PointerEvent) {
+    if (event.button !== 0) return;
+    const handle = event.currentTarget;
+    if (!(handle instanceof HTMLElement)) return;
+    event.preventDefault();
+    handle.setPointerCapture(event.pointerId);
+    dragRef.current = { startY: event.clientY, startH: previewHeight };
+  }
+
+  function onResizePointerMove(event: PointerEvent) {
+    const next = heightFromDrag(event.clientY);
+    if (next != null) setPreviewHeight(next);
+  }
+
+  function onResizePointerUp(event: PointerEvent) {
+    const next = heightFromDrag(event.clientY);
+    dragRef.current = null;
+    if (next != null) persistHeight(next);
+  }
+
+  function onResizeKeyDown(event: KeyboardEvent) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    const delta = event.key === "ArrowDown" ? 16 : -16;
+    persistHeight(
+      clampPreviewHeight(previewHeight + delta, globalThis.innerHeight),
+    );
+  }
+
   if (!card || !isLocalMediaRef(card.image)) return null;
 
   const digging = diggingId === card.id;
@@ -358,7 +414,10 @@ function ExploreImageReference() {
       class="capture-compose capture-image-staging capture-image-reference"
       data-testid="capture-compose"
     >
-      <div class="capture-image-staging__preview">
+      <div
+        class="capture-image-staging__preview capture-image-reference__preview"
+        style={{ height: `${previewHeight}px` }}
+      >
         {url
           ? (
             <img
@@ -368,6 +427,23 @@ function ExploreImageReference() {
             />
           )
           : null}
+        <div
+          class="capture-image-reference__resize"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="プレビューの高さをドラッグで変える"
+          title="ドラッグで高さを変える"
+          aria-valuenow={previewHeight}
+          aria-valuemin={PREVIEW_MIN_PX}
+          aria-valuemax={maxPreviewHeight(globalThis.innerHeight)}
+          tabIndex={0}
+          data-testid="capture-compose-preview-resize"
+          onPointerDown={onResizePointerDown}
+          onPointerMove={onResizePointerMove}
+          onPointerUp={onResizePointerUp}
+          onPointerCancel={onResizePointerUp}
+          onKeyDown={onResizeKeyDown}
+        />
       </div>
       <div
         class="capture-image-reference__bar"
@@ -539,7 +615,7 @@ export function Capture(props: { explore?: boolean }) {
       onDrop={explore ? onImageDrop : undefined}
     >
       {staging ? <ExploreImageStaging /> : null}
-      {inCompose ? <ExploreImageReference /> : null}
+      {inCompose ? <ExploreImageReference explore={explore} /> : null}
       {!staging && digging ? <CaptureDiggingBar /> : null}
       {!staging
         ? (
