@@ -494,6 +494,11 @@ export function Inspector() {
           onBlur={commit}
         />
       </label>
+      <TagField
+        cardId={card.id}
+        tags={card.tags}
+        disabled={replaying}
+      />
       <label class="inspector__field">
         <span>出典URL</span>
         <input
@@ -539,11 +544,6 @@ export function Inspector() {
           )
           : null}
       </div>
-      <TagField
-        cardId={card.id}
-        tags={card.tags}
-        disabled={replaying}
-      />
       {cardLinks.length
         ? (
           <label class="inspector__field">
