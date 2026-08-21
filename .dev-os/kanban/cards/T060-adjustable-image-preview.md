@@ -1,7 +1,7 @@
 ---
 id: T060
 title: 画像を見ながら書くプレビューの高さを自分の画面で変えられるようにする
-status: review
+status: doing
 owner: impl
 gate: human
 branch: "task/T060"
@@ -71,5 +71,10 @@ T041（1枚制限。本カードは表示だけ）
 - 2026-08-21 impl: 実装完了（cc2359a）。プレビュー下辺ドラッグ、localStorage は探索／思考サイド別。
   実測 flow 本体 +191 / 操作 +1 / 概念 +0 / gzip +986B / テスト +85 / スモーク 5。
   しきい値内。check/test/smoke 緑。人間実機確認待ち → review
+- 2026-08-21 human: 画像大きさ変えるの出てこない。今どのバージョンを開いているかタイトル等で分かるようにして
+- 2026-08-21 impl: rework取得。localhost:8000 は main の `deno task dev`（T060 未含み）。
+  ローカル serve のタブと画面に git ブランチを出す
 
 ## 差し戻し履歴（追記のみ）
+
+- 2026-08-21 human: つまみが見えない＋今どのバージョンか分からない → rework
