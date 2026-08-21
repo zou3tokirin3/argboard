@@ -1,6 +1,9 @@
+import { appTitle } from "./ui/release.ts";
+
 const root = new URL("./dist/", import.meta.url);
 const port = Number(Deno.env.get("PORT") ?? "8000");
 const branch = gitBranch();
+const title = appTitle(branch);
 
 function gitBranch(): string {
   try {
@@ -33,11 +36,11 @@ Deno.serve({ port }, async (request) => {
 
   try {
     let file = await Deno.readFile(fileUrl);
-    if (relativePath === "index.html" && branch) {
+    if (relativePath === "index.html") {
       file = new TextEncoder().encode(
         new TextDecoder().decode(file).replace(
           "<title>ARGBoard</title>",
-          `<title>ARGBoard · ${branch}</title>`,
+          `<title>${title}</title>`,
         ),
       );
     }

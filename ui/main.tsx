@@ -51,6 +51,7 @@ import {
   updateCardRole,
   updateLink,
 } from "./state.ts";
+import { appTitle } from "./release.ts";
 import { Stream } from "./stream.tsx";
 
 const INSTALL_TIP_KEY = "argboard.installTipDismissed";
@@ -59,6 +60,12 @@ function isStandaloneDisplay(): boolean {
   if (globalThis.matchMedia("(display-mode: standalone)").matches) return true;
   const safari = navigator as Navigator & { standalone?: boolean };
   return safari.standalone === true;
+}
+
+function useAppTitle() {
+  useEffect(() => {
+    document.title = appTitle();
+  }, []);
 }
 
 function InstallTip() {
@@ -298,7 +305,7 @@ function TopBar() {
         <div class="brand">
           <span class="brand__mark" aria-hidden="true">A</span>
           <div>
-            <span>{document.title}</span>
+            <span data-testid="app-release">{appTitle()}</span>
             <small>{projectName.value}</small>
           </div>
         </div>
@@ -491,6 +498,7 @@ function ProjectBootstrap() {
 }
 
 function App() {
+  useAppTitle();
   useEffect(() => {
     initialize();
   }, []);

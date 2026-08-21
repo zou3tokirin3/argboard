@@ -54,6 +54,7 @@ dropped → backlog（人間のみ・復活）
 - マイルストーン境界、デザイン、公開URL、ドッグフードは `gate: human` とする
 - review中に追加実装が必要になった場合、必ず理由を記録して rework → doing を経る
 - merge後にbranch/worktreeを片付けてからdoneへ進める
+- `ui/release.ts` の `APP_RELEASE` を +1 し、`APP_PREVIEW` を空にする（preview 中のみ非空）
 
 ## カード命名
 
