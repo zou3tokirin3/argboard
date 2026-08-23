@@ -564,9 +564,20 @@ if (isTest) {
   };
   document.documentElement.dataset.test = "true";
 } else if ("serviceWorker" in navigator) {
-  void navigator.serviceWorker.register(new URL("./sw.js", location.href), {
-    scope: "./",
-  });
+  const localDev = location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1";
+  if (localDev) {
+    // Local verify: an old shell worker makes every reload look stale.
+    void navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        void registration.unregister();
+      }
+    });
+  } else {
+    void navigator.serviceWorker.register(new URL("./sw.js", location.href), {
+      scope: "./",
+    });
+  }
 }
 
 render(<App />, document.getElementById("app")!);
