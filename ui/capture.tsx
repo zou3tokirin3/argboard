@@ -127,6 +127,18 @@ function CaptureImageSlot(props: {
     void applyBlob(blob);
   }
 
+  function applyFile(file: File | undefined) {
+    if (!file || props.disabled || busy) return;
+    setBusy(true);
+    const line = props.getDraftLine().trim();
+    const draft = line ? parseCaptureLine(line) : readCaptureDraft();
+    void pasteExploreImage(file, draft ?? undefined).catch((error) => {
+      alert(
+        error instanceof Error ? error.message : "画像を添付できませんでした",
+      );
+    }).finally(() => setBusy(false));
+  }
+
   function onPick(event: Event) {
     event.stopPropagation();
     if (props.disabled || busy) return;
@@ -134,34 +146,33 @@ function CaptureImageSlot(props: {
     input.type = "file";
     input.accept = "image/*";
     input.onchange = () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      setBusy(true);
-      const line = props.getDraftLine().trim();
-      const draft = line ? parseCaptureLine(line) : readCaptureDraft();
-      void pasteExploreImage(file, draft ?? undefined).catch((error) => {
-        alert(
-          error instanceof Error ? error.message : "画像を添付できませんでした",
-        );
-      }).finally(() => setBusy(false));
+      applyFile(input.files?.[0]);
     };
     input.click();
   }
 
+  function onFileChange(event: Event) {
+    const input = event.currentTarget;
+    if (!(input instanceof HTMLInputElement)) return;
+    const file = input.files?.[0];
+    input.value = "";
+    applyFile(file);
+  }
+
   return (
     <>
-      <button
-        type="button"
-        class="capture__image-slot"
-        data-testid="capture-image-slot"
-        title="スクショを貼る（⌘V）"
-        aria-label="スクショを貼り付け"
-        disabled={props.disabled || busy}
-        onPaste={onPaste}
-        onClick={onPick}
-      >
+      <label class="capture__image-slot" title="スクショを貼る（⌘V）">
+        <input
+          type="file"
+          accept="image/*"
+          data-testid="capture-image-slot"
+          aria-label="スクショを貼り付け"
+          disabled={props.disabled || busy}
+          onPaste={onPaste}
+          onChange={onFileChange}
+        />
         <span aria-hidden="true">🖼</span>
-      </button>
+      </label>
       <button
         type="button"
         class="capture__image-pick"

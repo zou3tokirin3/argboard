@@ -422,6 +422,29 @@ function StreamCardRow(props: StreamCardRowProps) {
   );
 }
 
+function StreamFilterToggle(props: {
+  testId: string;
+  pressed: boolean;
+  title: string;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <label
+      class={`stream__filter-btn${props.pressed ? " is-active" : ""}`}
+      title={props.title}
+    >
+      <input
+        type="checkbox"
+        data-testid={props.testId}
+        checked={props.pressed}
+        onChange={props.onToggle}
+      />
+      {props.label}
+    </label>
+  );
+}
+
 function TagFocusControls() {
   const current = viewProject.value;
   const usage = current ? collectTagUsage(current.cards) : [];
@@ -635,64 +658,50 @@ export function Stream() {
           />
         </label>
         <div class="stream__filters">
-          <button
-            type="button"
-            class={`stream__filter-btn${
-              unplacedOnly.value ? " is-active" : ""
-            }`}
-            data-testid="stream-unplaced-only"
-            aria-pressed={unplacedOnly.value}
+          <StreamFilterToggle
+            testId="stream-unplaced-only"
+            pressed={unplacedOnly.value}
             title="ボードに未配置のカードだけを表示"
-            onClick={() => {
+            label="未配置のみ"
+            onToggle={() => {
               const next = !unplacedOnly.value;
               unplacedOnly.value = next;
               if (next) placedOnly.value = false;
             }}
-          >
-            未配置のみ
-          </button>
-          <button
-            type="button"
-            class={`stream__filter-btn${placedOnly.value ? " is-active" : ""}`}
-            data-testid="stream-placed-only"
-            aria-pressed={placedOnly.value}
+          />
+          <StreamFilterToggle
+            testId="stream-placed-only"
+            pressed={placedOnly.value}
             title="ボードに配置済みのカードだけを表示"
-            onClick={() => {
+            label="配置済のみ"
+            onToggle={() => {
               const next = !placedOnly.value;
               placedOnly.value = next;
               if (next) unplacedOnly.value = false;
             }}
-          >
-            配置済のみ
-          </button>
-          <button
-            type="button"
-            class={`stream__filter-btn${findingOnly.value ? " is-active" : ""}`}
-            data-testid="stream-finding-only"
-            aria-pressed={findingOnly.value}
+          />
+          <StreamFilterToggle
+            testId="stream-finding-only"
+            pressed={findingOnly.value}
             title="発見カードだけを表示"
-            onClick={() => {
+            label="発見のみ"
+            onToggle={() => {
               const next = !findingOnly.value;
               findingOnly.value = next;
               if (next) thoughtOnly.value = false;
             }}
-          >
-            発見のみ
-          </button>
-          <button
-            type="button"
-            class={`stream__filter-btn${thoughtOnly.value ? " is-active" : ""}`}
-            data-testid="stream-thought-only"
-            aria-pressed={thoughtOnly.value}
+          />
+          <StreamFilterToggle
+            testId="stream-thought-only"
+            pressed={thoughtOnly.value}
             title="考察カードだけを表示"
-            onClick={() => {
+            label="考察のみ"
+            onToggle={() => {
               const next = !thoughtOnly.value;
               thoughtOnly.value = next;
               if (next) findingOnly.value = false;
             }}
-          >
-            考察のみ
-          </button>
+          />
         </div>
         <TagFocusControls />
         <div class="stream__list" ref={listRef}>
