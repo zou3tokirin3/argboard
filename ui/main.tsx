@@ -602,8 +602,8 @@ function App() {
       event.preventDefault();
       void removeCard(cardId);
     }
-    globalThis.addEventListener("keydown", onKeyDown);
-    return () => globalThis.removeEventListener("keydown", onKeyDown);
+    globalThis.addEventListener("keydown", onKeyDown, true);
+    return () => globalThis.removeEventListener("keydown", onKeyDown, true);
   }, []);
 
   return <ProjectBootstrap />;

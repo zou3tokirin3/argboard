@@ -38,14 +38,19 @@ Deno.serve({ port }, async (request) => {
     let file = await Deno.readFile(fileUrl);
     if (relativePath === "index.html") {
       file = new TextEncoder().encode(
-        new TextDecoder().decode(file).replace(
-          "<title>ARGBoard</title>",
-          `<title>${title}</title>`,
-        ),
+        new TextDecoder().decode(file)
+          .replace("<title>ARGBoard</title>", `<title>${title}</title>`)
+          .replace(
+            'src="./bundle.js"',
+            `src="./bundle.js?v=${encodeURIComponent(title)}"`,
+          ),
       );
     }
     return new Response(file, {
-      headers: { "content-type": contentTypeFor(relativePath) },
+      headers: {
+        "content-type": contentTypeFor(relativePath),
+        "cache-control": "no-store",
+      },
     });
   } catch {
     return new Response("Not found", { status: 404 });
