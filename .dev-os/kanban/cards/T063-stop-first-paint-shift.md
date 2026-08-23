@@ -1,10 +1,10 @@
 ---
 id: T063
 title: 画像とフォントの初回ずれを止める
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: auto
-branch: ""
+branch: "task/T063"
 template_ver: generic-0.2
 created: 2026-08-23
 updated: 2026-08-23
@@ -41,5 +41,6 @@ updated: 2026-08-23
 - 2026-08-23 planner: 人間「T063実装して」。受け入れ条件は検証可能。
   見込み flow=本体行+20〜40 / 操作+0 / 概念+0 / gzip は bundle 非増 / Won't=No。
   しきい値内のためパケットなし → ready
+- 2026-08-23 impl: 取得。task/T063 worktree で画像寸法・フォント先行読込・color-scheme を入れる
 
 ## 差し戻し履歴（追記のみ）
