@@ -76,6 +76,8 @@ updated: 2026-08-23
 - 2026-08-23 impl: Tab を本文入力 → 検索 → 探索/考察 → 本文入力で循環（d1b0f66）。
   フィルタは button に戻した。貼付はクリック／⌘V。task/T062 を main へ merge → review
   確認は http://localhost:8002/ を再読込。検索の次の Tab はモード切替。URL 欄には行かない。
+- 2026-08-23 impl: 8002 のタイトルだけ新しく、bundle.js が起動時のままだった。
+  ビルドし直し、HTML の script に ?v=、Cache-Control: no-store。8002 を建て直した
 
 ## 差し戻し履歴（追記のみ）
 
