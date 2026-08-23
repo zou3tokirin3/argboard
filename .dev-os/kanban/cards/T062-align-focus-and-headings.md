@@ -1,7 +1,7 @@
 ---
 id: T062
 title: フォーカスと見出しの床を揃える
-status: review
+status: doing
 owner: impl
 gate: human
 branch: "task/T062"
@@ -65,7 +65,10 @@ updated: 2026-08-23
   フォーカス時に検索と同じ 3px ring を付ける
 - 2026-08-23 impl: フィルタの :focus-visible に 3px ring（8328182）。task/T062 を main へ merge → review
   確認は http://localhost:8002/ を再読込。検索の次の Tab で「未配置のみ」に青い輪が付く。
+- 2026-08-23 impl: rework取得。mac の Tab が button を飛ばして URL 欄へ行く。
+  フィルタを checkbox、貼付スロットを file にして検索の次／入力の次に止まるようにする
 
 ## 差し戻し履歴（追記のみ）
 
 - 2026-08-23 human: 検索の次の Tab が貼付に見えない。フィルタと分からない → rework
+- 2026-08-23 human: フィルタに行かずブラウザの URL 欄へ行く → rework
