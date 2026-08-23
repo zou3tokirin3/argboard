@@ -221,6 +221,8 @@ function ExploreImageStaging() {
         <img
           src={draft.previewUrl}
           alt="準備中のスクショ"
+          width={1600}
+          height={1000}
           data-testid="capture-image-staging-preview"
         />
       </div>
@@ -423,6 +425,8 @@ function ExploreImageReference(props: { explore?: boolean }) {
             <img
               src={url}
               alt={card.title}
+              width={1600}
+              height={1000}
               data-testid="capture-compose-preview"
             />
           )

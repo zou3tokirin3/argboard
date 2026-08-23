@@ -92,8 +92,12 @@ export function CardImageField(props: {
               class="card-image-field__preview"
               src={url}
               alt="添付スクショ"
+              width={1600}
+              height={1000}
             />
           )
+          : hasImage
+          ? <span class="card-image-field__preview" aria-hidden="true" />
           : (
             <p class="card-image-field__hint">
               {variant === "inline"
