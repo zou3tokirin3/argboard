@@ -290,17 +290,20 @@ body {
   font-weight: 600;
 }
 .mode-switch button.is-active {
-  background: var(--bg);
-  color: var(--ink);
-  box-shadow: var(--shadow);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .mode-switch button:hover {
-  background: transparent;
-  border-color: transparent;
   color: var(--ink);
+}
+.mode-switch button.is-active:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .mode-switch button:focus {
   outline: 0;
+  background: var(--accent);
+  color: #fff;
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .topbar > .topbar__actions > button {
