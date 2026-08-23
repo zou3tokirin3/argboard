@@ -523,6 +523,56 @@ function ProjectBootstrap() {
   return <AppShell />;
 }
 
+function isUsableControl(el: HTMLElement | null): el is HTMLElement {
+  if (!el) return false;
+  if (el.closest("[inert]")) return false;
+  if (el instanceof HTMLButtonElement && el.disabled) return false;
+  if (el instanceof HTMLInputElement && el.disabled) return false;
+  return true;
+}
+
+/** Capture → search → mode switch. Mac Tab otherwise leaves the page. */
+function chromeTabCycle(): HTMLElement[] {
+  const capture = document.querySelector<HTMLElement>(
+    '[data-testid="capture-input"]',
+  );
+  const search = document.querySelector<HTMLElement>(
+    '.search input[type="search"]',
+  );
+  const mode = document.querySelector<HTMLElement>(
+    '.mode-switch [role="tab"][tabindex="0"]',
+  );
+  return [capture, search, mode].filter(isUsableControl);
+}
+
+function moveChromeTab(event: KeyboardEvent): boolean {
+  if (event.key !== "Tab") return false;
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return false;
+
+  if (target.closest(".skip-link") && !event.shiftKey) {
+    const capture = document.querySelector<HTMLElement>(
+      '[data-testid="capture-input"]',
+    );
+    if (isUsableControl(capture)) {
+      event.preventDefault();
+      capture.focus();
+      return true;
+    }
+  }
+
+  const items = chromeTabCycle();
+  if (items.length < 2) return false;
+  const index = items.findIndex((el) => el === target || el.contains(target));
+  if (index < 0) return false;
+  event.preventDefault();
+  const next = event.shiftKey
+    ? items[(index - 1 + items.length) % items.length]!
+    : items[(index + 1) % items.length]!;
+  next.focus();
+  return true;
+}
+
 function App() {
   useAppTitle();
   useEffect(() => {
@@ -531,6 +581,7 @@ function App() {
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      if (moveChromeTab(event)) return;
       if (event.key !== "Delete" && event.key !== "Backspace") return;
       const target = event.target as HTMLElement | null;
       if (
