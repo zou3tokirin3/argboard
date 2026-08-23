@@ -1,7 +1,7 @@
 ---
 id: T062
 title: フォーカスと見出しの床を揃える
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T062"
@@ -73,6 +73,9 @@ updated: 2026-08-23
 - 2026-08-23 impl: rework取得。人間「本文入力・検索・切り替えの3循環」。
   フィルタと貼付は Tab に入れない。Mac の Tab が button を飛ばすので、
   3点だけ preventDefault して回す
+- 2026-08-23 impl: Tab を本文入力 → 検索 → 探索/考察 → 本文入力で循環（d1b0f66）。
+  フィルタは button に戻した。貼付はクリック／⌘V。task/T062 を main へ merge → review
+  確認は http://localhost:8002/ を再読込。検索の次の Tab はモード切替。URL 欄には行かない。
 
 ## 差し戻し履歴（追記のみ）
 
