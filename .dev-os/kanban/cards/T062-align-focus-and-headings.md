@@ -1,7 +1,7 @@
 ---
 id: T062
 title: フォーカスと見出しの床を揃える
-status: review
+status: doing
 owner: impl
 gate: human
 branch: "task/T062"
@@ -70,8 +70,12 @@ updated: 2026-08-23
 - 2026-08-23 impl: フィルタを checkbox、貼付スロットを file に変更（aaaae73）。
   見た目とオンオフの意味は同じ。task/T062 を main へ merge → review
   確認は http://localhost:8002/ を再読込。検索の次の Tab が「未配置のみ」。
+- 2026-08-23 impl: rework取得。人間「本文入力・検索・切り替えの3循環」。
+  フィルタと貼付は Tab に入れない。Mac の Tab が button を飛ばすので、
+  3点だけ preventDefault して回す
 
 ## 差し戻し履歴（追記のみ）
 
 - 2026-08-23 human: 検索の次の Tab が貼付に見えない。フィルタと分からない → rework
 - 2026-08-23 human: フィルタに行かずブラウザの URL 欄へ行く → rework
+- 2026-08-23 human: 依然として URL 欄。本文入力・検索・切り替えの3循環でよいか → rework
