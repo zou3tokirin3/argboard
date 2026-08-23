@@ -1,7 +1,7 @@
 ---
 id: T063
 title: 画像とフォントの初回ずれを止める
-status: doing
+status: review
 owner: impl
 gate: auto
 branch: "task/T063"
@@ -45,6 +45,8 @@ updated: 2026-08-23
 - 2026-08-23 impl: 実装完了（4784f11）。実測 flow 本体 +43 / 操作 +0 / 概念 +0 / gzip +118B。
   しきい値内。check/test/smoke 緑。task/T063 を main へ merge → review
 - 2026-08-23 impl: rework取得。APP_PREVIEW を T063 にし、左上とタブで本変更だと分かるようにする
+- 2026-08-23 impl: 表示ラベルを `0.60+T063` に変更（08f6b49）。task/T063 を main へ merge → review
+  確認は http://localhost:8001/ 。タブ・左上が `ARGBoard · 0.60+T063` であること。
 
 ## 差し戻し履歴（追記のみ）
 
