@@ -1,7 +1,7 @@
 ---
 id: T063
 title: 画像とフォントの初回ずれを止める
-status: review
+status: rework
 owner: impl
 gate: auto
 branch: "task/T063"
@@ -46,3 +46,5 @@ updated: 2026-08-23
   しきい値内。check/test/smoke 緑。task/T063 を main へ merge → review
 
 ## 差し戻し履歴（追記のみ）
+
+- 2026-08-23 human: 8001も左上・タブが T058 のまま。T063 と分からない → rework
