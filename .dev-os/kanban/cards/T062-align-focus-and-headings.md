@@ -1,7 +1,7 @@
 ---
 id: T062
 title: フォーカスと見出しの床を揃える
-status: review
+status: doing
 owner: impl
 gate: human
 branch: "task/T062"
@@ -61,5 +61,9 @@ updated: 2026-08-23
   確認は http://localhost:8002/ 。タブ・左上が `ARGBoard · 0.60+T062` であること。
   貼付スロットは button にしたのでクリックでもファイル選択が開く（…と同じ）。
   貼付とドラッグは従来どおり。
+- 2026-08-23 impl: rework取得。検索の次がフィルタだと分からないので、
+  フォーカス時に検索と同じ 3px ring を付ける
 
 ## 差し戻し履歴（追記のみ）
+
+- 2026-08-23 human: 検索の次の Tab が貼付に見えない。フィルタと分からない → rework
