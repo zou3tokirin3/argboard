@@ -1,7 +1,7 @@
 ---
 id: T062
 title: フォーカスと見出しの床を揃える
-status: backlog
+status: ready
 owner: none
 gate: human
 branch: ""
@@ -50,5 +50,8 @@ updated: 2026-08-23
 ## 作業ログ（追記のみ）
 
 - 2026-08-23 planner: UI評価から起票。T013 の即削除は再燃させない
+- 2026-08-23 planner: 人間「T062やって」。受け入れ条件は検証可能。
+  見込み flow=本体行+80〜140 / 操作+2（skip / 空メッセージ） / 概念+0 /
+  gzip +2KB未満 / Won't=No。しきい値内のためパケットなし → ready
 
 ## 差し戻し履歴（追記のみ）
