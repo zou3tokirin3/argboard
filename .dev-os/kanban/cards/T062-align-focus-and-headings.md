@@ -1,7 +1,7 @@
 ---
 id: T062
 title: フォーカスと見出しの床を揃える
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T062"
@@ -35,10 +35,10 @@ updated: 2026-08-23
 表示: タブ・左上が **`ARGBoard · <release>+<id>`**（review 中）または **`ARGBoard · <release>`**（done 後）であること。
 `<release>` は `ui/release.ts` の `APP_RELEASE`。review 中は `APP_PREVIEW` に本カード id を入れる。
 
-- [ ] Tab で skip link → 入力へ辿れる
-- [ ] モードタブにフォーカスして矢印で探索／考察が切り替わる
-- [ ] 検索欄フォーカス時にリングが見える
-- [ ] 貼付スロットをキーボードで開け、フィルタ全オン相当で空メッセージが出る
+- [x] Tab で skip link → 入力へ辿れる
+- [x] モードタブにフォーカスして矢印で探索／考察が切り替わる
+- [x] 検索欄フォーカス時にリングが見える
+- [x] 貼付スロットをキーボードで開け、フィルタ全オン相当で空メッセージが出る
 
 ## このカードでやらない
 
@@ -80,6 +80,8 @@ updated: 2026-08-23
   ビルドし直し、HTML の script に ?v=、Cache-Control: no-store。8002 を建て直した
 - 2026-08-23 impl: 人間「ループは動く。探索/考察の選択色が薄い」。
   選択中は accent-soft、フォーカス中はアクセント塗りつぶし
+- 2026-08-23 human: 見やすくなった。ガイダンスこのくらいでよい → done。
+  APP_RELEASE 0.61、APP_PREVIEW 空。task/T062 worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
 
