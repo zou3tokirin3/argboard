@@ -1,7 +1,7 @@
 ---
 id: T063
 title: 画像とフォントの初回ずれを止める
-status: backlog
+status: ready
 owner: none
 gate: auto
 branch: ""
@@ -38,5 +38,8 @@ updated: 2026-08-23
 ## 作業ログ（追記のみ）
 
 - 2026-08-23 planner: UI評価から起票。見た目の系統は触らず、ずれだけ止める
+- 2026-08-23 planner: 人間「T063実装して」。受け入れ条件は検証可能。
+  見込み flow=本体行+20〜40 / 操作+0 / 概念+0 / gzip は bundle 非増 / Won't=No。
+  しきい値内のためパケットなし → ready
 
 ## 差し戻し履歴（追記のみ）
