@@ -1,10 +1,10 @@
 ---
 id: T062
 title: フォーカスと見出しの床を揃える
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T062"
 template_ver: generic-0.2
 created: 2026-08-23
 updated: 2026-08-23
@@ -53,5 +53,6 @@ updated: 2026-08-23
 - 2026-08-23 planner: 人間「T062やって」。受け入れ条件は検証可能。
   見込み flow=本体行+80〜140 / 操作+2（skip / 空メッセージ） / 概念+0 /
   gzip +2KB未満 / Won't=No。しきい値内のためパケットなし → ready
+- 2026-08-23 impl: 取得。task/T062 worktree でフォーカス床と見出しを揃える
 
 ## 差し戻し履歴（追記のみ）
