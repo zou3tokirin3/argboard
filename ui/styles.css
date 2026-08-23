@@ -299,6 +299,10 @@ body {
   border-color: transparent;
   color: var(--ink);
 }
+.mode-switch button:focus {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 .topbar > .topbar__actions > button {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -1379,9 +1383,6 @@ span.card-image-field__preview {
   margin: 0 12px 8px;
 }
 .stream__filter-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
   height: 26px;
   padding: 0 9px;
   border: 1px solid var(--line-strong);
@@ -1391,26 +1392,17 @@ span.card-image-field__preview {
   font: 500 12px "IBM Plex Sans JP", sans-serif;
   cursor: pointer;
 }
-.stream__filter-btn input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
 .stream__filter-btn:hover,
-.stream__filter-btn.is-active,
-.stream__filter-btn:focus-within {
+.stream__filter-btn.is-active {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-soft);
 }
-.stream__filter-btn:focus-within {
+.stream__filter-btn:focus-visible {
   outline: 0;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .stream__filter-btn.is-active {
