@@ -45,6 +45,27 @@ const timeFormatter = new Intl.DateTimeFormat("ja-JP", {
   minute: "2-digit",
 });
 
+function streamEmptyReason(input: {
+  total: number;
+  query: string;
+  unplacedOnly: boolean;
+  placedOnly: boolean;
+  findingOnly: boolean;
+  thoughtOnly: boolean;
+}): string {
+  if (input.total === 0) return "まだ手がかりがありません";
+  if (input.query) return `「${input.query}」に合う手がかりはありません`;
+  const filters: string[] = [];
+  if (input.unplacedOnly) filters.push("未配置のみ");
+  if (input.placedOnly) filters.push("配置済のみ");
+  if (input.findingOnly) filters.push("発見のみ");
+  if (input.thoughtOnly) filters.push("考察のみ");
+  if (filters.length > 0) {
+    return `${filters.join("・")}に合う手がかりはありません`;
+  }
+  return "表示できる手がかりはありません";
+}
+
 function sourceLabel(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "") || url;
@@ -675,27 +696,44 @@ export function Stream() {
         </div>
         <TagFocusControls />
         <div class="stream__list" ref={listRef}>
-          <StreamStickyTrail
-            listRef={listRef}
-            visibleCards={displayCards}
-            cardById={cardById}
-            visibleIds={visibleIds}
-          />
-          {forest.roots.map((card) => (
-            <StreamTreeBranch
-              key={card.id}
-              card={card}
-              depth={0}
-              forest={forest}
-              collapsed={collapsed}
-              childCountByParent={childCountByParent}
-              boardCardIds={boardCardIds}
-              canDrag={canDrag}
-              replaying={replaying}
-              isContemplate={isContemplate}
-              allCards={cards}
-            />
-          ))}
+          {filtered.length === 0
+            ? (
+              <p class="stream__empty" data-testid="stream-empty">
+                {streamEmptyReason({
+                  total: cards.length,
+                  query: search.value.trim(),
+                  unplacedOnly: unplacedOnly.value,
+                  placedOnly: placedOnly.value,
+                  findingOnly: findingOnly.value,
+                  thoughtOnly: thoughtOnly.value,
+                })}
+              </p>
+            )
+            : (
+              <>
+                <StreamStickyTrail
+                  listRef={listRef}
+                  visibleCards={displayCards}
+                  cardById={cardById}
+                  visibleIds={visibleIds}
+                />
+                {forest.roots.map((card) => (
+                  <StreamTreeBranch
+                    key={card.id}
+                    card={card}
+                    depth={0}
+                    forest={forest}
+                    collapsed={collapsed}
+                    childCountByParent={childCountByParent}
+                    boardCardIds={boardCardIds}
+                    canDrag={canDrag}
+                    replaying={replaying}
+                    isContemplate={isContemplate}
+                    allCards={cards}
+                  />
+                ))}
+              </>
+            )}
         </div>
       </div>
     </section>

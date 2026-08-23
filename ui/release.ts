@@ -8,7 +8,7 @@
  * Local serve on a feature branch may append ` · task/T063`.
  */
 export const APP_RELEASE = "0.60";
-export const APP_PREVIEW: string | null = "T063";
+export const APP_PREVIEW: string | null = "T062";
 
 export function appTitle(branch?: string): string {
   const label = APP_PREVIEW ? `${APP_RELEASE}+${APP_PREVIEW}` : APP_RELEASE;

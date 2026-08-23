@@ -150,17 +150,18 @@ function CaptureImageSlot(props: {
 
   return (
     <>
-      <div
+      <button
+        type="button"
         class="capture__image-slot"
         data-testid="capture-image-slot"
-        tabIndex={props.disabled ? -1 : 0}
         title="スクショを貼る（⌘V）"
-        onPaste={onPaste}
-        role="group"
         aria-label="スクショを貼り付け"
+        disabled={props.disabled || busy}
+        onPaste={onPaste}
+        onClick={onPick}
       >
         <span aria-hidden="true">🖼</span>
-      </div>
+      </button>
       <button
         type="button"
         class="capture__image-pick"

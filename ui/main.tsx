@@ -305,18 +305,38 @@ function TopBar() {
         <div class="brand">
           <span class="brand__mark" aria-hidden="true">A</span>
           <div>
-            <span data-testid="app-release">{appTitle()}</span>
+            <h1 data-testid="app-release">{appTitle()}</h1>
             <small>{projectName.value}</small>
           </div>
         </div>
       </div>
       <div class="topbar__actions">
-        <div class="mode-switch" role="tablist" aria-label="モード">
+        <div
+          class="mode-switch"
+          role="tablist"
+          aria-label="モード"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+              return;
+            }
+            event.preventDefault();
+            const next = mode === "explore" ? "contemplate" : "explore";
+            setAppMode(next);
+            const root = event.currentTarget;
+            requestAnimationFrame(() => {
+              const selector = next === "explore"
+                ? '[data-testid="mode-explore"]'
+                : '[data-testid="mode-contemplate"]';
+              root.querySelector<HTMLElement>(selector)?.focus();
+            });
+          }}
+        >
           <button
             type="button"
             role="tab"
             data-testid="mode-explore"
             aria-selected={mode === "explore"}
+            tabIndex={mode === "explore" ? 0 : -1}
             class={mode === "explore" ? "is-active" : undefined}
             onClick={() => setAppMode("explore")}
           >
@@ -327,6 +347,7 @@ function TopBar() {
             role="tab"
             data-testid="mode-contemplate"
             aria-selected={mode === "contemplate"}
+            tabIndex={mode === "contemplate" ? 0 : -1}
             class={mode === "contemplate" ? "is-active" : undefined}
             onClick={() => setAppMode("contemplate")}
           >
@@ -482,11 +503,16 @@ function ContemplateWorkspace() {
 function AppShell() {
   const mode = appMode.value;
   return (
-    <main class={`app-shell mode-${mode}`}>
+    <div class={`app-shell mode-${mode}`}>
+      <a class="skip-link" href="#main-content" data-testid="skip-link">
+        本文へ
+      </a>
       <InstallTip />
       <TopBar />
-      {mode === "explore" ? <ExploreWorkspace /> : <ContemplateWorkspace />}
-    </main>
+      <main id="main-content" tabIndex={-1}>
+        {mode === "explore" ? <ExploreWorkspace /> : <ContemplateWorkspace />}
+      </main>
+    </div>
   );
 }
 
