@@ -1,7 +1,7 @@
 ---
 id: T062
 title: フォーカスと見出しの床を揃える
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T062"
@@ -67,6 +67,9 @@ updated: 2026-08-23
   確認は http://localhost:8002/ を再読込。検索の次の Tab で「未配置のみ」に青い輪が付く。
 - 2026-08-23 impl: rework取得。mac の Tab が button を飛ばして URL 欄へ行く。
   フィルタを checkbox、貼付スロットを file にして検索の次／入力の次に止まるようにする
+- 2026-08-23 impl: フィルタを checkbox、貼付スロットを file に変更（aaaae73）。
+  見た目とオンオフの意味は同じ。task/T062 を main へ merge → review
+  確認は http://localhost:8002/ を再読込。検索の次の Tab が「未配置のみ」。
 
 ## 差し戻し履歴（追記のみ）
 
