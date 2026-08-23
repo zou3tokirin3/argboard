@@ -9,7 +9,7 @@ Deno.test("appTitle shows release only when preview is cleared", () => {
 
 Deno.test("appTitle includes preview ticket", () => {
   const title = appTitle();
-  if (!title.includes("+T058")) {
+  if (!title.includes("+T063")) {
     throw new Error(`expected preview ticket in title: ${title}`);
   }
 });
