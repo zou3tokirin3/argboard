@@ -1387,6 +1387,13 @@ span.card-image-field__preview {
   color: var(--accent);
   background: var(--accent-soft);
 }
+.stream__filter-btn:focus-visible {
+  outline: 0;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 .stream__filter-btn.is-active {
   font-weight: 600;
 }
