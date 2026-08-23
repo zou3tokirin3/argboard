@@ -24,12 +24,16 @@ export function MediaThumb(props: {
    * Extreme aspect ratios fall back to centered cover.
    */
   preferContain?: boolean;
+  width?: number;
+  height?: number;
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [fit, setFit] = useState<"contain" | "cover">(
     props.preferContain ? "contain" : "cover",
   );
   const has = isLocalMediaRef(props.image);
+  const width = props.width ?? 88;
+  const height = props.height ?? 66;
 
   useEffect(() => {
     let cancelled = false;
@@ -44,16 +48,27 @@ export function MediaThumb(props: {
     };
   }, [props.image, has, props.preferContain]);
 
-  if (!has || !url) return null;
+  if (!has) return null;
   const className = [
     props.className ?? "media-thumb",
     props.preferContain ? `is-fit-${fit}` : null,
   ].filter(Boolean).join(" ");
+  if (!url) {
+    return (
+      <span
+        class={className}
+        data-testid={props.testId}
+        aria-hidden="true"
+      />
+    );
+  }
   return (
     <img
       class={className}
       src={url}
       alt=""
+      width={width}
+      height={height}
       data-testid={props.testId}
       draggable={false}
       onLoad={props.preferContain

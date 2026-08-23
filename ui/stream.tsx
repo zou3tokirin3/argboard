@@ -321,6 +321,8 @@ function StreamCardRow(props: StreamCardRowProps) {
                       <MediaThumb
                         image={card.image}
                         className="stream-card__thumb"
+                        width={88}
+                        height={66}
                       />
                     </button>
                   )
@@ -372,6 +374,8 @@ function StreamCardRow(props: StreamCardRowProps) {
                       <MediaThumb
                         image={card.image}
                         className="stream-card__thumb"
+                        width={88}
+                        height={66}
                       />
                     </button>
                   )

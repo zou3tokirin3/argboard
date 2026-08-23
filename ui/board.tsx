@@ -604,6 +604,8 @@ function BoardNode({
                       image={card.image}
                       className="board-node__thumb"
                       preferContain={card.size === "l"}
+                      width={88}
+                      height={56}
                     />
                   )
                   : null}
