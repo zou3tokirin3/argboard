@@ -1,13 +1,13 @@
 ---
 id: T063
 title: 画像とフォントの初回ずれを止める
-status: review
+status: done
 owner: impl
 gate: auto
 branch: "task/T063"
 template_ver: generic-0.2
 created: 2026-08-23
-updated: 2026-08-23
+updated: 2026-08-27
 ---
 
 ## 目的
@@ -21,12 +21,12 @@ updated: 2026-08-23
 
 ## 受け入れ条件
 
-- [ ] カード／ステージング／サムネの `<img>` に width / height（または同等のアスペクト予約）がある
-- [ ] IBM Plex を `@import` せず、`index.html` から `preconnect` ＋ stylesheet（`font-display: swap` 維持）
-- [ ] `html` に `color-scheme: light` があり、スクロールバー／ネイティブ input がページ地色と揃う
-- [ ] フォント系統（IBM Plex Sans JP / Mono）は変えない
-- [ ] 既存 unit / smoke が緑
-- [ ] flow しきい値（本体行 +200 / 操作 +3 / 概念 +2 / gzip +8KB / Won't）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
+- [x] カード／ステージング／サムネの `<img>` に width / height（または同等のアスペクト予約）がある
+- [x] IBM Plex を `@import` せず、`index.html` から `preconnect` ＋ stylesheet（`font-display: swap` 維持）
+- [x] `html` に `color-scheme: light` があり、スクロールバー／ネイティブ input がページ地色と揃う
+- [x] フォント系統（IBM Plex Sans JP / Mono）は変えない
+- [x] 既存 unit / smoke が緑
+- [x] flow しきい値（本体行 +200 / 操作 +3 / 概念 +2 / gzip +8KB / Won't）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
 
 ## このカードでやらない
 
@@ -49,6 +49,7 @@ updated: 2026-08-23
   確認は http://localhost:8001/ 。タブ・左上が `ARGBoard · 0.60+T063` であること。
 - 2026-08-23 impl: 人間「毎回最新版読み込みが出る」。localhost では SW を登録せず、残っていれば外す（90dfc13）。
   公開URLのPWAは従来どおり。8001 を建て直して確認。
+- 2026-08-27 human: おおむね良さそう → done（gate: auto）。task/T063 worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
 
