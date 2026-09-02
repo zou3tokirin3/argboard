@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "preact/hooks";
+import { debounce } from "./debounce.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
+import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
 import { DigClearViaButton, DigStartButton } from "./digging-controls.tsx";
 import { buildFoundViaForest, flattenFoundViaForest } from "./project.ts";
 import {
@@ -16,6 +24,7 @@ import {
   focusOrigin,
   isReplaying,
   openExploreCompose,
+  openOutcomeOnly,
   placedOnly,
   removeCard,
   revealStreamCardId,
@@ -36,6 +45,7 @@ import {
 import { MediaThumb } from "./media-thumb.tsx";
 import { isLocalMediaRef } from "./media.ts";
 import { StreamStickyTrail } from "./stream-sticky-trail.tsx";
+import { thoughtOutcomeLabel } from "./thought-outcome.ts";
 import { collectTagUsage } from "./tags.ts";
 import type { Card } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
@@ -52,6 +62,7 @@ function streamEmptyReason(input: {
   placedOnly: boolean;
   findingOnly: boolean;
   thoughtOnly: boolean;
+  openOutcomeOnly: boolean;
 }): string {
   if (input.total === 0) return "まだ手がかりがありません";
   if (input.query) return `「${input.query}」に合う手がかりはありません`;
@@ -60,6 +71,7 @@ function streamEmptyReason(input: {
   if (input.placedOnly) filters.push("配置済のみ");
   if (input.findingOnly) filters.push("発見のみ");
   if (input.thoughtOnly) filters.push("考察のみ");
+  if (input.openOutcomeOnly) filters.push("未検証の仮説");
   if (filters.length > 0) {
     return `${filters.join("・")}に合う手がかりはありません`;
   }
@@ -84,19 +96,20 @@ function streamCardStatus(
 }
 
 function streamMetaLabel(
-  card: { role?: "finding" | "thought" },
+  card: { role?: "finding" | "thought"; outcome?: Card["outcome"] },
   status: string,
   childCount: number,
 ): string {
   const role = card.role === "thought" ? "考察" : "発見";
+  const outcome = card.outcome ? ` · ${thoughtOutcomeLabel(card.outcome)}` : "";
   const branch = childCount > 0 ? ` · 枝${childCount}` : "";
-  return `${role} · ${status}${branch}`;
+  return `${role}${outcome} · ${status}${branch}`;
 }
 
 function isMetaToolTarget(target: EventTarget | null): boolean {
   return Boolean(
     (target as HTMLElement | null)?.closest(
-      "button, .inspector__size-toggle, .stream-card__meta-tools, .dig-act, .stream__branch-toggle, .stream-card__title-input",
+      "button, .inspector__size-toggle, .inspector__outcome-chips, .stream-card__meta-tools, .dig-act, .stream__branch-toggle, .stream-card__title-input",
     ),
   );
 }
@@ -124,27 +137,49 @@ function StreamCardTitle(props: {
 }) {
   const { card, editable } = props;
   const [draft, setDraft] = useState(card.title);
+  const draftRef = useRef(draft);
+  const cardRef = useRef(card);
+  draftRef.current = draft;
+  cardRef.current = card;
 
   useEffect(() => {
     setDraft(card.title);
-  }, [card.id, card.title]);
+  }, [card.id]);
+
+  const commitNow = useCallback(async (nextTitle?: string) => {
+    const current = cardRef.current;
+    const next = (nextTitle ?? draftRef.current).trim();
+    if (!next) {
+      setDraft(current.title);
+      return;
+    }
+    if (next === current.title) return;
+    await updateCard(current.id, {
+      title: next,
+      body: current.body,
+      url: current.url,
+    });
+  }, []);
+
+  const debouncedCommit = useMemo(
+    () => debounce(() => void commitNow(), 400),
+    [commitNow],
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedCommit.cancel();
+      void commitNow();
+    };
+  }, [card.id, debouncedCommit, commitNow]);
 
   if (!editable) {
     return <strong>{card.title}</strong>;
   }
 
-  async function commit(nextTitle?: string) {
-    const next = (nextTitle ?? draft).trim();
-    if (!next) {
-      setDraft(card.title);
-      return;
-    }
-    if (next === card.title) return;
-    await updateCard(card.id, {
-      title: next,
-      body: card.body,
-      url: card.url,
-    });
+  function flushCommit(nextTitle?: string) {
+    debouncedCommit.cancel();
+    void commitNow(nextTitle);
   }
 
   return (
@@ -154,14 +189,17 @@ function StreamCardTitle(props: {
       data-testid="stream-card-title-input"
       value={draft}
       aria-label="タイトル"
-      onInput={(event) => setDraft(event.currentTarget.value)}
+      onInput={(event) => {
+        setDraft(event.currentTarget.value);
+        debouncedCommit();
+      }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
         event.stopPropagation();
         if (event.key === "Enter") {
           event.preventDefault();
-          void commit(event.currentTarget.value);
+          flushCommit(event.currentTarget.value);
           event.currentTarget.blur();
         }
         if (event.key === "Escape") {
@@ -170,7 +208,7 @@ function StreamCardTitle(props: {
           event.currentTarget.blur();
         }
       }}
-      onBlur={(event) => void commit(event.currentTarget.value)}
+      onBlur={(event) => flushCommit(event.currentTarget.value)}
     />
   );
 }
@@ -220,9 +258,9 @@ function StreamCardRow(props: StreamCardRowProps) {
       <div
         class={`stream-card ${selected ? "is-selected" : ""} ${
           card.role === "thought" ? "is-thought" : ""
-        } ${childCount > 0 ? "has-children" : ""} ${
-          canDrag ? "is-draggable" : ""
-        }`}
+        } ${card.outcome ? `has-outcome is-outcome-${card.outcome}` : ""} ${
+          childCount > 0 ? "has-children" : ""
+        } ${canDrag ? "is-draggable" : ""}`}
         data-testid="stream-card"
         data-card-id={card.id}
         data-role={card.role === "thought" ? "thought" : "finding"}
@@ -266,6 +304,16 @@ function StreamCardRow(props: StreamCardRowProps) {
                   role={card.role}
                   testIdPrefix="stream"
                 />
+                {card.role === "thought"
+                  ? (
+                    <ThoughtOutcomeField
+                      cardId={card.id}
+                      outcome={card.outcome}
+                      testIdPrefix="stream"
+                      compact
+                    />
+                  )
+                  : null}
                 <DigStartButton
                   active={digging}
                   onClick={digging ? undefined : (event) => {
@@ -323,6 +371,15 @@ function StreamCardRow(props: StreamCardRowProps) {
                       </span>
                     )
                     : null}
+                  {card.outcome
+                    ? (
+                      <span
+                        class={`stream-card__outcome is-${card.outcome}`}
+                      >
+                        {thoughtOutcomeLabel(card.outcome)}
+                      </span>
+                    )
+                    : null}
                 </span>
                 {isLocalMediaRef(card.image)
                   ? (
@@ -373,6 +430,15 @@ function StreamCardRow(props: StreamCardRowProps) {
                     ? (
                       <span class="tags">
                         {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
+                      </span>
+                    )
+                    : null}
+                  {card.outcome
+                    ? (
+                      <span
+                        class={`stream-card__outcome is-${card.outcome}`}
+                      >
+                        {thoughtOutcomeLabel(card.outcome)}
                       </span>
                     )
                     : null}
@@ -693,6 +759,20 @@ export function Stream() {
           >
             考察のみ
           </button>
+          <button
+            type="button"
+            class={`stream__filter-btn${
+              openOutcomeOnly.value ? " is-active" : ""
+            }`}
+            data-testid="stream-open-outcome-only"
+            aria-pressed={openOutcomeOnly.value}
+            title="未検証の仮説だけを表示"
+            onClick={() => {
+              openOutcomeOnly.value = !openOutcomeOnly.value;
+            }}
+          >
+            未検証
+          </button>
         </div>
         <TagFocusControls />
         <div class="stream__list" ref={listRef}>
@@ -706,6 +786,7 @@ export function Stream() {
                   placedOnly: placedOnly.value,
                   findingOnly: findingOnly.value,
                   thoughtOnly: thoughtOnly.value,
+                  openOutcomeOnly: openOutcomeOnly.value,
                 })}
               </p>
             )

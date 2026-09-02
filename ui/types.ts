@@ -1,3 +1,5 @@
+import type { ThoughtOutcome } from "./thought-outcome.ts";
+
 export type AppMode = "explore" | "contemplate";
 
 export type ProjectUi = {
@@ -29,6 +31,11 @@ export type ProjectEvent =
      * `""` clears to default finding.
      */
     role?: "finding" | "thought" | "";
+    /**
+     * Present only when thought outcome changed (omit keeps previous on replay).
+     * `""` clears outcome. Meaningful only on `role: "thought"` cards.
+     */
+    outcome?: ThoughtOutcome | "";
   }
   | {
     type: "card_removed";
@@ -66,6 +73,8 @@ export type Card = {
   id: string;
   title: string;
   role?: "finding" | "thought";
+  /** Hypothesis disposition. Only on thought cards; omit = plain interpretation memo. */
+  outcome?: ThoughtOutcome;
   body?: string;
   url?: string;
   /** Local media id in IndexedDB (not an external URL). */

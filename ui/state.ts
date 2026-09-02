@@ -33,6 +33,8 @@ import {
   withBirthEvents,
 } from "./project.ts";
 import { attachTag, detachTag, normalizeTag, replaceTag } from "./tags.ts";
+import type { ThoughtOutcome } from "./thought-outcome.ts";
+import type { ProjectEvent } from "./types.ts";
 import type { CardSize } from "./node-size.ts";
 import { normalizeCardSize } from "./node-size.ts";
 import type { ParsedCapture } from "./capture-notation.ts";
@@ -92,6 +94,8 @@ export const placedOnly = signal(false);
 export const findingOnly = signal(false);
 /** Session-only: show thought stream cards only (T055). Not persisted. */
 export const thoughtOnly = signal(false);
+/** Session-only: show thought cards marked outcome open (unverified hypothesis). */
+export const openOutcomeOnly = signal(false);
 /** Session-only: collapsed parent card ids in tree view (T051). Not persisted. */
 export const collapsedStreamBranches = signal<ReadonlySet<string>>(new Set());
 /** Session-only: card id whose captures get foundVia (T050). Not persisted. */
@@ -436,6 +440,7 @@ export const filteredCards = computed(() => {
     if (placedOnly.value && !boardCardIds.has(card.id)) return false;
     if (findingOnly.value && card.role === "thought") return false;
     if (thoughtOnly.value && card.role !== "thought") return false;
+    if (openOutcomeOnly.value && card.outcome !== "open") return false;
     if (!query) return true;
     return [card.title, card.body, card.url, ...(card.tags ?? [])]
       .filter(Boolean)
@@ -548,6 +553,7 @@ async function activateProject(next: Project): Promise<void> {
   placedOnly.value = false;
   findingOnly.value = false;
   thoughtOnly.value = false;
+  openOutcomeOnly.value = false;
   stopDigging();
   clearAllMediaObjectUrls();
   // Snapshot missing births before open so later edits can rewind text/labels.
@@ -906,7 +912,40 @@ export async function updateCardRole(
     cards: current.cards.map((item) => {
       if (item.id !== id) return item;
       if (nextRole === "thought") return { ...item, role: "thought" as const };
-      const { role: _drop, ...rest } = item;
+      const { role: _drop, outcome: _outcome, ...rest } = item;
+      return rest;
+    }),
+  };
+  const event: ProjectEvent = {
+    type: "card_updated",
+    at: Date.now(),
+    cardId: id,
+    title: card.title,
+    body: card.body,
+    url: card.url,
+    role: nextRole === "thought" ? "thought" : "",
+  };
+  if (nextRole !== "thought" && card.outcome) event.outcome = "";
+  await persist(appendEvent(next, event));
+}
+
+/** Set or clear hypothesis disposition on a thought card. */
+export async function updateCardOutcome(
+  id: string,
+  outcome: ThoughtOutcome | undefined,
+): Promise<void> {
+  const current = assertWritable();
+  if (!current) return;
+  const card = current.cards.find((item) => item.id === id);
+  if (!card) return;
+  if (card.role !== "thought") return;
+  if ((card.outcome ?? undefined) === outcome) return;
+  const next = {
+    ...current,
+    cards: current.cards.map((item) => {
+      if (item.id !== id) return item;
+      if (outcome) return { ...item, outcome };
+      const { outcome: _drop, ...rest } = item;
       return rest;
     }),
   };
@@ -917,7 +956,7 @@ export async function updateCardRole(
     title: card.title,
     body: card.body,
     url: card.url,
-    role: nextRole === "thought" ? "thought" : "",
+    outcome: outcome ?? "",
   }));
 }
 

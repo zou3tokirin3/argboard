@@ -217,6 +217,14 @@ function applyEvent(
         if (event.role === "thought") next.role = "thought";
         else delete next.role;
       }
+      if ("outcome" in event) {
+        if (
+          event.outcome === "open" || event.outcome === "held" ||
+          event.outcome === "failed"
+        ) {
+          next.outcome = event.outcome;
+        } else delete next.outcome;
+      }
       cards.set(event.cardId, next);
       break;
     }

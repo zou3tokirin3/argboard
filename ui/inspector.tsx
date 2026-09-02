@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "preact/hooks";
+import { debounce } from "./debounce.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
+import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
 import { CardImageField } from "./card-image-field.tsx";
 import { isLocalMediaRef } from "./media.ts";
 import {
@@ -283,16 +291,73 @@ export function Inspector() {
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
   const titleRef = useRef<HTMLInputElement>(null);
+  const prevCardIdRef = useRef<string | undefined>();
+  const prevLinkIdRef = useRef<string | undefined>();
+  const fieldsRef = useRef({ title: "", body: "", url: "" });
+  const labelRef = useRef("");
+  fieldsRef.current = { title, body, url };
+  labelRef.current = label;
+
+  const singleCardEditId = !link && multiIds.length <= 1 ? card?.id : undefined;
+
+  const saveCardFields = useCallback(async (id: string) => {
+    if (isReplaying.value) return;
+    const patch = fieldsRef.current;
+    await updateCard(id, patch);
+  }, []);
+
+  const debouncedSaveCard = useMemo(
+    () => debounce((id: string) => void saveCardFields(id), 400),
+    [saveCardFields],
+  );
+
+  const saveLinkLabel = useCallback(async (linkId: string) => {
+    if (isReplaying.value) return;
+    await updateLink(linkId, { label: labelRef.current });
+  }, []);
+
+  const debouncedSaveLink = useMemo(
+    () => debounce((linkId: string) => void saveLinkLabel(linkId), 400),
+    [saveLinkLabel],
+  );
 
   useEffect(() => {
-    setTitle(card?.title ?? "");
-    setBody(card?.body ?? "");
-    setUrl(card?.url ?? "");
-  }, [card?.id, card?.title, card?.body, card?.url]);
+    const id = card?.id;
+    const idChanged = id !== prevCardIdRef.current;
+    prevCardIdRef.current = id;
+    if (replaying || idChanged) {
+      setTitle(card?.title ?? "");
+      setBody(card?.body ?? "");
+      setUrl(card?.url ?? "");
+    }
+  }, [card?.id, card?.title, card?.body, card?.url, replaying]);
 
   useEffect(() => {
-    setLabel(link?.label ?? "");
-  }, [link?.id, link?.label]);
+    const id = link?.id;
+    const idChanged = id !== prevLinkIdRef.current;
+    prevLinkIdRef.current = id;
+    if (replaying || idChanged) {
+      setLabel(link?.label ?? "");
+    }
+  }, [link?.id, link?.label, replaying]);
+
+  useEffect(() => {
+    if (!singleCardEditId) return;
+    const id = singleCardEditId;
+    return () => {
+      debouncedSaveCard.cancel();
+      void saveCardFields(id);
+    };
+  }, [singleCardEditId, debouncedSaveCard, saveCardFields]);
+
+  useEffect(() => {
+    const linkId = link?.id;
+    if (!linkId) return;
+    return () => {
+      debouncedSaveLink.cancel();
+      void saveLinkLabel(linkId);
+    };
+  }, [link?.id, debouncedSaveLink, saveLinkLabel]);
 
   useEffect(() => {
     if (!card?.id) return;
@@ -325,8 +390,14 @@ export function Inspector() {
             value={label}
             placeholder="同一人物？ など"
             disabled={replaying}
-            onInput={(event) => setLabel(event.currentTarget.value)}
-            onBlur={() => updateLink(link.id, { label })}
+            onInput={(event) => {
+              setLabel(event.currentTarget.value);
+              debouncedSaveLink(link.id);
+            }}
+            onBlur={() => {
+              debouncedSaveLink.cancel();
+              void saveLinkLabel(link.id);
+            }}
             onKeyDown={(event) => {
               if (event.key === "Enter") event.currentTarget.blur();
             }}
@@ -405,9 +476,9 @@ export function Inspector() {
     );
   }
 
-  async function commit() {
-    if (isReplaying.value) return;
-    await updateCard(card!.id, { title, body, url });
+  function flushCardFields() {
+    debouncedSaveCard.cancel();
+    if (singleCardEditId) void saveCardFields(singleCardEditId);
   }
 
   const cards = viewProject.value?.cards ?? [];
@@ -490,10 +561,22 @@ export function Inspector() {
           data-testid="inspector-title"
           value={title}
           disabled={replaying}
-          onInput={(event) => setTitle(event.currentTarget.value)}
-          onBlur={commit}
+          onInput={(event) => {
+            setTitle(event.currentTarget.value);
+            if (singleCardEditId) debouncedSaveCard(singleCardEditId);
+          }}
+          onBlur={flushCardFields}
         />
       </label>
+      {card.role === "thought"
+        ? (
+          <ThoughtOutcomeField
+            cardId={card.id}
+            outcome={card.outcome}
+            disabled={replaying}
+          />
+        )
+        : null}
       <TagField
         cardId={card.id}
         tags={card.tags}
@@ -507,8 +590,11 @@ export function Inspector() {
           value={url}
           placeholder="https://"
           disabled={replaying}
-          onInput={(event) => setUrl(event.currentTarget.value)}
-          onBlur={commit}
+          onInput={(event) => {
+            setUrl(event.currentTarget.value);
+            if (singleCardEditId) debouncedSaveCard(singleCardEditId);
+          }}
+          onBlur={flushCardFields}
         />
       </label>
       <label class="inspector__field">
@@ -518,8 +604,11 @@ export function Inspector() {
           rows={6}
           value={body}
           disabled={replaying}
-          onInput={(event) => setBody(event.currentTarget.value)}
-          onBlur={commit}
+          onInput={(event) => {
+            setBody(event.currentTarget.value);
+            if (singleCardEditId) debouncedSaveCard(singleCardEditId);
+          }}
+          onBlur={flushCardFields}
         />
       </label>
       <div class="inspector__field">
