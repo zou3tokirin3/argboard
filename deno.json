@@ -5,7 +5,8 @@
     "check": "deno fmt --check && deno lint && deno check ui/main.tsx",
     "test": "deno test -A tests/unit/",
     "smoke": "deno task build && deno run -A tests/smoke.ts",
-    "budget": "deno run -A tools/budget.ts"
+    "budget": "deno run -A tools/budget.ts",
+    "cf:dev": "deno task build && pnpm dlx wrangler@4 dev --port 8787"
   },
   "compilerOptions": {
     "jsx": "react-jsx",
