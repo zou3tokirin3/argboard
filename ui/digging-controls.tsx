@@ -1,5 +1,7 @@
 /** Icon-only digging controls — orange chips, distinct from text meta buttons. */
 
+import { IconTip, type IconTipAlign } from "./icon-tip.tsx";
+
 export function DigShovelIcon() {
   return (
     <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -88,6 +90,7 @@ type DigStartButtonProps = {
   active?: boolean;
   testId?: string;
   title?: string;
+  tipAlign?: IconTipAlign;
   onClick?: (event: Event) => void;
 };
 
@@ -95,80 +98,89 @@ export function DigStartButton({
   active = false,
   testId = "stream-dig-start",
   title = "ここから掘る",
+  tipAlign = "center",
   onClick,
 }: DigStartButtonProps) {
   if (active) {
     return (
-      <span
-        class="dig-act is-active"
-        data-testid="stream-dig-active"
-        aria-label="掘り中"
-        title="掘り中"
-      >
-        <DigShovelIcon />
-      </span>
+      <IconTip align={tipAlign} label="掘り中 — この手がかりから追加中">
+        <span
+          class="dig-act is-active"
+          data-testid="stream-dig-active"
+          aria-label="掘り中"
+        >
+          <DigShovelIcon />
+        </span>
+      </IconTip>
     );
   }
   return (
-    <button
-      type="button"
-      class="dig-act"
-      data-testid={testId}
-      aria-label={title}
-      title={title}
-      onClick={onClick}
-    >
-      <DigShovelIcon />
-    </button>
+    <IconTip align={tipAlign} label={title}>
+      <button
+        type="button"
+        class="dig-act"
+        data-testid={testId}
+        aria-label={title}
+        onClick={onClick}
+      >
+        <DigShovelIcon />
+      </button>
+    </IconTip>
   );
 }
 
 type DigStopButtonProps = {
   testId?: string;
   title?: string;
+  tipAlign?: IconTipAlign;
   onClick?: () => void;
 };
 
 export function DigStopButton({
   testId = "capture-digging-stop",
   title = "掘り中を外す",
+  tipAlign = "center",
   onClick,
 }: DigStopButtonProps) {
   return (
-    <button
-      type="button"
-      class="dig-act dig-act--stop"
-      data-testid={testId}
-      aria-label={title}
-      title={title}
-      onClick={onClick}
-    >
-      <DigCancelIcon />
-    </button>
+    <IconTip align={tipAlign} label={title}>
+      <button
+        type="button"
+        class="dig-act dig-act--stop"
+        data-testid={testId}
+        aria-label={title}
+        onClick={onClick}
+      >
+        <DigCancelIcon />
+      </button>
+    </IconTip>
   );
 }
 
 type DigClearViaButtonProps = {
   testId?: string;
   title?: string;
+  tipAlign?: IconTipAlign;
   onClick?: (event: Event) => void;
 };
 
 export function DigClearViaButton({
   testId = "stream-clear-found-via",
   title = "間違えて掘った分を埋める",
+  tipAlign = "center",
   onClick,
 }: DigClearViaButtonProps) {
   return (
-    <button
-      type="button"
-      class="dig-act dig-act--fill"
-      data-testid={testId}
-      aria-label={title}
-      title={title}
-      onClick={onClick}
-    >
-      <DigFillIcon />
-    </button>
+    <IconTip align={tipAlign} label={title}>
+      <button
+        type="button"
+        class="dig-act dig-act--fill"
+        data-testid={testId}
+        aria-label={title}
+        onClick={onClick}
+      >
+        <DigFillIcon />
+      </button>
+    </IconTip>
   );
 }

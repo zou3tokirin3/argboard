@@ -20,3 +20,14 @@ export function thoughtOutcomeLabel(value: ThoughtOutcome): string {
       return "棄却";
   }
 }
+
+export function thoughtOutcomeShort(value: ThoughtOutcome): string {
+  switch (value) {
+    case "open":
+      return "未検";
+    case "held":
+      return "採用";
+    case "failed":
+      return "棄却";
+  }
+}

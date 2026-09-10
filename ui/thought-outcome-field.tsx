@@ -1,8 +1,11 @@
+import { IconTip, type IconTipAlign } from "./icon-tip.tsx";
 import { updateCardOutcome } from "./state.ts";
+import { ThoughtOutcomeIcon } from "./thought-outcome-icon.tsx";
 import {
   THOUGHT_OUTCOMES,
   type ThoughtOutcome,
   thoughtOutcomeLabel,
+  thoughtOutcomeShort,
 } from "./thought-outcome.ts";
 
 type ThoughtOutcomeFieldProps = {
@@ -11,7 +14,21 @@ type ThoughtOutcomeFieldProps = {
   disabled?: boolean;
   testIdPrefix?: string;
   compact?: boolean;
+  tipAlign?: IconTipAlign;
 };
+
+function outcomeTip(value: ThoughtOutcome, active: boolean): string {
+  const label = thoughtOutcomeLabel(value);
+  if (active) return `仮説 · ${label}を外す`;
+  switch (value) {
+    case "open":
+      return "仮説 · 未検証（まだ確定していない）";
+    case "held":
+      return "仮説 · 採用（有力と判断）";
+    case "failed":
+      return "仮説 · 棄却（却下）";
+  }
+}
 
 export function ThoughtOutcomeField({
   cardId,
@@ -19,6 +36,7 @@ export function ThoughtOutcomeField({
   disabled = false,
   testIdPrefix = "inspector",
   compact = false,
+  tipAlign = "center",
 }: ThoughtOutcomeFieldProps) {
   async function pick(next: ThoughtOutcome) {
     if (disabled) return;
@@ -39,7 +57,7 @@ export function ThoughtOutcomeField({
         )
         : null}
       <div
-        class="inspector__outcome-chips"
+        class="inspector__outcome-toggle"
         role="group"
         aria-label="仮説の成否"
         onClick={(event) => event.stopPropagation()}
@@ -47,25 +65,31 @@ export function ThoughtOutcomeField({
         {THOUGHT_OUTCOMES.map((value) => {
           const active = outcome === value;
           return (
-            <button
+            <IconTip
               key={value}
-              type="button"
-              class={`inspector__outcome-chip${
-                active ? " is-active" : ""
-              } is-${value}`}
-              data-testid={`${testIdPrefix}-outcome-${value}`}
-              aria-pressed={active}
-              title={active
-                ? `${thoughtOutcomeLabel(value)}を外す`
-                : thoughtOutcomeLabel(value)}
-              disabled={disabled}
-              onClick={(event) => {
-                event.stopPropagation();
-                void pick(value);
-              }}
+              align={tipAlign}
+              label={outcomeTip(value, active)}
             >
-              {thoughtOutcomeLabel(value)}
-            </button>
+              <button
+                type="button"
+                class={`inspector__outcome-toggle-btn icon-labeled-btn${
+                  active ? " is-active" : ""
+                } is-${value}`}
+                data-testid={`${testIdPrefix}-outcome-${value}`}
+                aria-pressed={active}
+                aria-label={thoughtOutcomeLabel(value)}
+                disabled={disabled}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void pick(value);
+                }}
+              >
+                <ThoughtOutcomeIcon outcome={value} />
+                <span class="icon-labeled-btn__text">
+                  {thoughtOutcomeShort(value)}
+                </span>
+              </button>
+            </IconTip>
           );
         })}
       </div>

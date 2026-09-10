@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "preact/hooks";
+import { IconTip } from "./icon-tip.tsx";
 import { debounce } from "./debounce.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
@@ -45,7 +46,8 @@ import {
 import { MediaThumb } from "./media-thumb.tsx";
 import { isLocalMediaRef } from "./media.ts";
 import { StreamStickyTrail } from "./stream-sticky-trail.tsx";
-import { thoughtOutcomeLabel } from "./thought-outcome.ts";
+import { ThoughtOutcomeIcon } from "./thought-outcome-icon.tsx";
+import { thoughtOutcomeLabel, thoughtOutcomeShort } from "./thought-outcome.ts";
 import { collectTagUsage } from "./tags.ts";
 import type { Card } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
@@ -109,7 +111,7 @@ function streamMetaLabel(
 function isMetaToolTarget(target: EventTarget | null): boolean {
   return Boolean(
     (target as HTMLElement | null)?.closest(
-      "button, .inspector__size-toggle, .inspector__outcome-chips, .stream-card__meta-tools, .dig-act, .stream__branch-toggle, .stream-card__title-input",
+      "button, .inspector__size-toggle, .inspector__outcome-toggle, .stream-card__meta-tools, .dig-act, .stream__branch-toggle, .stream-card__title-input",
     ),
   );
 }
@@ -274,20 +276,24 @@ function StreamCardRow(props: StreamCardRowProps) {
         >
           {childCount > 0
             ? (
-              <button
-                type="button"
-                class="stream__branch-toggle"
-                data-testid="stream-branch-toggle"
-                aria-expanded={!branchCollapsed}
-                aria-label={branchCollapsed ? "枝を開く" : "枝を畳む"}
-                title={branchCollapsed ? "枝を開く" : "枝を畳む"}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onToggleBranch?.();
-                }}
+              <IconTip
+                align="start"
+                label={branchCollapsed ? "枝を開く" : "枝を畳む"}
               >
-                {branchCollapsed ? "▸" : "▾"}
-              </button>
+                <button
+                  type="button"
+                  class="stream__branch-toggle"
+                  data-testid="stream-branch-toggle"
+                  aria-expanded={!branchCollapsed}
+                  aria-label={branchCollapsed ? "枝を開く" : "枝を畳む"}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onToggleBranch?.();
+                  }}
+                >
+                  {branchCollapsed ? "▸" : "▾"}
+                </button>
+              </IconTip>
             )
             : depth > 0
             ? <span class="stream-tree__leaf-spacer" aria-hidden="true" />
@@ -303,6 +309,7 @@ function StreamCardRow(props: StreamCardRowProps) {
                   cardId={card.id}
                   role={card.role}
                   testIdPrefix="stream"
+                  tipAlign="end"
                 />
                 {card.role === "thought"
                   ? (
@@ -311,11 +318,13 @@ function StreamCardRow(props: StreamCardRowProps) {
                       outcome={card.outcome}
                       testIdPrefix="stream"
                       compact
+                      tipAlign="end"
                     />
                   )
                   : null}
                 <DigStartButton
                   active={digging}
+                  tipAlign="end"
                   onClick={digging ? undefined : (event) => {
                     event.stopPropagation();
                     startDigging(card.id);
@@ -324,6 +333,7 @@ function StreamCardRow(props: StreamCardRowProps) {
                 {card.foundVia
                   ? (
                     <DigClearViaButton
+                      tipAlign="end"
                       title={viaCard
                         ? `「${viaCard.title}」からの発見を埋める`
                         : "間違えて掘った分を埋める"}
@@ -373,36 +383,47 @@ function StreamCardRow(props: StreamCardRowProps) {
                     : null}
                   {card.outcome
                     ? (
-                      <span
-                        class={`stream-card__outcome is-${card.outcome}`}
+                      <IconTip
+                        align="start"
+                        label={`仮説 · ${thoughtOutcomeLabel(card.outcome)}`}
                       >
-                        {thoughtOutcomeLabel(card.outcome)}
-                      </span>
+                        <span
+                          class={`stream-card__outcome is-${card.outcome}`}
+                          aria-label={thoughtOutcomeLabel(card.outcome)}
+                        >
+                          <ThoughtOutcomeIcon outcome={card.outcome} />
+                          <span class="stream-card__outcome-label">
+                            {thoughtOutcomeShort(card.outcome)}
+                          </span>
+                        </span>
+                      </IconTip>
                     )
                     : null}
                 </span>
                 {isLocalMediaRef(card.image)
                   ? (
-                    <button
-                      type="button"
-                      class="stream-card__thumb-btn"
-                      data-testid="stream-card-thumb"
-                      title="大きく見ながら書く"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (selectedCardId.value !== card.id) {
-                          selectSingleCard(card.id);
-                        }
-                        openExploreCompose(card.id);
-                      }}
-                    >
-                      <MediaThumb
-                        image={card.image}
-                        className="stream-card__thumb"
-                        width={88}
-                        height={66}
-                      />
-                    </button>
+                    <IconTip align="end" label="画像 · 大きく見ながら書く">
+                      <button
+                        type="button"
+                        class="stream-card__thumb-btn"
+                        data-testid="stream-card-thumb"
+                        aria-label="大きく見ながら書く"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (selectedCardId.value !== card.id) {
+                            selectSingleCard(card.id);
+                          }
+                          openExploreCompose(card.id);
+                        }}
+                      >
+                        <MediaThumb
+                          image={card.image}
+                          className="stream-card__thumb"
+                          width={88}
+                          height={66}
+                        />
+                      </button>
+                    </IconTip>
                   )
                   : null}
               </span>
@@ -435,36 +456,47 @@ function StreamCardRow(props: StreamCardRowProps) {
                     : null}
                   {card.outcome
                     ? (
-                      <span
-                        class={`stream-card__outcome is-${card.outcome}`}
+                      <IconTip
+                        align="start"
+                        label={`仮説 · ${thoughtOutcomeLabel(card.outcome)}`}
                       >
-                        {thoughtOutcomeLabel(card.outcome)}
-                      </span>
+                        <span
+                          class={`stream-card__outcome is-${card.outcome}`}
+                          aria-label={thoughtOutcomeLabel(card.outcome)}
+                        >
+                          <ThoughtOutcomeIcon outcome={card.outcome} />
+                          <span class="stream-card__outcome-label">
+                            {thoughtOutcomeShort(card.outcome)}
+                          </span>
+                        </span>
+                      </IconTip>
                     )
                     : null}
                 </span>
                 {isLocalMediaRef(card.image)
                   ? (
-                    <button
-                      type="button"
-                      class="stream-card__thumb-btn"
-                      data-testid="stream-card-thumb"
-                      title="大きく見ながら書く"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (selectedCardId.value !== card.id) {
-                          selectSingleCard(card.id);
-                        }
-                        openExploreCompose(card.id);
-                      }}
-                    >
-                      <MediaThumb
-                        image={card.image}
-                        className="stream-card__thumb"
-                        width={88}
-                        height={66}
-                      />
-                    </button>
+                    <IconTip align="end" label="画像 · 大きく見ながら書く">
+                      <button
+                        type="button"
+                        class="stream-card__thumb-btn"
+                        data-testid="stream-card-thumb"
+                        aria-label="大きく見ながら書く"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (selectedCardId.value !== card.id) {
+                            selectSingleCard(card.id);
+                          }
+                          openExploreCompose(card.id);
+                        }}
+                      >
+                        <MediaThumb
+                          image={card.image}
+                          className="stream-card__thumb"
+                          width={88}
+                          height={66}
+                        />
+                      </button>
+                    </IconTip>
                   )
                   : null}
               </span>
@@ -497,24 +529,31 @@ function TagFocusControls() {
   const hops = focusHops.value;
   return (
     <div class="stream__tag-focus">
-      <div class="stream__tag-focus-list" role="group" aria-label="タグで視点">
-        {usage.map((entry) => (
-          <button
-            key={entry.name}
-            type="button"
-            class={`stream__tag-focus-btn${
-              tagFocus === entry.name ? " is-active" : ""
-            }`}
-            data-testid="stream-tag-focus-btn"
-            data-tag={entry.name}
-            aria-pressed={tagFocus === entry.name}
-            title={`「${entry.name}」の視点で見る（${entry.count}件）`}
-            onClick={() => setFocusViewByTag(entry.name)}
-          >
-            #{entry.name}
-            <span class="stream__tag-focus-count">{entry.count}</span>
-          </button>
-        ))}
+      <div class="stream__tag-focus-head">
+        <span class="stream__tag-focus-label">タグ視点</span>
+        <div
+          class="stream__tag-focus-list"
+          role="group"
+          aria-label="タグで視点"
+        >
+          {usage.map((entry) => (
+            <button
+              key={entry.name}
+              type="button"
+              class={`stream__tag-focus-btn${
+                tagFocus === entry.name ? " is-active" : ""
+              }`}
+              data-testid="stream-tag-focus-btn"
+              data-tag={entry.name}
+              aria-pressed={tagFocus === entry.name}
+              title={`「${entry.name}」の視点で見る（${entry.count}件）`}
+              onClick={() => setFocusViewByTag(entry.name)}
+            >
+              #{entry.name}
+              <span class="stream__tag-focus-count">{entry.count}</span>
+            </button>
+          ))}
+        </div>
       </div>
       {tagFocus
         ? (
@@ -522,35 +561,38 @@ function TagFocusControls() {
             <span class="board__focus-meta" aria-live="polite">
               視点 · {hops}
             </span>
-            <button
-              type="button"
-              class="board__focus-icon"
-              disabled={hops <= 1}
-              aria-label="一周戻す"
-              title="一周戻す"
-              onClick={() => shrinkFocusHops()}
-            >
-              −
-            </button>
-            <button
-              type="button"
-              class="board__focus-icon"
-              aria-label="もう一周広げる"
-              title="もう一周広げる"
-              onClick={() => expandFocusHops()}
-            >
-              ＋
-            </button>
-            <button
-              type="button"
-              class="board__focus-icon"
-              data-testid="tag-focus-clear"
-              aria-label="視点をやめる"
-              title="視点をやめる"
-              onClick={() => clearFocusView()}
-            >
-              ×
-            </button>
+            <IconTip label="視点 · 一周戻す">
+              <button
+                type="button"
+                class="board__focus-icon"
+                disabled={hops <= 1}
+                aria-label="一周戻す"
+                onClick={() => shrinkFocusHops()}
+              >
+                −
+              </button>
+            </IconTip>
+            <IconTip label="視点 · もう一周広げる">
+              <button
+                type="button"
+                class="board__focus-icon"
+                aria-label="もう一周広げる"
+                onClick={() => expandFocusHops()}
+              >
+                ＋
+              </button>
+            </IconTip>
+            <IconTip label="視点 · やめる">
+              <button
+                type="button"
+                class="board__focus-icon"
+                data-testid="tag-focus-clear"
+                aria-label="視点をやめる"
+                onClick={() => clearFocusView()}
+              >
+                ×
+              </button>
+            </IconTip>
           </div>
         )
         : null}
@@ -700,79 +742,158 @@ export function Stream() {
             aria-label="手がかりを検索"
           />
         </label>
-        <div class="stream__filters">
-          <button
-            type="button"
-            class={`stream__filter-btn${
-              unplacedOnly.value ? " is-active" : ""
-            }`}
-            data-testid="stream-unplaced-only"
-            aria-pressed={unplacedOnly.value}
-            title="ボードに未配置のカードだけを表示"
-            onClick={() => {
-              const next = !unplacedOnly.value;
-              unplacedOnly.value = next;
-              if (next) placedOnly.value = false;
-            }}
+        <div
+          class="stream__filters"
+          role="toolbar"
+          aria-label="発見ログの絞り込み"
+        >
+          <div
+            class="stream__filter-group stream__filter-group--placement"
+            role="group"
+            aria-label="配置"
           >
-            未配置のみ
-          </button>
-          <button
-            type="button"
-            class={`stream__filter-btn${placedOnly.value ? " is-active" : ""}`}
-            data-testid="stream-placed-only"
-            aria-pressed={placedOnly.value}
-            title="ボードに配置済みのカードだけを表示"
-            onClick={() => {
-              const next = !placedOnly.value;
-              placedOnly.value = next;
-              if (next) unplacedOnly.value = false;
-            }}
+            <span class="stream__filter-group-label">配置</span>
+            <div class="stream__filter-group-btns">
+              <IconTip align="start" label="配置 · 未配置のみ（ボード未掲載）">
+                <button
+                  type="button"
+                  class={`stream__filter-btn stream__filter-btn--chip${
+                    unplacedOnly.value ? " is-active" : ""
+                  }`}
+                  data-testid="stream-unplaced-only"
+                  aria-pressed={unplacedOnly.value}
+                  aria-label="未配置のみ"
+                  onClick={() => {
+                    const next = !unplacedOnly.value;
+                    unplacedOnly.value = next;
+                    if (next) placedOnly.value = false;
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                      d="M8 2.5C6.2 2.5 5 3.9 5 5.6c0 2.3 3 6 3 6s3-3.7 3-6C11 3.9 9.8 2.5 8 2.5z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-dasharray="2.2 1.6"
+                    />
+                  </svg>
+                  <span class="stream__filter-btn-label">未配</span>
+                </button>
+              </IconTip>
+              <IconTip align="start" label="配置 · 配置済のみ（ボード掲載）">
+                <button
+                  type="button"
+                  class={`stream__filter-btn stream__filter-btn--chip${
+                    placedOnly.value ? " is-active" : ""
+                  }`}
+                  data-testid="stream-placed-only"
+                  aria-pressed={placedOnly.value}
+                  aria-label="配置済のみ"
+                  onClick={() => {
+                    const next = !placedOnly.value;
+                    placedOnly.value = next;
+                    if (next) unplacedOnly.value = false;
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                      d="M8 2.5C6.2 2.5 5 3.9 5 5.6c0 2.3 3 6 3 6s3-3.7 3-6C11 3.9 9.8 2.5 8 2.5z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                  <span class="stream__filter-btn-label">掲載</span>
+                </button>
+              </IconTip>
+            </div>
+          </div>
+          <div
+            class="stream__filter-group stream__filter-group--role"
+            role="group"
+            aria-label="種別"
           >
-            配置済のみ
-          </button>
-          <button
-            type="button"
-            class={`stream__filter-btn${findingOnly.value ? " is-active" : ""}`}
-            data-testid="stream-finding-only"
-            aria-pressed={findingOnly.value}
-            title="発見カードだけを表示"
-            onClick={() => {
-              const next = !findingOnly.value;
-              findingOnly.value = next;
-              if (next) thoughtOnly.value = false;
-            }}
+            <span class="stream__filter-group-label">種別</span>
+            <div class="stream__filter-group-btns">
+              <IconTip align="start" label="種別 · 発見カードのみ">
+                <button
+                  type="button"
+                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--finding${
+                    findingOnly.value ? " is-active" : ""
+                  }`}
+                  data-testid="stream-finding-only"
+                  aria-pressed={findingOnly.value}
+                  aria-label="発見のみ"
+                  onClick={() => {
+                    const next = !findingOnly.value;
+                    findingOnly.value = next;
+                    if (next) thoughtOnly.value = false;
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <circle cx="8" cy="8" r="3.5" fill="currentColor" />
+                  </svg>
+                  <span class="stream__filter-btn-label">発見</span>
+                </button>
+              </IconTip>
+              <IconTip align="start" label="種別 · 考察カードのみ">
+                <button
+                  type="button"
+                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--thought${
+                    thoughtOnly.value ? " is-active" : ""
+                  }`}
+                  data-testid="stream-thought-only"
+                  aria-pressed={thoughtOnly.value}
+                  aria-label="考察のみ"
+                  onClick={() => {
+                    const next = !thoughtOnly.value;
+                    thoughtOnly.value = next;
+                    if (next) findingOnly.value = false;
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <rect
+                      x="3.5"
+                      y="3.5"
+                      width="9"
+                      height="9"
+                      rx="2"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-dasharray="2.5 2"
+                    />
+                  </svg>
+                  <span class="stream__filter-btn-label">考察</span>
+                </button>
+              </IconTip>
+            </div>
+          </div>
+          <div
+            class="stream__filter-group stream__filter-group--outcome"
+            role="group"
+            aria-label="成否"
           >
-            発見のみ
-          </button>
-          <button
-            type="button"
-            class={`stream__filter-btn${thoughtOnly.value ? " is-active" : ""}`}
-            data-testid="stream-thought-only"
-            aria-pressed={thoughtOnly.value}
-            title="考察カードだけを表示"
-            onClick={() => {
-              const next = !thoughtOnly.value;
-              thoughtOnly.value = next;
-              if (next) findingOnly.value = false;
-            }}
-          >
-            考察のみ
-          </button>
-          <button
-            type="button"
-            class={`stream__filter-btn${
-              openOutcomeOnly.value ? " is-active" : ""
-            }`}
-            data-testid="stream-open-outcome-only"
-            aria-pressed={openOutcomeOnly.value}
-            title="未検証の仮説だけを表示"
-            onClick={() => {
-              openOutcomeOnly.value = !openOutcomeOnly.value;
-            }}
-          >
-            未検証
-          </button>
+            <span class="stream__filter-group-label">成否</span>
+            <div class="stream__filter-group-btns">
+              <IconTip align="start" label="成否 · 未検証の仮説のみ">
+                <button
+                  type="button"
+                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--open${
+                    openOutcomeOnly.value ? " is-active" : ""
+                  }`}
+                  data-testid="stream-open-outcome-only"
+                  aria-pressed={openOutcomeOnly.value}
+                  aria-label="未検証"
+                  onClick={() => {
+                    openOutcomeOnly.value = !openOutcomeOnly.value;
+                  }}
+                >
+                  <ThoughtOutcomeIcon outcome="open" />
+                  <span class="stream__filter-btn-label">未検</span>
+                </button>
+              </IconTip>
+            </div>
+          </div>
         </div>
         <TagFocusControls />
         <div class="stream__list" ref={listRef}>

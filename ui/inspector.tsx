@@ -9,6 +9,7 @@ import { debounce } from "./debounce.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
 import { CardImageField } from "./card-image-field.tsx";
+import { IconTip } from "./icon-tip.tsx";
 import { isLocalMediaRef } from "./media.ts";
 import {
   attachTagToCards,
@@ -506,50 +507,54 @@ export function Inspector() {
             role="group"
             aria-label="ボード上のサイズ"
           >
-            <button
-              type="button"
-              class={card.size === "l" ? undefined : "is-active"}
-              data-testid="inspector-card-size-m"
-              aria-pressed={card.size !== "l"}
-              title="標準"
-              disabled={replaying}
-              onClick={() => void updateCardSize(card.id, "m")}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <rect
-                  x="4"
-                  y="5"
-                  width="8"
-                  height="6"
-                  rx="1"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              class={card.size === "l" ? "is-active" : undefined}
-              data-testid="inspector-card-size-l"
-              aria-pressed={card.size === "l"}
-              title="大きめ"
-              disabled={replaying}
-              onClick={() => void updateCardSize(card.id, "l")}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <rect
-                  x="2"
-                  y="3"
-                  width="12"
-                  height="10"
-                  rx="1.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                />
-              </svg>
-            </button>
+            <IconTip label="ボード上のサイズ · 標準">
+              <button
+                type="button"
+                class={card.size === "l" ? undefined : "is-active"}
+                data-testid="inspector-card-size-m"
+                aria-pressed={card.size !== "l"}
+                aria-label="標準"
+                disabled={replaying}
+                onClick={() => void updateCardSize(card.id, "m")}
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <rect
+                    x="4"
+                    y="5"
+                    width="8"
+                    height="6"
+                    rx="1"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                </svg>
+              </button>
+            </IconTip>
+            <IconTip label="ボード上のサイズ · 大きめ">
+              <button
+                type="button"
+                class={card.size === "l" ? "is-active" : undefined}
+                data-testid="inspector-card-size-l"
+                aria-pressed={card.size === "l"}
+                aria-label="大きめ"
+                disabled={replaying}
+                onClick={() => void updateCardSize(card.id, "l")}
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <rect
+                    x="2"
+                    y="3"
+                    width="12"
+                    height="10"
+                    rx="1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  />
+                </svg>
+              </button>
+            </IconTip>
           </div>
         </div>
       </div>
