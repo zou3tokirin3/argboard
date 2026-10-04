@@ -1,5 +1,13 @@
 import { parseCaptureLine, type ParsedCapture } from "./capture-notation.ts";
 
+function readCaptureStoryWhen(): string | undefined {
+  const el = document.querySelector<HTMLInputElement>(
+    '[data-testid="capture-story-when"]',
+  );
+  const when = el?.value?.trim();
+  return when || undefined;
+}
+
 /** Read the live explore capture line from the DOM (for global paste / drop). */
 export function readCaptureDraft(): ParsedCapture | null {
   const el = document.querySelector<HTMLInputElement>(
@@ -7,7 +15,10 @@ export function readCaptureDraft(): ParsedCapture | null {
   );
   const line = el?.value?.trim();
   if (!line) return null;
-  return parseCaptureLine(line);
+  const parsed = parseCaptureLine(line);
+  if (!parsed) return null;
+  const storyWhen = readCaptureStoryWhen();
+  return storyWhen ? { ...parsed, storyWhen } : parsed;
 }
 
 export function clearCaptureDraft(): void {
@@ -15,4 +26,8 @@ export function clearCaptureDraft(): void {
     '[data-testid="capture-input"]',
   );
   if (el) el.value = "";
+  const when = document.querySelector<HTMLInputElement>(
+    '[data-testid="capture-story-when"]',
+  );
+  if (when) when.value = "";
 }

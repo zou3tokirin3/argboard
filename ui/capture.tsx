@@ -97,19 +97,36 @@ function CaptureDiggingBar() {
   );
 }
 
+function withStoryWhen(
+  draft: ReturnType<typeof parseCaptureLine> | null,
+  storyWhen: string,
+):
+  | ReturnType<typeof parseCaptureLine>
+  | { title: string; storyWhen: string }
+  | null {
+  const when = storyWhen.trim();
+  if (!draft) return when ? { title: "", storyWhen: when } : null;
+  return when ? { ...draft, storyWhen: when } : draft;
+}
+
 function CaptureImageSlot(props: {
   disabled: boolean;
   getDraftLine: () => string;
+  getStoryWhen: () => string;
 }) {
   const [busy, setBusy] = useState(false);
+
+  function draftFromLine() {
+    const line = props.getDraftLine().trim();
+    const parsed = line ? parseCaptureLine(line) : readCaptureDraft();
+    return withStoryWhen(parsed, props.getStoryWhen());
+  }
 
   async function applyBlob(blob: Blob | undefined) {
     if (!blob || props.disabled || busy) return;
     setBusy(true);
     try {
-      const line = props.getDraftLine().trim();
-      const draft = line ? parseCaptureLine(line) : readCaptureDraft();
-      await pasteExploreImage(blob, draft ?? undefined);
+      await pasteExploreImage(blob, draftFromLine() ?? undefined);
     } catch (error) {
       alert(
         error instanceof Error ? error.message : "画像を添付できませんでした",
@@ -130,13 +147,13 @@ function CaptureImageSlot(props: {
   function applyFile(file: File | undefined) {
     if (!file || props.disabled || busy) return;
     setBusy(true);
-    const line = props.getDraftLine().trim();
-    const draft = line ? parseCaptureLine(line) : readCaptureDraft();
-    void pasteExploreImage(file, draft ?? undefined).catch((error) => {
-      alert(
-        error instanceof Error ? error.message : "画像を添付できませんでした",
-      );
-    }).finally(() => setBusy(false));
+    void pasteExploreImage(file, draftFromLine() ?? undefined).catch(
+      (error) => {
+        alert(
+          error instanceof Error ? error.message : "画像を添付できませんでした",
+        );
+      },
+    ).finally(() => setBusy(false));
   }
 
   function onPick(event: Event) {
@@ -264,6 +281,17 @@ function ExploreImageStaging() {
         />
       </div>
       <div class="capture-compose__meta">
+        <input
+          type="text"
+          class="capture-compose__story-when"
+          data-testid="capture-image-staging-story-when"
+          value={draft.storyWhen}
+          placeholder="作中時間"
+          disabled={replaying}
+          aria-label="作中時間"
+          onInput={(event) =>
+            patchExploreImageDraft({ storyWhen: event.currentTarget.value })}
+        />
         <input
           type="url"
           class="capture-compose__url"
@@ -525,12 +553,17 @@ export function Capture(props: { explore?: boolean }) {
     diggingCardId.value === captureSourceCard?.id &&
     !inCompose;
   const input = useRef<HTMLInputElement>(null);
+  const storyWhenInput = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState(readHistory);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const draftRef = useRef("");
 
   function getDraftLine(): string {
     return input.current?.value ?? "";
+  }
+
+  function getStoryWhen(): string {
+    return storyWhenInput.current?.value ?? "";
   }
 
   function showLine(line: string): void {
@@ -545,7 +578,9 @@ export function Capture(props: { explore?: boolean }) {
     const line = input.current?.value ?? "";
     const parsed = parseCaptureLine(line);
     if (!parsed) return;
+    const storyWhen = getStoryWhen().trim();
     if (input.current) input.current.value = "";
+    if (storyWhenInput.current) storyWhenInput.current.value = "";
     draftRef.current = "";
     setHistoryIndex(-1);
     const next = pushHistory(history, line);
@@ -554,6 +589,7 @@ export function Capture(props: { explore?: boolean }) {
     await addCard(parsed.title, {
       body: parsed.body,
       url: parsed.url,
+      ...(storyWhen ? { storyWhen } : {}),
       ...(inCompose && referenceCaptureMode === "thought"
         ? { role: "thought" as const }
         : {}),
@@ -611,7 +647,10 @@ export function Capture(props: { explore?: boolean }) {
     event.preventDefault();
     try {
       const line = getDraftLine().trim();
-      const draft = line ? parseCaptureLine(line) : readCaptureDraft();
+      const draft = withStoryWhen(
+        line ? parseCaptureLine(line) : readCaptureDraft(),
+        getStoryWhen(),
+      );
       await pasteExploreImage(blob, draft ?? undefined);
     } catch (error) {
       alert(
@@ -653,14 +692,32 @@ export function Capture(props: { explore?: boolean }) {
                 if (historyIndex >= 0) setHistoryIndex(-1);
               }}
             />
+            <input
+              ref={storyWhenInput}
+              type="text"
+              class="capture__story-when"
+              data-testid="capture-story-when"
+              aria-label="作中時間"
+              autocomplete="off"
+              placeholder="作中時間"
+              disabled={replaying}
+            />
             {explore && !staging
               ? (
                 <CaptureImageSlot
                   disabled={replaying}
                   getDraftLine={getDraftLine}
+                  getStoryWhen={getStoryWhen}
                 />
               )
               : null}
+            {
+              /*
+              Multiple text fields disable implicit Enter-submit unless a
+              default submit button exists. Keep the 1-line Enter path.
+            */
+            }
+            <button type="submit" class="capture__submit-sr">追加</button>
             <kbd>↵</kbd>
           </form>
         )
@@ -685,7 +742,8 @@ export function Capture(props: { explore?: boolean }) {
           )
           : (
             <>
-              <code>題 // ひとこと</code> · URLはそのまま貼ると出典に ·
+              <code>題 // ひとこと</code>{" "}
+              · URLはそのまま貼ると出典に · 作中時間は任意 ·
               {explore
                 ? (
                   <>
