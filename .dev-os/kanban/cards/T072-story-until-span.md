@@ -1,7 +1,7 @@
 ---
 id: T072
 title: 作中時間に任意の帯の後ろ（storyUntil）を足し、点と幅を残せるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T072"
@@ -48,18 +48,18 @@ T070 採択どおり、作中時間を **起点（`storyWhen`）＋ 任意の帯
 - [x] `foundAt` と作中時間を混同しない（既存ヒントを維持または一文更新）
 - [x] flow しきい値（本体行 +200 / 操作 +3 / 概念 +2 / gzip +8KB / Won't）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「点と帯を2欄で残せ、帯なしは軽い」と確認する
+- [x] 人間が「点と帯を2欄で残せ、帯なしは軽い」と確認する
 
 ## 確認観点（gate: human のとき）
 
 表示: タブ・左上が **`ARGBoard · <release>+<id>`**（review 中）または **`ARGBoard · <release>`**（done 後）であること。
 `<release>` は `ui/release.ts` の `APP_RELEASE`。review 中は `APP_PREVIEW` に本カード id を入れる。
 
-- [ ] 起点だけ → 点として残り、時ありになる
-- [ ] 起点＋終端／長さ → 帯として見え、時ありになる
-- [ ] 帯の後ろだけでも時ありになる
-- [ ] 両方空の連続キャプチャが従来どおり速い
-- [ ] 既存の `storyWhen` のみカードが壊れない
+- [x] 起点だけ → 点として残り、時ありになる
+- [x] 起点＋終端／長さ → 帯として見え、時ありになる
+- [x] 帯の後ろだけでも時ありになる
+- [x] 両方空の連続キャプチャが従来どおり速い
+- [x] 既存の `storyWhen` のみカードが壊れない
 
 ## このカードでやらない
 
@@ -80,5 +80,6 @@ T070 採択どおり、作中時間を **起点（`storyWhen`）＋ 任意の帯
   時あり定義（どちらか非空）・発見ログ `12:34–20min` 表示・APP_PREVIEW=T072。
   budget --since main: 本体+182 / 操作+3 / 概念+2 / gzip+0.7KB / Won't=No。
   操作・概念はしきい値ちょうど。check/test/smoke 緑 → review
+- 2026-10-04 human: 良さそう → done。APP_RELEASE 0.65、APP_PREVIEW 空。task/T072 worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
