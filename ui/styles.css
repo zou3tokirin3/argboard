@@ -966,6 +966,53 @@ kbd {
   margin: 0 auto;
   width: 100%;
 }
+.workspace--lane {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  overflow: auto;
+}
+.lane-panel {
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+}
+.lane-panel h2,
+.lane-panel h3 {
+  margin: 0 0 8px;
+}
+.lane-empty {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.lane-origin {
+  display: block;
+  margin-bottom: 16px;
+}
+.lane-origin select {
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+}
+.lane-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lane-list li {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.lane-when {
+  flex: 0 0 7em;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 .workspace--contemplate {
   display: flex;
 }
@@ -2917,7 +2964,8 @@ span.card-image-field__preview {
     margin: 10px auto 4px;
   }
   .workspace--explore,
-  .workspace--contemplate {
+  .workspace--contemplate,
+  .workspace--lane {
     display: block;
     flex: none;
   }

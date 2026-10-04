@@ -1,3 +1,4 @@
+import { hasStoryWhen } from "./story-when.ts";
 import { normalizeTag } from "./tags.ts";
 import type { Board, Card, Link, Project, ProjectEvent } from "./types.ts";
 
@@ -489,6 +490,34 @@ export function focusReachableIds(
     .filter((c) => (c.tags ?? []).some((t) => normalizeTag(t) === tag))
     .map((c) => c.id);
   return reachableFromCardIds(links, seeds, Math.max(0, hops - 1));
+}
+
+/**
+ * Person-lane members (T073): 1-hop timed neighbors, plus 2-hop via a thought.
+ * Origin is never included.
+ */
+export function laneMemberCards(
+  links: readonly Pick<Link, "from" | "to">[],
+  cards: readonly Card[],
+  originId: string,
+): Card[] {
+  const byId = new Map(cards.map((card) => [card.id, card]));
+  if (!byId.has(originId)) return [];
+  const adj = linkAdjacency(links);
+  const members = new Map<string, Card>();
+  for (const neighborId of adj.get(originId) ?? []) {
+    if (neighborId === originId) continue;
+    const neighbor = byId.get(neighborId);
+    if (!neighbor) continue;
+    if (hasStoryWhen(neighbor)) members.set(neighbor.id, neighbor);
+    if (neighbor.role !== "thought") continue;
+    for (const farId of adj.get(neighborId) ?? []) {
+      if (farId === originId || farId === neighborId) continue;
+      const far = byId.get(farId);
+      if (far && hasStoryWhen(far)) members.set(far.id, far);
+    }
+  }
+  return [...members.values()];
 }
 
 /**
