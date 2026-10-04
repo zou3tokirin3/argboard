@@ -291,13 +291,20 @@ export function Inspector() {
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
   const [storyWhen, setStoryWhen] = useState("");
+  const [storyUntil, setStoryUntil] = useState("");
   const [label, setLabel] = useState("");
   const titleRef = useRef<HTMLInputElement>(null);
   const prevCardIdRef = useRef<string | undefined>();
   const prevLinkIdRef = useRef<string | undefined>();
-  const fieldsRef = useRef({ title: "", body: "", url: "", storyWhen: "" });
+  const fieldsRef = useRef({
+    title: "",
+    body: "",
+    url: "",
+    storyWhen: "",
+    storyUntil: "",
+  });
   const labelRef = useRef("");
-  fieldsRef.current = { title, body, url, storyWhen };
+  fieldsRef.current = { title, body, url, storyWhen, storyUntil };
   labelRef.current = label;
 
   const singleCardEditId = !link && multiIds.length <= 1 ? card?.id : undefined;
@@ -332,6 +339,7 @@ export function Inspector() {
       setBody(card?.body ?? "");
       setUrl(card?.url ?? "");
       setStoryWhen(card?.storyWhen ?? "");
+      setStoryUntil(card?.storyUntil ?? "");
     }
   }, [
     card?.id,
@@ -339,6 +347,7 @@ export function Inspector() {
     card?.body,
     card?.url,
     card?.storyWhen,
+    card?.storyUntil,
     replaying,
   ]);
 
@@ -611,26 +620,46 @@ export function Inspector() {
           onBlur={flushCardFields}
         />
       </label>
-      <label class="inspector__field">
+      <div class="inspector__field">
         <span>作中時間</span>
-        <input
-          type="text"
-          data-testid="inspector-story-when"
-          value={storyWhen}
-          placeholder="例: 23:17 / 夜 / Day3"
-          disabled={replaying}
-          onInput={(event) => {
-            setStoryWhen(event.currentTarget.value);
-            if (singleCardEditId) debouncedSaveCard(singleCardEditId);
-          }}
-          onBlur={flushCardFields}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-          }}
-        />
-      </label>
+        <div class="inspector__story-when-row">
+          <input
+            type="text"
+            data-testid="inspector-story-when"
+            value={storyWhen}
+            placeholder="起点 例: 12:34"
+            disabled={replaying}
+            aria-label="作中時間の起点"
+            onInput={(event) => {
+              setStoryWhen(event.currentTarget.value);
+              if (singleCardEditId) debouncedSaveCard(singleCardEditId);
+            }}
+            onBlur={flushCardFields}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+          />
+          <span class="inspector__story-when-sep" aria-hidden="true">〜</span>
+          <input
+            type="text"
+            data-testid="inspector-story-until"
+            value={storyUntil}
+            placeholder="帯の端 例: 13:00 / 20min"
+            disabled={replaying}
+            aria-label="作中時間の帯の端"
+            onInput={(event) => {
+              setStoryUntil(event.currentTarget.value);
+              if (singleCardEditId) debouncedSaveCard(singleCardEditId);
+            }}
+            onBlur={flushCardFields}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.currentTarget.blur();
+            }}
+          />
+        </div>
+      </div>
       <p class="inspector__hint inspector__hint--inline">
-        発見ログ左の時刻は壁時計。作中・証言の「いつ」は上の欄へ
+        発見ログ左の時刻は壁時計。作中は上へ。帯の端が空なら点
       </p>
       <label class="inspector__field">
         <span>メモ</span>

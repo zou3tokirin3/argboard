@@ -47,6 +47,7 @@ import {
 } from "./state.ts";
 import { MediaThumb } from "./media-thumb.tsx";
 import { isLocalMediaRef } from "./media.ts";
+import { formatStoryWhenLabel, hasStoryWhen } from "./story-when.ts";
 import { StreamStickyTrail } from "./stream-sticky-trail.tsx";
 import { ThoughtOutcomeIcon } from "./thought-outcome-icon.tsx";
 import { thoughtOutcomeLabel, thoughtOutcomeShort } from "./thought-outcome.ts";
@@ -307,10 +308,10 @@ function StreamCardRow(props: StreamCardRowProps) {
             ? <span class="stream-tree__nest-mark" aria-hidden="true">↳</span>
             : null}
           <time>{timeFormatter.format(card.foundAt)}</time>
-          {card.storyWhen?.trim()
+          {hasStoryWhen(card)
             ? (
               <span class="stream-card__story-when" title="作中時間">
-                {card.storyWhen.trim()}
+                {formatStoryWhenLabel(card)}
               </span>
             )
             : null}

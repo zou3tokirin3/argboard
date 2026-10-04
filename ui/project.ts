@@ -230,6 +230,11 @@ function applyEvent(
         if (when) next.storyWhen = when;
         else delete next.storyWhen;
       }
+      if ("storyUntil" in event) {
+        const until = event.storyUntil?.trim();
+        if (until) next.storyUntil = until;
+        else delete next.storyUntil;
+      }
       cards.set(event.cardId, next);
       break;
     }

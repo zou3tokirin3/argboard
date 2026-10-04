@@ -8,6 +8,24 @@ function readCaptureStoryWhen(): string | undefined {
   return when || undefined;
 }
 
+function readCaptureStoryUntil(): string | undefined {
+  const el = document.querySelector<HTMLInputElement>(
+    '[data-testid="capture-story-until"]',
+  );
+  const until = el?.value?.trim();
+  return until || undefined;
+}
+
+function withStoryFields(parsed: ParsedCapture): ParsedCapture {
+  const storyWhen = readCaptureStoryWhen();
+  const storyUntil = readCaptureStoryUntil();
+  return {
+    ...parsed,
+    ...(storyWhen ? { storyWhen } : {}),
+    ...(storyUntil ? { storyUntil } : {}),
+  };
+}
+
 /** Read the live explore capture line from the DOM (for global paste / drop). */
 export function readCaptureDraft(): ParsedCapture | null {
   const el = document.querySelector<HTMLInputElement>(
@@ -17,8 +35,7 @@ export function readCaptureDraft(): ParsedCapture | null {
   if (!line) return null;
   const parsed = parseCaptureLine(line);
   if (!parsed) return null;
-  const storyWhen = readCaptureStoryWhen();
-  return storyWhen ? { ...parsed, storyWhen } : parsed;
+  return withStoryFields(parsed);
 }
 
 export function clearCaptureDraft(): void {
@@ -30,4 +47,8 @@ export function clearCaptureDraft(): void {
     '[data-testid="capture-story-when"]',
   );
   if (when) when.value = "";
+  const until = document.querySelector<HTMLInputElement>(
+    '[data-testid="capture-story-until"]',
+  );
+  if (until) until.value = "";
 }

@@ -615,10 +615,11 @@ body {
 .capture input::placeholder {
   color: #8b98a5;
 }
-.capture input.capture__story-when {
-  flex: 0 1 96px;
-  min-width: 72px;
-  max-width: 120px;
+.capture input.capture__story-when,
+.capture input.capture__story-until {
+  flex: 0 1 72px;
+  min-width: 56px;
+  max-width: 96px;
   height: 32px;
   padding: 0 8px;
   border: 1px dashed var(--line-strong);
@@ -627,11 +628,13 @@ body {
   color: var(--ink);
   font-size: 12px;
 }
-.capture input.capture__story-when:focus {
+.capture input.capture__story-when:focus,
+.capture input.capture__story-until:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
-.capture input.capture__story-when:disabled {
+.capture input.capture__story-when:disabled,
+.capture input.capture__story-until:disabled {
   opacity: 0.45;
 }
 .capture__submit-sr {
@@ -745,7 +748,8 @@ body {
 .capture-compose__title,
 .capture-compose__body,
 .capture-compose__url,
-.capture-compose__story-when {
+.capture-compose__story-when,
+.capture-compose__story-until {
   width: 100%;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-box);
@@ -755,11 +759,12 @@ body {
   font: inherit;
   resize: vertical;
 }
-.capture-compose__story-when {
-  flex: 0 1 120px;
+.capture-compose__story-when,
+.capture-compose__story-until {
+  flex: 0 1 96px;
   width: auto;
-  min-width: 88px;
-  max-width: 140px;
+  min-width: 72px;
+  max-width: 120px;
   font-size: 13px;
 }
 .capture-compose__title {
@@ -779,7 +784,8 @@ body {
 .capture-compose__title:focus,
 .capture-compose__body:focus,
 .capture-compose__url:focus,
-.capture-compose__story-when:focus {
+.capture-compose__story-when:focus,
+.capture-compose__story-until:focus {
   outline: 0;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
@@ -1077,6 +1083,22 @@ kbd {
   outline: 0;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.inspector__story-when-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.inspector__story-when-row input {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+.inspector__story-when-sep {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-weight: 600;
 }
 .inspector__image-reference {
   justify-self: start;
@@ -1921,7 +1943,7 @@ span.card-image-field__preview {
 .stream-card__story-when {
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 9em;
+  max-width: 12em;
   overflow: hidden;
   color: #1f5f7a;
   font-weight: 600;
