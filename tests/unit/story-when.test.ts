@@ -22,6 +22,23 @@ Deno.test("parseProjectJson roundtrips card.storyWhen", () => {
   }
 });
 
+Deno.test("card_added with storyWhen keeps it on replay", () => {
+  const card = {
+    id: "cap",
+    title: "短波",
+    foundAt: 10,
+    storyWhen: "23:17",
+  };
+  let project = createEmptyProject("キャプチャ作中時間", 1);
+  project = appendEvent(project, { type: "card_added", at: 10, card });
+  const viewed = viewThrough(project, 0);
+  if (viewed.cards[0]?.storyWhen !== "23:17") {
+    throw new Error(
+      `capture storyWhen must replay: ${JSON.stringify(viewed.cards[0])}`,
+    );
+  }
+});
+
 Deno.test("viewThrough applies and clears storyWhen on card_updated", () => {
   const card = {
     id: "a",

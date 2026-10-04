@@ -2,6 +2,8 @@ export type ParsedCapture = {
   title: string;
   body?: string;
   url?: string;
+  /** Optional in-story time from capture UI (not parsed from the line). */
+  storyWhen?: string;
 };
 
 /** Pull the first http(s) URL out of a capture line. */

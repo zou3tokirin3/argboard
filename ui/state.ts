@@ -250,6 +250,7 @@ export type ExploreImageDraft = {
   title: string;
   body: string;
   url: string;
+  storyWhen: string;
 };
 
 export const exploreImageDraft = signal<ExploreImageDraft | null>(null);
@@ -261,7 +262,9 @@ export function clearExploreImageDraft(): void {
 }
 
 export function patchExploreImageDraft(
-  patch: Partial<Pick<ExploreImageDraft, "title" | "body" | "url">>,
+  patch: Partial<
+    Pick<ExploreImageDraft, "title" | "body" | "url" | "storyWhen">
+  >,
 ): void {
   const draft = exploreImageDraft.value;
   if (!draft) return;
@@ -449,7 +452,13 @@ export const filteredCards = computed(() => {
     if (whenFilter === "with" && !hasWhen) return false;
     if (whenFilter === "without" && hasWhen) return false;
     if (!query) return true;
-    return [card.title, card.body, card.url, card.storyWhen, ...(card.tags ?? [])]
+    return [
+      card.title,
+      card.body,
+      card.url,
+      card.storyWhen,
+      ...(card.tags ?? []),
+    ]
       .filter(Boolean)
       .some((value) => value!.toLocaleLowerCase("ja").includes(query));
   });
@@ -662,12 +671,16 @@ export async function addCard(
     placeAt?: { x: number; y: number };
     body?: string;
     url?: string;
+    storyWhen?: string;
   },
 ): Promise<string | null> {
   const cleanTitle = title.trim();
   if (!cleanTitle) return null;
   const body = options?.body?.trim() ? options.body.trim() : undefined;
   const url = options?.url?.trim() ? options.url.trim() : undefined;
+  const storyWhen = options?.storyWhen?.trim()
+    ? options.storyWhen.trim()
+    : undefined;
 
   // Read + write memory must stay synchronous so overlapping captures
   // cannot both snapshot the same Project and drop a later card.
@@ -682,6 +695,7 @@ export async function addCard(
     ...(options?.role === "thought" ? { role: "thought" as const } : {}),
     ...(body ? { body } : {}),
     ...(url ? { url } : {}),
+    ...(storyWhen ? { storyWhen } : {}),
     ...(foundVia ? { foundVia } : {}),
   };
   let next = appendEvent(
@@ -735,6 +749,9 @@ async function createCardWithCompressedImage(
   const title = draft?.title.trim() || "（無題）";
   const body = draft?.body?.trim() ? draft.body.trim() : undefined;
   const url = draft?.url?.trim() ? draft.url.trim() : undefined;
+  const storyWhen = draft?.storyWhen?.trim()
+    ? draft.storyWhen.trim()
+    : undefined;
   const foundVia = resolveDiggingFoundVia();
   const card: Card = {
     id: cardId,
@@ -743,6 +760,7 @@ async function createCardWithCompressedImage(
     image: mediaId,
     ...(body ? { body } : {}),
     ...(url ? { url } : {}),
+    ...(storyWhen ? { storyWhen } : {}),
     ...(foundVia ? { foundVia } : {}),
   };
   let next = appendEvent(
@@ -798,6 +816,7 @@ export async function stageExploreImage(
     title: parsed?.title ?? "",
     body: parsed?.body ?? "",
     url: parsed?.url ?? "",
+    storyWhen: parsed?.storyWhen ?? "",
   };
 }
 
@@ -809,6 +828,7 @@ export async function commitExploreImageDraft(): Promise<string | null> {
     title: draft.title.trim() || "（無題）",
     ...(draft.body.trim() ? { body: draft.body.trim() } : {}),
     ...(draft.url.trim() ? { url: draft.url.trim() } : {}),
+    ...(draft.storyWhen.trim() ? { storyWhen: draft.storyWhen.trim() } : {}),
   };
   const blob = draft.blob;
   clearExploreImageDraft();
