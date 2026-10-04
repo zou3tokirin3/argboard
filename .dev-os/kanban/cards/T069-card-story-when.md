@@ -1,10 +1,10 @@
 ---
 id: T069
 title: カードに作中時間を薄く持ち、時間付き／なしで発見ログを分けられるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T069"
 template_ver: generic-0.2
 created: 2026-10-04
 updated: 2026-10-04
@@ -89,5 +89,6 @@ O5「人物特定→時系列」の時間半分（PLAN 改訂13・時間構造�
   見込み flow=本体行+100〜160 / 操作+3（inspector-story-when / stream-story-when-only / stream-no-story-when-only） /
   概念+3（Card.storyWhen + card_updated.storyWhen + storyWhenFilter）/ gzip +3KB未満 / Won't=No。
   概念がしきい値+2を1超える見込み。人間の実装指示を concept +3 の GO として扱う → ready
+- 2026-10-04 impl: 取得。task/T069 worktree で `storyWhen` ＋ 時あり/時なし絞りを実装する
 
 ## 差し戻し履歴（追記のみ）
