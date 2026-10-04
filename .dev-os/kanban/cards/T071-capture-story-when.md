@@ -1,7 +1,7 @@
 ---
 id: T071
 title: 探索キャプチャ時にも作中時間を任意で入れられるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T071"
@@ -50,17 +50,17 @@ updated: 2026-10-04
 - [x] 画像ステージング経由でも `storyWhen` を付けられる
 - [x] flow しきい値（本体行 +200 / 操作 +3 / 概念 +2 / gzip +8KB / Won't）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「入れたときに時間が残せる」と確認する
+- [x] 人間が「入れたときに時間が残せる」と確認する
 
 ## 確認観点（gate: human のとき）
 
 表示: タブ・左上が **`ARGBoard · <release>+<id>`**（review 中）または **`ARGBoard · <release>`**（done 後）であること。
 `<release>` は `ui/release.ts` の `APP_RELEASE`。review 中は `APP_PREVIEW` に本カード id を入れる。
 
-- [ ] 探索キャプチャで作中時間を付けて保存し、ログ／インスペクタに残る
-- [ ] 作中時間なしの連続キャプチャが従来どおり速い
-- [ ] インスペクタだけの既存運用も壊さない
-- [ ] 画像キャプチャ確定時にも作中時間を付けられる
+- [x] 探索キャプチャで作中時間を付けて保存し、ログ／インスペクタに残る
+- [x] 作中時間なしの連続キャプチャが従来どおり速い
+- [x] インスペクタだけの既存運用も壊さない
+- [x] 画像キャプチャ確定時にも作中時間を付けられる
 
 ## このカードでやらない
 
@@ -81,5 +81,6 @@ updated: 2026-10-04
 - 2026-10-04 impl: 実装完了（6a5a3d1）。キャプチャ行隣の作中時間欄・画像ステージング同欄・
   Enter 維持用の隠れ submit・APP_PREVIEW=T071。budget --since main: 本体+131 / 操作+2 /
   概念+0 / gzip+0.4KB / Won't=No。check/test/smoke 緑 → review
+- 2026-10-04 human: 確認OK → done。APP_RELEASE 0.64、APP_PREVIEW 空。task/T071 worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）

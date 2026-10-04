@@ -4,11 +4,11 @@
  * - APP_RELEASE: bump when marking a gate:human card done (0.60 → 0.61 …)
  * - APP_PREVIEW: ticket id while in review (e.g. T058); clear on done
  *
- * Display: `ARGBoard · 0.63+T071` (preview) / `ARGBoard · 0.63` (stable)
- * Local serve on a feature branch may append ` · task/T071`.
+ * Display: `ARGBoard · 0.64+T072` (preview) / `ARGBoard · 0.64` (stable)
+ * Local serve on a feature branch may append ` · task/T072`.
  */
-export const APP_RELEASE = "0.63";
-export const APP_PREVIEW: string | null = "T071";
+export const APP_RELEASE = "0.64";
+export const APP_PREVIEW: string | null = null;
 
 export function appTitle(branch?: string): string {
   const label = APP_PREVIEW ? `${APP_RELEASE}+${APP_PREVIEW}` : APP_RELEASE;
