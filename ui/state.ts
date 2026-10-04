@@ -323,28 +323,45 @@ export const revealCardId = signal<string | null>(null);
 export const focusOrigin = signal<FocusOrigin | null>(null);
 export const focusHops = signal(1);
 /**
- * Session-only person-lane surface (T073). Not persisted in Project.ui.mode.
- * open=false clears the third-tab view on reload.
+ * Session-only story-chrono list (T073). Not persisted in Project.ui.mode.
+ * Entered from the board focus bar; cleared on reload / mode tab switch.
  */
-export const laneView = signal<{ open: boolean; originId: string | null }>({
+export const laneView = signal<
+  { open: boolean; originId: string | null; hops: number }
+>({
   open: false,
   originId: null,
+  hops: 1,
 });
 
-export function openLaneView(): void {
-  clearReplay();
-  laneView.value = { open: true, originId: laneView.value.originId };
-}
-
 export function clearLaneView(): void {
-  laneView.value = { open: false, originId: null };
+  laneView.value = { open: false, originId: null, hops: 1 };
 }
 
-export function setLaneOrigin(cardId: string | null): void {
-  laneView.value = {
-    open: true,
-    originId: cardId,
-  };
+/** Open story-chrono from a selected board card (contemplate). */
+export async function openStoryChrono(cardId: string): Promise<void> {
+  const current = project.value;
+  if (!current) return;
+  clearReplay();
+  if ((current.ui?.mode ?? "explore") !== "contemplate") {
+    closeExploreCompose();
+    clearExploreImageDraft();
+    await persist(withUi(current, { mode: "contemplate" }));
+  }
+  selectSingleCard(cardId);
+  laneView.value = { open: true, originId: cardId, hops: 1 };
+}
+
+export function expandStoryHops(): void {
+  const view = laneView.value;
+  if (!view.open || !view.originId) return;
+  laneView.value = { ...view, hops: view.hops + 1 };
+}
+
+export function shrinkStoryHops(): void {
+  const view = laneView.value;
+  if (!view.open || !view.originId || view.hops <= 1) return;
+  laneView.value = { ...view, hops: view.hops - 1 };
 }
 
 /** Session-only growth replay index (T025). Not persisted. null = live. */

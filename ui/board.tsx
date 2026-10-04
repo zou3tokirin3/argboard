@@ -12,6 +12,7 @@ import {
   focusOrigin,
   isReplaying,
   moveCardsOnBoardLocal,
+  openStoryChrono,
   placeCardOnBoard,
   project,
   replayIndex,
@@ -758,19 +759,41 @@ function FocusFloat(props: {
               onClick={() => clearFocusView()}
               path="M4 4l8 8M12 4l-8 8"
             />
+            <button
+              type="button"
+              class="board__focus-enter"
+              data-testid="story-chrono-set"
+              aria-label="作中で並べる"
+              title="糸で届く作中時間つきカードを時間順に並べる"
+              onClick={() => void openStoryChrono(barAnchorId)}
+            >
+              作中で並べる
+            </button>
           </>
         )
         : (
-          <button
-            type="button"
-            class="board__focus-enter"
-            data-testid="focus-set"
-            aria-label="この視点で見る"
-            title="つながるカードだけを浮かべ、ほかは沈める"
-            onClick={() => setFocusView(barAnchorId)}
-          >
-            この視点で見る
-          </button>
+          <>
+            <button
+              type="button"
+              class="board__focus-enter"
+              data-testid="focus-set"
+              aria-label="この視点で見る"
+              title="つながるカードだけを浮かべ、ほかは沈める"
+              onClick={() => setFocusView(barAnchorId)}
+            >
+              この視点で見る
+            </button>
+            <button
+              type="button"
+              class="board__focus-enter"
+              data-testid="story-chrono-set"
+              aria-label="作中で並べる"
+              title="糸で届く作中時間つきカードを時間順に並べる"
+              onClick={() => void openStoryChrono(barAnchorId)}
+            >
+              作中で並べる
+            </button>
+          </>
         )}
     </div>
   );

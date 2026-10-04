@@ -332,18 +332,18 @@ Deno.test("demo births separate connect from label, and keep card add+place", ()
     label === "糸 · 接続" || label === "糸 · 要検討"
   );
   const linkLabels = labels.filter((label) => label.startsWith("ラベル ·"));
-  if (adds.length !== 4) {
-    throw new Error(`expected 4 card adds, got ${adds.length}: ${labels}`);
+  if (adds.length !== 5) {
+    throw new Error(`expected 5 card adds, got ${adds.length}: ${labels}`);
   }
-  if (places.length !== 4) {
-    throw new Error(`expected 4 placements, got ${places.length}: ${labels}`);
+  if (places.length !== 5) {
+    throw new Error(`expected 5 placements, got ${places.length}: ${labels}`);
   }
-  if (connects.length !== 3) {
-    throw new Error(`expected 3 connects, got ${connects.length}: ${labels}`);
+  if (connects.length !== 4) {
+    throw new Error(`expected 4 connects, got ${connects.length}: ${labels}`);
   }
-  if (linkLabels.length !== 3) {
+  if (linkLabels.length !== 4) {
     throw new Error(
-      `expected 3 label steps separate from connect, got ${linkLabels.length}: ${labels}`,
+      `expected 4 label steps separate from connect, got ${linkLabels.length}: ${labels}`,
     );
   }
 
@@ -367,14 +367,16 @@ Deno.test("same-ms connect steps appear one at a time via through index", () => 
   const connectSteps = steps.filter((step) =>
     step.label === "糸 · 接続" || step.label === "糸 · 要検討"
   );
-  if (connectSteps.length !== 3) {
-    throw new Error(`expected 3 connect steps, got ${connectSteps.length}`);
+  if (connectSteps.length !== 4) {
+    throw new Error(`expected 4 connect steps, got ${connectSteps.length}`);
   }
   const counts = connectSteps.map((step) =>
     viewThrough(demo, step.through).links.length
   );
-  if (counts[0] !== 1 || counts[1] !== 2 || counts[2] !== 3) {
-    throw new Error(`links should accumulate 1,2,3 got ${counts}`);
+  if (
+    counts[0] !== 1 || counts[1] !== 2 || counts[2] !== 3 || counts[3] !== 4
+  ) {
+    throw new Error(`links should accumulate 1,2,3,4 got ${counts}`);
   }
 });
 

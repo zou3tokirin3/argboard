@@ -493,31 +493,25 @@ export function focusReachableIds(
 }
 
 /**
- * Person-lane members (T073): 1-hop timed neighbors, plus 2-hop via a thought.
- * Origin is never included.
+ * Story-chrono members (T073): cards within `hops` undirected link steps
+ * that have in-story time. Origin is never included.
  */
 export function laneMemberCards(
   links: readonly Pick<Link, "from" | "to">[],
   cards: readonly Card[],
   originId: string,
+  hops = 1,
 ): Card[] {
   const byId = new Map(cards.map((card) => [card.id, card]));
   if (!byId.has(originId)) return [];
-  const adj = linkAdjacency(links);
-  const members = new Map<string, Card>();
-  for (const neighborId of adj.get(originId) ?? []) {
-    if (neighborId === originId) continue;
-    const neighbor = byId.get(neighborId);
-    if (!neighbor) continue;
-    if (hasStoryWhen(neighbor)) members.set(neighbor.id, neighbor);
-    if (neighbor.role !== "thought") continue;
-    for (const farId of adj.get(neighborId) ?? []) {
-      if (farId === originId || farId === neighborId) continue;
-      const far = byId.get(farId);
-      if (far && hasStoryWhen(far)) members.set(far.id, far);
-    }
+  const reached = reachableCardIds(links, originId, Math.max(0, hops));
+  const members: Card[] = [];
+  for (const id of reached) {
+    if (id === originId) continue;
+    const card = byId.get(id);
+    if (card && hasStoryWhen(card)) members.push(card);
   }
-  return [...members.values()];
+  return members;
 }
 
 /**
@@ -837,18 +831,21 @@ export function createDemoProject(now = Date.now()): Project {
       id: "radio-signal",
       title: "23:17の短波ラジオ",
       body: "毎晩同じ時刻に数字列が流れる。",
+      storyWhen: "23:17",
       foundAt: now - 3600000,
     },
     {
       id: "station-locker",
       title: "東口ロッカー B-17",
       body: "動画の背景に一瞬だけ映り込んだ。",
+      storyWhen: "22:40",
       foundAt: now - 2800000,
     },
     {
       id: "missing-poster",
       title: "消えた告知ポスター",
       body: "アーカイブにはあるが、現地では剥がされていた。",
+      storyWhen: "夜",
       foundAt: now - 1900000,
     },
     {
@@ -857,6 +854,13 @@ export function createDemoProject(now = Date.now()): Project {
       role: "thought",
       body: "時刻、ロッカー、投稿IDに17が繰り返し現れる。",
       foundAt: now - 900000,
+    },
+    {
+      id: "late-train",
+      title: "終電後の改札音",
+      body: "短波のあとに聞こえた、という証言。日付が曖昧。",
+      storyWhen: "1:05",
+      foundAt: now - 800000,
     },
   ];
 
@@ -891,6 +895,14 @@ export function createDemoProject(now = Date.now()): Project {
         kind: "contradicts",
         createdAt: now,
       },
+      {
+        id: "radio-late",
+        from: "radio-signal",
+        to: "late-train",
+        label: "そのあと?",
+        kind: "connects",
+        createdAt: now,
+      },
     ],
     boards: [{
       id: "main-board",
@@ -901,6 +913,7 @@ export function createDemoProject(now = Date.now()): Project {
         "station-locker": { x: 480, y: 70 },
         "missing-poster": { x: 95, y: 345 },
         "seventeen-theory": { x: 470, y: 330 },
+        "late-train": { x: 280, y: 200 },
       },
     }],
     ui: { mode: "explore", sideOpen: false },

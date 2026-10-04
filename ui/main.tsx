@@ -26,7 +26,6 @@ import {
   initialize,
   isReplaying,
   laneView,
-  openLaneView,
   pasteExploreImage,
   patchExploreImageDraft,
   pickAndImportProject,
@@ -323,24 +322,13 @@ function TopBar() {
               return;
             }
             event.preventDefault();
-            const order = ["explore", "contemplate", "lane"] as const;
-            const currentKey = laneView.value.open
-              ? "lane"
-              : mode === "contemplate"
-              ? "contemplate"
-              : "explore";
-            const index = order.indexOf(currentKey);
-            const delta = event.key === "ArrowRight" ? 1 : -1;
-            const next = order[(index + delta + order.length) % order.length]!;
-            if (next === "lane") openLaneView();
-            else void setAppMode(next);
+            const next = mode === "explore" ? "contemplate" : "explore";
+            void setAppMode(next);
             const root = event.currentTarget;
             requestAnimationFrame(() => {
               const selector = next === "explore"
                 ? '[data-testid="mode-explore"]'
-                : next === "contemplate"
-                ? '[data-testid="mode-contemplate"]'
-                : '[data-testid="mode-lane"]';
+                : '[data-testid="mode-contemplate"]';
               root.querySelector<HTMLElement>(selector)?.focus();
             });
           }}
@@ -349,11 +337,9 @@ function TopBar() {
             type="button"
             role="tab"
             data-testid="mode-explore"
-            aria-selected={!laneView.value.open && mode === "explore"}
-            tabIndex={!laneView.value.open && mode === "explore" ? 0 : -1}
-            class={!laneView.value.open && mode === "explore"
-              ? "is-active"
-              : undefined}
+            aria-selected={mode === "explore"}
+            tabIndex={mode === "explore" ? 0 : -1}
+            class={mode === "explore" ? "is-active" : undefined}
             onClick={() => void setAppMode("explore")}
           >
             探索
@@ -362,25 +348,12 @@ function TopBar() {
             type="button"
             role="tab"
             data-testid="mode-contemplate"
-            aria-selected={!laneView.value.open && mode === "contemplate"}
-            tabIndex={!laneView.value.open && mode === "contemplate" ? 0 : -1}
-            class={!laneView.value.open && mode === "contemplate"
-              ? "is-active"
-              : undefined}
+            aria-selected={mode === "contemplate"}
+            tabIndex={mode === "contemplate" ? 0 : -1}
+            class={mode === "contemplate" ? "is-active" : undefined}
             onClick={() => void setAppMode("contemplate")}
           >
             考察
-          </button>
-          <button
-            type="button"
-            role="tab"
-            data-testid="mode-lane"
-            aria-selected={laneView.value.open}
-            tabIndex={laneView.value.open ? 0 : -1}
-            class={laneView.value.open ? "is-active" : undefined}
-            onClick={() => openLaneView()}
-          >
-            レーン
           </button>
         </div>
         <SaveStatusLabel />
@@ -522,7 +495,7 @@ function ContemplateWorkspace() {
         <span aria-hidden="true">{side ? "<" : ">"}</span>
       </button>
       <div class="contemplate-main">
-        <BoardView />
+        {laneView.value.open ? <LaneWorkspace /> : <BoardView />}
         <Inspector />
       </div>
     </div>
@@ -531,21 +504,15 @@ function ContemplateWorkspace() {
 
 function AppShell() {
   const mode = appMode.value;
-  const lane = laneView.value.open;
-  const shellMode = lane ? "lane" : mode;
   return (
-    <div class={`app-shell mode-${shellMode}`}>
+    <div class={`app-shell mode-${mode}`}>
       <a class="skip-link" href="#main-content" data-testid="skip-link">
         本文へ
       </a>
       <InstallTip />
       <TopBar />
       <main id="main-content" tabIndex={-1}>
-        {lane
-          ? <LaneWorkspace />
-          : mode === "explore"
-          ? <ExploreWorkspace />
-          : <ContemplateWorkspace />}
+        {mode === "explore" ? <ExploreWorkspace /> : <ContemplateWorkspace />}
       </main>
     </div>
   );

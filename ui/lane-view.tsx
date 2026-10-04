@@ -1,71 +1,110 @@
 import { laneMemberCards } from "./project.ts";
-import { laneView, setLaneOrigin, viewProject } from "./state.ts";
-import { formatStoryWhenLabel, sortLaneCards } from "./story-when.ts";
+import {
+  clearLaneView,
+  expandStoryHops,
+  laneView,
+  selectSingleCard,
+  shrinkStoryHops,
+  viewProject,
+} from "./state.ts";
+import {
+  formatStoryWhenLabel,
+  sortLaneCards,
+  storyOrderSuspicious,
+} from "./story-when.ts";
 
 export function LaneWorkspace() {
   const current = viewProject.value;
-  const { open, originId } = laneView.value;
-  if (!current || !open) return null;
+  const { open, originId, hops } = laneView.value;
+  if (!current || !open || !originId) return null;
 
-  const cards = current.cards.toSorted((a, b) =>
-    a.title.localeCompare(b.title, "ja")
+  const origin = current.cards.find((card) => card.id === originId);
+  if (!origin) {
+    return (
+      <div class="lane-panel">
+        <p class="lane-empty">起点カードが見つかりません</p>
+        <button
+          type="button"
+          data-testid="story-chrono-clear"
+          onClick={() => clearLaneView()}
+        >
+          閉じる
+        </button>
+      </div>
+    );
+  }
+
+  const members = sortLaneCards(
+    laneMemberCards(current.links, current.cards, origin.id, hops),
   );
-  const origin = originId ? current.cards.find((c) => c.id === originId) : null;
-  const members = origin
-    ? sortLaneCards(laneMemberCards(current.links, current.cards, origin.id))
-    : [];
+  const suspicious = storyOrderSuspicious(members);
 
   return (
-    <div class="workspace workspace--lane">
-      <div class="lane-panel">
-        <h2>作中レーン</h2>
+    <div class="lane-panel">
+      <header class="lane-panel__header">
+        <div class="lane-panel__title-row">
+          <h2>作中で並べる</h2>
+          <div class="lane-panel__hops" aria-live="polite">
+            <span>作中 · {hops}</span>
+            <button
+              type="button"
+              class="lane-panel__hop"
+              data-testid="story-chrono-shrink"
+              disabled={hops <= 1}
+              aria-label="一周戻す"
+              onClick={() => shrinkStoryHops()}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              class="lane-panel__hop"
+              data-testid="story-chrono-expand"
+              aria-label="もう一周広げる"
+              onClick={() => expandStoryHops()}
+            >
+              ＋
+            </button>
+            <button
+              type="button"
+              class="lane-panel__hop"
+              data-testid="story-chrono-clear"
+              aria-label="作中並びをやめる"
+              onClick={() => clearLaneView()}
+            >
+              ×
+            </button>
+          </div>
+        </div>
         <p class="lane-empty">
-          起点に糸で繋がる作中時間つきカードを時間順に並べます（配置は覚えません）。
+          「{origin.title}」から糸で届く作中時間つきカード。配置は覚えません。
         </p>
-        <label class="lane-origin">
-          起点{" "}
-          <select
-            data-testid="lane-origin-pick"
-            value={originId ?? ""}
-            onChange={(event) => {
-              setLaneOrigin(event.currentTarget.value || null);
-            }}
-          >
-            <option value="">カードを選ぶ</option>
-            {cards.map((card) => (
-              <option key={card.id} value={card.id}>
-                {card.title}
-                {card.role === "thought" ? "（考察）" : ""}
-              </option>
+      </header>
+      {members.length === 0
+        ? <p class="lane-empty">この範囲に作中時間つきカードがありません</p>
+        : (
+          <ul class="lane-list">
+            {members.map((card, index) => (
+              <li key={card.id}>
+                <button
+                  type="button"
+                  class="lane-list__row"
+                  data-testid="story-chrono-row"
+                  data-card-id={card.id}
+                  onClick={() => selectSingleCard(card.id)}
+                >
+                  <span class="lane-when">
+                    {formatStoryWhenLabel(card) || "—"}
+                  </span>
+                  <span class="lane-list__title">{card.title}</span>
+                  {suspicious[index]
+                    ? <span class="lane-flag">順が怪しい</span>
+                    : null}
+                </button>
+              </li>
             ))}
-          </select>
-        </label>
-        {!origin
-          ? <p class="lane-empty">起点カードを選ぶと、ここに並びます</p>
-          : (
-            <>
-              <h3>{origin.title}</h3>
-              {members.length === 0
-                ? (
-                  <p class="lane-empty">
-                    糸で繋がる作中時間つきカードがありません
-                  </p>
-                )
-                : (
-                  <ul class="lane-list">
-                    {members.map((card) => (
-                      <li key={card.id}>
-                        <span class="lane-when">
-                          {formatStoryWhenLabel(card) || "—"}
-                        </span>
-                        {card.title}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-            </>
-          )}
-      </div>
+          </ul>
+        )}
     </div>
   );
 }
