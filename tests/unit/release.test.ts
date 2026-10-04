@@ -1,15 +1,15 @@
-import { appTitle } from "../../ui/release.ts";
+import { APP_PREVIEW, APP_RELEASE, appTitle } from "../../ui/release.ts";
 
-Deno.test("appTitle shows release only when preview is cleared", () => {
+Deno.test("appTitle shows release with optional preview ticket", () => {
   const title = appTitle();
-  if (!title.startsWith("ARGBoard · 0.")) {
+  if (!title.startsWith(`ARGBoard · ${APP_RELEASE}`)) {
     throw new Error(`unexpected title: ${title}`);
   }
-});
-
-Deno.test("appTitle omits preview ticket when cleared", () => {
-  const title = appTitle();
-  if (title.includes("+")) {
+  if (APP_PREVIEW) {
+    if (!title.includes(`+${APP_PREVIEW}`)) {
+      throw new Error(`expected preview ticket: ${title}`);
+    }
+  } else if (title.includes("+")) {
     throw new Error(`preview should be cleared: ${title}`);
   }
 });

@@ -225,6 +225,11 @@ function applyEvent(
           next.outcome = event.outcome;
         } else delete next.outcome;
       }
+      if ("storyWhen" in event) {
+        const when = event.storyWhen?.trim();
+        if (when) next.storyWhen = when;
+        else delete next.storyWhen;
+      }
       cards.set(event.cardId, next);
       break;
     }
