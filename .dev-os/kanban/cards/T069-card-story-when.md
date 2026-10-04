@@ -1,7 +1,7 @@
 ---
 id: T069
 title: カードに作中時間を薄く持ち、時間付き／なしで発見ログを分けられるようにする
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T069"
@@ -52,14 +52,14 @@ O5「人物特定→時系列」の時間半分（PLAN 改訂13・時間構造�
 
 ## 受け入れ条件
 
-- [ ] `Card` に任意の `storyWhen` がある（未設定は従来どおり。エクスポート JSON 往復可）
-- [ ] インスペクタで作中時間を付け・直し・消せる
-- [ ] 作中時間なしのキャプチャ／編集は従来どおり動く（必須化しない）
-- [ ] 発見ログで **時あり** / **時なし** に絞れる（既存の検索・role・配置・成否フィルタと AND）
-- [ ] トグル状態は session のみ（JSON に載せない）
-- [ ] `foundAt` と作中時間を混同しない（UI・並びの説明が一文ある）
-- [ ] flow しきい値（本体行 +200 / 操作 +3 / 概念 +2 / gzip +8KB / Won't）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
-- [ ] 最新コミットで check / test / smoke が緑
+- [x] `Card` に任意の `storyWhen` がある（未設定は従来どおり。エクスポート JSON 往復可）
+- [x] インスペクタで作中時間を付け・直し・消せる
+- [x] 作中時間なしのキャプチャ／編集は従来どおり動く（必須化しない）
+- [x] 発見ログで **時あり** / **時なし** に絞れる（既存の検索・role・配置・成否フィルタと AND）
+- [x] トグル状態は session のみ（JSON に載せない）
+- [x] `foundAt` と作中時間を混同しない（UI・並びの説明が一文ある）
+- [x] flow しきい値（本体行 +200 / 操作 +3 / 概念 +2 / gzip +8KB / Won't）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
+- [x] 最新コミットで check / test / smoke が緑
 - [ ] 人間が「タイトルに書かなくても時間が残り、時間の有無で一覧を分けられる」と確認する
 
 ## 確認観点（gate: human のとき）
@@ -90,5 +90,8 @@ O5「人物特定→時系列」の時間半分（PLAN 改訂13・時間構造�
   概念+3（Card.storyWhen + card_updated.storyWhen + storyWhenFilter）/ gzip +3KB未満 / Won't=No。
   概念がしきい値+2を1超える見込み。人間の実装指示を concept +3 の GO として扱う → ready
 - 2026-10-04 impl: 取得。task/T069 worktree で `storyWhen` ＋ 時あり/時なし絞りを実装する
+- 2026-10-04 impl: 実装完了（c750c60）。`Card.storyWhen`・インスペクタ編集・作中フィルタ（時あり/時なし）・
+  APP_PREVIEW=T069。budget --since main: 本体+176 / 操作+3 / 概念+3 / gzip+0.8KB / Won't=No。
+  概念+3は ready 時の人間GOどおり。check/test/smoke 緑 → review
 
 ## 差し戻し履歴（追記のみ）
