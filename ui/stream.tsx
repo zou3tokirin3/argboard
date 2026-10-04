@@ -37,6 +37,8 @@ import {
   setFocusViewByTag,
   shrinkFocusHops,
   startDigging,
+  storyWhenFilter,
+  type StoryWhenFilter,
   thoughtOnly,
   toggleStreamBranchCollapsed,
   unplacedOnly,
@@ -65,6 +67,7 @@ function streamEmptyReason(input: {
   findingOnly: boolean;
   thoughtOnly: boolean;
   openOutcomeOnly: boolean;
+  storyWhenFilter: StoryWhenFilter;
 }): string {
   if (input.total === 0) return "まだ手がかりがありません";
   if (input.query) return `「${input.query}」に合う手がかりはありません`;
@@ -74,6 +77,8 @@ function streamEmptyReason(input: {
   if (input.findingOnly) filters.push("発見のみ");
   if (input.thoughtOnly) filters.push("考察のみ");
   if (input.openOutcomeOnly) filters.push("未検証の仮説");
+  if (input.storyWhenFilter === "with") filters.push("時あり");
+  if (input.storyWhenFilter === "without") filters.push("時なし");
   if (filters.length > 0) {
     return `${filters.join("・")}に合う手がかりはありません`;
   }
@@ -302,6 +307,13 @@ function StreamCardRow(props: StreamCardRowProps) {
             ? <span class="stream-tree__nest-mark" aria-hidden="true">↳</span>
             : null}
           <time>{timeFormatter.format(card.foundAt)}</time>
+          {card.storyWhen?.trim()
+            ? (
+              <span class="stream-card__story-when" title="作中時間">
+                {card.storyWhen.trim()}
+              </span>
+            )
+            : null}
           {selected && !replaying
             ? (
               <span class="stream-card__meta-tools">
@@ -894,6 +906,85 @@ export function Stream() {
               </IconTip>
             </div>
           </div>
+          <div
+            class="stream__filter-group stream__filter-group--story-when"
+            role="group"
+            aria-label="作中時間"
+          >
+            <span class="stream__filter-group-label">作中</span>
+            <div class="stream__filter-group-btns">
+              <IconTip
+                align="start"
+                label="作中 · 時間付きのみ（壁時計の発見時刻ではない）"
+              >
+                <button
+                  type="button"
+                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--story-when${
+                    storyWhenFilter.value === "with" ? " is-active" : ""
+                  }`}
+                  data-testid="stream-story-when-only"
+                  aria-pressed={storyWhenFilter.value === "with"}
+                  aria-label="時あり"
+                  onClick={() => {
+                    storyWhenFilter.value = storyWhenFilter.value === "with"
+                      ? "off"
+                      : "with";
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <circle
+                      cx="8"
+                      cy="8"
+                      r="5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                    />
+                    <path
+                      d="M8 4.5V8l2.2 1.4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                  <span class="stream__filter-btn-label">時あり</span>
+                </button>
+              </IconTip>
+              <IconTip
+                align="start"
+                label="作中 · 時間なしのみ（作中時間が未設定）"
+              >
+                <button
+                  type="button"
+                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--no-story-when${
+                    storyWhenFilter.value === "without" ? " is-active" : ""
+                  }`}
+                  data-testid="stream-no-story-when-only"
+                  aria-pressed={storyWhenFilter.value === "without"}
+                  aria-label="時なし"
+                  onClick={() => {
+                    storyWhenFilter.value = storyWhenFilter.value === "without"
+                      ? "off"
+                      : "without";
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <circle
+                      cx="8"
+                      cy="8"
+                      r="5.5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-dasharray="2.2 1.6"
+                    />
+                  </svg>
+                  <span class="stream__filter-btn-label">時なし</span>
+                </button>
+              </IconTip>
+            </div>
+          </div>
         </div>
         <TagFocusControls />
         <div class="stream__list" ref={listRef}>
@@ -908,6 +999,7 @@ export function Stream() {
                   findingOnly: findingOnly.value,
                   thoughtOnly: thoughtOnly.value,
                   openOutcomeOnly: openOutcomeOnly.value,
+                  storyWhenFilter: storyWhenFilter.value,
                 })}
               </p>
             )

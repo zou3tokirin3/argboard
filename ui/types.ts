@@ -36,6 +36,11 @@ export type ProjectEvent =
      * `""` clears outcome. Meaningful only on `role: "thought"` cards.
      */
     outcome?: ThoughtOutcome | "";
+    /**
+     * Present only when in-story time changed (omit keeps previous on replay).
+     * `""` clears. Free text (e.g. `23:17` / `夜` / `Day3`).
+     */
+    storyWhen?: string;
   }
   | {
     type: "card_removed";
@@ -83,6 +88,11 @@ export type Card = {
   /** Board display size (T022). Omit or `"m"` = default; `"l"` = large. */
   size?: "m" | "l";
   foundAt: number;
+  /**
+   * Optional in-story / testimony time (T069). Free text; omit = unset.
+   * Not wall-clock discovery time (`foundAt`).
+   */
+  storyWhen?: string;
   /** Parent card id when captured from a viewed source (T050 / T059). Immutable after capture. */
   foundVia?: string;
 };

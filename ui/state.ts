@@ -96,6 +96,9 @@ export const findingOnly = signal(false);
 export const thoughtOnly = signal(false);
 /** Session-only: show thought cards marked outcome open (unverified hypothesis). */
 export const openOutcomeOnly = signal(false);
+/** Session-only: filter stream by in-story time presence (T069). Not persisted. */
+export type StoryWhenFilter = "off" | "with" | "without";
+export const storyWhenFilter = signal<StoryWhenFilter>("off");
 /** Session-only: collapsed parent card ids in tree view (T051). Not persisted. */
 export const collapsedStreamBranches = signal<ReadonlySet<string>>(new Set());
 /** Session-only: card id whose captures get foundVia (T050). Not persisted. */
@@ -435,14 +438,18 @@ export const filteredCards = computed(() => {
   if (!current) return [];
   const query = search.value.trim().toLocaleLowerCase("ja");
   const boardCardIds = new Set(current.boards[0]?.cardIds ?? []);
+  const whenFilter = storyWhenFilter.value;
   const filtered = current.cards.filter((card) => {
     if (unplacedOnly.value && boardCardIds.has(card.id)) return false;
     if (placedOnly.value && !boardCardIds.has(card.id)) return false;
     if (findingOnly.value && card.role === "thought") return false;
     if (thoughtOnly.value && card.role !== "thought") return false;
     if (openOutcomeOnly.value && card.outcome !== "open") return false;
+    const hasWhen = Boolean(card.storyWhen?.trim());
+    if (whenFilter === "with" && !hasWhen) return false;
+    if (whenFilter === "without" && hasWhen) return false;
     if (!query) return true;
-    return [card.title, card.body, card.url, ...(card.tags ?? [])]
+    return [card.title, card.body, card.url, card.storyWhen, ...(card.tags ?? [])]
       .filter(Boolean)
       .some((value) => value!.toLocaleLowerCase("ja").includes(query));
   });
@@ -554,6 +561,7 @@ async function activateProject(next: Project): Promise<void> {
   findingOnly.value = false;
   thoughtOnly.value = false;
   openOutcomeOnly.value = false;
+  storyWhenFilter.value = "off";
   stopDigging();
   clearAllMediaObjectUrls();
   // Snapshot missing births before open so later edits can rewind text/labels.
@@ -836,7 +844,7 @@ export async function setSideOpen(open: boolean): Promise<void> {
 
 export async function updateCard(
   id: string,
-  patch: Pick<Card, "title" | "body" | "url">,
+  patch: Pick<Card, "title" | "body" | "url"> & { storyWhen?: string },
 ): Promise<void> {
   const current = assertWritable();
   if (!current) return;
@@ -844,20 +852,32 @@ export async function updateCard(
   if (!title) return;
   const body = patch.body?.trim() ? patch.body.trim() : undefined;
   const url = patch.url?.trim() ? patch.url.trim() : undefined;
+  const touchStoryWhen = "storyWhen" in patch;
+  const storyWhen = patch.storyWhen?.trim()
+    ? patch.storyWhen.trim()
+    : undefined;
   const next = {
     ...current,
-    cards: current.cards.map((card) =>
-      card.id === id ? { ...card, title, body, url } : card
-    ),
+    cards: current.cards.map((card) => {
+      if (card.id !== id) return card;
+      const updated: Card = { ...card, title, body, url };
+      if (touchStoryWhen) {
+        if (storyWhen) updated.storyWhen = storyWhen;
+        else delete updated.storyWhen;
+      }
+      return updated;
+    }),
   };
-  await persist(appendEvent(next, {
+  const event: ProjectEvent = {
     type: "card_updated",
     at: Date.now(),
     cardId: id,
     title,
     body,
     url,
-  }));
+  };
+  if (touchStoryWhen) event.storyWhen = storyWhen ?? "";
+  await persist(appendEvent(next, event));
 }
 
 /** Replace a card's free tags (T031). Empty list clears tags. */

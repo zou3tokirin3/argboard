@@ -290,13 +290,14 @@ export function Inspector() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
+  const [storyWhen, setStoryWhen] = useState("");
   const [label, setLabel] = useState("");
   const titleRef = useRef<HTMLInputElement>(null);
   const prevCardIdRef = useRef<string | undefined>();
   const prevLinkIdRef = useRef<string | undefined>();
-  const fieldsRef = useRef({ title: "", body: "", url: "" });
+  const fieldsRef = useRef({ title: "", body: "", url: "", storyWhen: "" });
   const labelRef = useRef("");
-  fieldsRef.current = { title, body, url };
+  fieldsRef.current = { title, body, url, storyWhen };
   labelRef.current = label;
 
   const singleCardEditId = !link && multiIds.length <= 1 ? card?.id : undefined;
@@ -330,8 +331,16 @@ export function Inspector() {
       setTitle(card?.title ?? "");
       setBody(card?.body ?? "");
       setUrl(card?.url ?? "");
+      setStoryWhen(card?.storyWhen ?? "");
     }
-  }, [card?.id, card?.title, card?.body, card?.url, replaying]);
+  }, [
+    card?.id,
+    card?.title,
+    card?.body,
+    card?.url,
+    card?.storyWhen,
+    replaying,
+  ]);
 
   useEffect(() => {
     const id = link?.id;
@@ -602,6 +611,27 @@ export function Inspector() {
           onBlur={flushCardFields}
         />
       </label>
+      <label class="inspector__field">
+        <span>作中時間</span>
+        <input
+          type="text"
+          data-testid="inspector-story-when"
+          value={storyWhen}
+          placeholder="例: 23:17 / 夜 / Day3"
+          disabled={replaying}
+          onInput={(event) => {
+            setStoryWhen(event.currentTarget.value);
+            if (singleCardEditId) debouncedSaveCard(singleCardEditId);
+          }}
+          onBlur={flushCardFields}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") event.currentTarget.blur();
+          }}
+        />
+      </label>
+      <p class="inspector__hint inspector__hint--inline">
+        発見ログ左の時刻は壁時計。作中・証言の「いつ」は上の欄へ
+      </p>
       <label class="inspector__field">
         <span>メモ</span>
         <textarea
