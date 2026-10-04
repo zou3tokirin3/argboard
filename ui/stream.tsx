@@ -122,6 +122,15 @@ function isMetaToolTarget(target: EventTarget | null): boolean {
   );
 }
 
+/** Controls that must not start stream→board card drag. */
+function isStreamCardDragIgnoredTarget(target: EventTarget | null): boolean {
+  return Boolean(
+    (target as HTMLElement | null)?.closest(
+      "button, a, input, textarea, select, [contenteditable='true']",
+    ),
+  );
+}
+
 function scrollStreamRowIntoView(list: HTMLElement, cardId: string): boolean {
   if (list.clientHeight <= 0) return false;
   const row = list.querySelector<HTMLElement>(
@@ -272,6 +281,23 @@ function StreamCardRow(props: StreamCardRowProps) {
         data-testid="stream-card"
         data-card-id={card.id}
         data-role={card.role === "thought" ? "thought" : "finding"}
+        draggable={canDrag}
+        onPointerDown={(event) => {
+          if (!canDrag) return;
+          if (isStreamCardDragIgnoredTarget(event.target)) return;
+          globalThis.getSelection?.()?.removeAllRanges();
+        }}
+        onDragStart={(event) => {
+          if (!canDrag) return;
+          if (isStreamCardDragIgnoredTarget(event.target)) {
+            event.preventDefault();
+            return;
+          }
+          globalThis.getSelection?.()?.removeAllRanges();
+          event.dataTransfer?.setData(CARD_MIME, card.id);
+          event.dataTransfer!.effectAllowed = "copy";
+        }}
+        onDragEnd={() => globalThis.getSelection?.()?.removeAllRanges()}
       >
         <div
           class="stream-card__meta-row"
@@ -443,18 +469,16 @@ function StreamCardRow(props: StreamCardRowProps) {
             </div>
           )
           : (
-            <button
-              type="button"
+            <div
               class="stream-card__main"
-              draggable={canDrag}
-              onDragStart={(event) => {
-                if (!canDrag) return;
-                globalThis.getSelection?.()?.removeAllRanges();
-                event.dataTransfer?.setData(CARD_MIME, card.id);
-                event.dataTransfer!.effectAllowed = "copy";
-              }}
-              onDragEnd={() => globalThis.getSelection?.()?.removeAllRanges()}
+              role="button"
+              tabIndex={0}
               onClick={() => selectCardFromStream(card.id)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                selectCardFromStream(card.id);
+              }}
             >
               <span class="stream-card__body-row">
                 <span class="stream-card__text">
@@ -513,7 +537,7 @@ function StreamCardRow(props: StreamCardRowProps) {
                   )
                   : null}
               </span>
-            </button>
+            </div>
           )}
         {card.url
           ? (

@@ -2812,11 +2812,29 @@ span.card-image-field__preview {
   color: var(--muted);
   font-size: 12px;
 }
+.stream-card.is-draggable {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: element;
+}
+.stream-card.is-draggable:active {
+  cursor: grabbing;
+}
+.stream-card.is-draggable .stream-card__meta-row,
 .stream-card.is-draggable .stream-card__main {
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
+.stream-card.is-draggable .stream-card__meta-row:active,
 .stream-card.is-draggable .stream-card__main:active {
   cursor: grabbing;
+}
+.stream-card.is-draggable button,
+.stream-card.is-draggable a {
+  cursor: pointer;
+  -webkit-user-drag: none;
 }
 .board__canvas:active {
   cursor: grabbing;
