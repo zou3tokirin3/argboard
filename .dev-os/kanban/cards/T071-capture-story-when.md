@@ -1,10 +1,10 @@
 ---
 id: T071
 title: 探索キャプチャ時にも作中時間を任意で入れられるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T071"
 template_ver: generic-0.2
 created: 2026-10-04
 updated: 2026-10-04
@@ -77,5 +77,6 @@ updated: 2026-10-04
 - 2026-10-04 planner: 人間「T071の実装やって」。ready 確定（隣の薄い入力・考察/画像も同導線・行内記法なし）。
   見込み flow=本体行+80〜140 / 操作+1（capture-with-story-when）/ 概念+0（T069 の storyWhen 再利用）/
   gzip +2KB未満 / Won't=No。しきい値内 → ready
+- 2026-10-04 impl: 取得。task/T071 worktree でキャプチャ導線を実装する
 
 ## 差し戻し履歴（追記のみ）
