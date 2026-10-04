@@ -1,7 +1,7 @@
 ---
 id: T073
 title: 人物レーンを単一起点の時間順リストとして見られるようにする
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T073"
@@ -99,5 +99,8 @@ PLAN 改訂13・§12 Won't「タイムラインビュー」（本カードでリ
   Won't=§12 タイムラインビューをリスト合成に限り部分解除 → [packets/T073.md](../packets/T073.md)。
   後続テーブルは T075 起票。人間GO（プラン承認＝パケット GO）→ ready
 - 2026-10-04 impl: 取得。task/T073 worktree で単一起点レーン・リストを実装する
+- 2026-10-04 impl: 実装完了（402c2de）。第三タブ「レーン」session・起点select・
+  1ホップ＋考察経由2ホップの時ありリスト・APP_PREVIEW=T073・§12注記。
+  check/test緑。budget 本体行+238（見積超え）/操作+2/概念+1 → review（超過は追認待ち）
 
 ## 差し戻し履歴（追記のみ）
