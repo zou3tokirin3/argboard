@@ -322,6 +322,31 @@ export const revealCardId = signal<string | null>(null);
 /** Session-only focus view (T018 card / T033 tag). Not persisted. */
 export const focusOrigin = signal<FocusOrigin | null>(null);
 export const focusHops = signal(1);
+/**
+ * Session-only person-lane surface (T073). Not persisted in Project.ui.mode.
+ * open=false clears the third-tab view on reload.
+ */
+export const laneView = signal<{ open: boolean; originId: string | null }>({
+  open: false,
+  originId: null,
+});
+
+export function openLaneView(): void {
+  clearReplay();
+  laneView.value = { open: true, originId: laneView.value.originId };
+}
+
+export function clearLaneView(): void {
+  laneView.value = { open: false, originId: null };
+}
+
+export function setLaneOrigin(cardId: string | null): void {
+  laneView.value = {
+    open: true,
+    originId: cardId,
+  };
+}
+
 /** Session-only growth replay index (T025). Not persisted. null = live. */
 export const replayIndex = signal<number | null>(null);
 export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(
@@ -570,6 +595,7 @@ async function activateProject(next: Project): Promise<void> {
   revealCardId.value = null;
   clearFocusView();
   clearReplay();
+  clearLaneView();
   search.value = "";
   unplacedOnly.value = false;
   placedOnly.value = false;
@@ -864,7 +890,9 @@ export async function pasteExploreImage(
 
 export async function setAppMode(mode: AppMode): Promise<void> {
   const current = project.value;
-  if (!current || (current.ui?.mode ?? "explore") === mode) return;
+  if (!current) return;
+  clearLaneView();
+  if ((current.ui?.mode ?? "explore") === mode) return;
   if (mode === "explore") clearReplay();
   else {
     closeExploreCompose();

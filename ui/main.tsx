@@ -6,6 +6,7 @@ import { readCaptureDraft } from "./capture-draft.ts";
 import { imageBlobFromClipboard } from "./clipboard-image.ts";
 import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
+import { LaneWorkspace } from "./lane-view.tsx";
 import {
   activeProjectId,
   addCard,
@@ -24,6 +25,8 @@ import {
   importProjectFromText,
   initialize,
   isReplaying,
+  laneView,
+  openLaneView,
   pasteExploreImage,
   patchExploreImageDraft,
   pickAndImportProject,
@@ -320,13 +323,24 @@ function TopBar() {
               return;
             }
             event.preventDefault();
-            const next = mode === "explore" ? "contemplate" : "explore";
-            setAppMode(next);
+            const order = ["explore", "contemplate", "lane"] as const;
+            const currentKey = laneView.value.open
+              ? "lane"
+              : mode === "contemplate"
+              ? "contemplate"
+              : "explore";
+            const index = order.indexOf(currentKey);
+            const delta = event.key === "ArrowRight" ? 1 : -1;
+            const next = order[(index + delta + order.length) % order.length]!;
+            if (next === "lane") openLaneView();
+            else void setAppMode(next);
             const root = event.currentTarget;
             requestAnimationFrame(() => {
               const selector = next === "explore"
                 ? '[data-testid="mode-explore"]'
-                : '[data-testid="mode-contemplate"]';
+                : next === "contemplate"
+                ? '[data-testid="mode-contemplate"]'
+                : '[data-testid="mode-lane"]';
               root.querySelector<HTMLElement>(selector)?.focus();
             });
           }}
@@ -335,10 +349,12 @@ function TopBar() {
             type="button"
             role="tab"
             data-testid="mode-explore"
-            aria-selected={mode === "explore"}
-            tabIndex={mode === "explore" ? 0 : -1}
-            class={mode === "explore" ? "is-active" : undefined}
-            onClick={() => setAppMode("explore")}
+            aria-selected={!laneView.value.open && mode === "explore"}
+            tabIndex={!laneView.value.open && mode === "explore" ? 0 : -1}
+            class={!laneView.value.open && mode === "explore"
+              ? "is-active"
+              : undefined}
+            onClick={() => void setAppMode("explore")}
           >
             探索
           </button>
@@ -346,12 +362,25 @@ function TopBar() {
             type="button"
             role="tab"
             data-testid="mode-contemplate"
-            aria-selected={mode === "contemplate"}
-            tabIndex={mode === "contemplate" ? 0 : -1}
-            class={mode === "contemplate" ? "is-active" : undefined}
-            onClick={() => setAppMode("contemplate")}
+            aria-selected={!laneView.value.open && mode === "contemplate"}
+            tabIndex={!laneView.value.open && mode === "contemplate" ? 0 : -1}
+            class={!laneView.value.open && mode === "contemplate"
+              ? "is-active"
+              : undefined}
+            onClick={() => void setAppMode("contemplate")}
           >
             考察
+          </button>
+          <button
+            type="button"
+            role="tab"
+            data-testid="mode-lane"
+            aria-selected={laneView.value.open}
+            tabIndex={laneView.value.open ? 0 : -1}
+            class={laneView.value.open ? "is-active" : undefined}
+            onClick={() => openLaneView()}
+          >
+            レーン
           </button>
         </div>
         <SaveStatusLabel />
@@ -502,15 +531,21 @@ function ContemplateWorkspace() {
 
 function AppShell() {
   const mode = appMode.value;
+  const lane = laneView.value.open;
+  const shellMode = lane ? "lane" : mode;
   return (
-    <div class={`app-shell mode-${mode}`}>
+    <div class={`app-shell mode-${shellMode}`}>
       <a class="skip-link" href="#main-content" data-testid="skip-link">
         本文へ
       </a>
       <InstallTip />
       <TopBar />
       <main id="main-content" tabIndex={-1}>
-        {mode === "explore" ? <ExploreWorkspace /> : <ContemplateWorkspace />}
+        {lane
+          ? <LaneWorkspace />
+          : mode === "explore"
+          ? <ExploreWorkspace />
+          : <ContemplateWorkspace />}
       </main>
     </div>
   );
