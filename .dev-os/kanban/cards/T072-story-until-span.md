@@ -81,5 +81,6 @@ T070 採択どおり、作中時間を **起点（`storyWhen`）＋ 任意の帯
   budget --since main: 本体+182 / 操作+3 / 概念+2 / gzip+0.7KB / Won't=No。
   操作・概念はしきい値ちょうど。check/test/smoke 緑 → review
 - 2026-10-04 human: 良さそう → done。APP_RELEASE 0.65、APP_PREVIEW 空。task/T072 worktree/branch 削除
+- 2026-10-04 planner: 閲覧面の後続として [T073](T073-person-lane-timeline-view.md) を backlog 起票
 
 ## 差し戻し履歴（追記のみ）
