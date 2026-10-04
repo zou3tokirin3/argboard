@@ -1,10 +1,10 @@
 ---
 id: T074
 title: 発見ログから考察ボードへのドラッグ配置を安定させる
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T074"
 template_ver: generic-0.2
 created: 2026-10-04
 updated: 2026-10-04
@@ -54,5 +54,6 @@ updated: 2026-10-04
 
 - 2026-10-04 human: 考察ボードへカードを入れるときタイトル掴み→文字選択、本体掴み→入らない。正しい挙動か？
 - 2026-10-04 planner: バグ寄りと判定。`button`+部分ドラッグ＋文字 DnD 勝ちが原因。T074 起票→ready
+- 2026-10-04 impl: 取得。task/T074 worktree でカード全体 DnD に直す
 
 ## 差し戻し履歴（追記のみ）
