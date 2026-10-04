@@ -97,29 +97,43 @@ function CaptureDiggingBar() {
   );
 }
 
-function withStoryWhen(
+function withStoryFields(
   draft: ReturnType<typeof parseCaptureLine> | null,
   storyWhen: string,
+  storyUntil: string,
 ):
   | ReturnType<typeof parseCaptureLine>
-  | { title: string; storyWhen: string }
+  | { title: string; storyWhen?: string; storyUntil?: string }
   | null {
   const when = storyWhen.trim();
-  if (!draft) return when ? { title: "", storyWhen: when } : null;
-  return when ? { ...draft, storyWhen: when } : draft;
+  const until = storyUntil.trim();
+  if (!draft) {
+    if (!when && !until) return null;
+    return {
+      title: "",
+      ...(when ? { storyWhen: when } : {}),
+      ...(until ? { storyUntil: until } : {}),
+    };
+  }
+  return {
+    ...draft,
+    ...(when ? { storyWhen: when } : {}),
+    ...(until ? { storyUntil: until } : {}),
+  };
 }
 
 function CaptureImageSlot(props: {
   disabled: boolean;
   getDraftLine: () => string;
   getStoryWhen: () => string;
+  getStoryUntil: () => string;
 }) {
   const [busy, setBusy] = useState(false);
 
   function draftFromLine() {
     const line = props.getDraftLine().trim();
     const parsed = line ? parseCaptureLine(line) : readCaptureDraft();
-    return withStoryWhen(parsed, props.getStoryWhen());
+    return withStoryFields(parsed, props.getStoryWhen(), props.getStoryUntil());
   }
 
   async function applyBlob(blob: Blob | undefined) {
@@ -286,11 +300,22 @@ function ExploreImageStaging() {
           class="capture-compose__story-when"
           data-testid="capture-image-staging-story-when"
           value={draft.storyWhen}
-          placeholder="作中時間"
+          placeholder="起点"
           disabled={replaying}
-          aria-label="作中時間"
+          aria-label="作中時間の起点"
           onInput={(event) =>
             patchExploreImageDraft({ storyWhen: event.currentTarget.value })}
+        />
+        <input
+          type="text"
+          class="capture-compose__story-until"
+          data-testid="capture-image-staging-story-until"
+          value={draft.storyUntil}
+          placeholder="帯の端"
+          disabled={replaying}
+          aria-label="作中時間の帯の端"
+          onInput={(event) =>
+            patchExploreImageDraft({ storyUntil: event.currentTarget.value })}
         />
         <input
           type="url"
@@ -554,6 +579,7 @@ export function Capture(props: { explore?: boolean }) {
     !inCompose;
   const input = useRef<HTMLInputElement>(null);
   const storyWhenInput = useRef<HTMLInputElement>(null);
+  const storyUntilInput = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState(readHistory);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const draftRef = useRef("");
@@ -564,6 +590,10 @@ export function Capture(props: { explore?: boolean }) {
 
   function getStoryWhen(): string {
     return storyWhenInput.current?.value ?? "";
+  }
+
+  function getStoryUntil(): string {
+    return storyUntilInput.current?.value ?? "";
   }
 
   function showLine(line: string): void {
@@ -579,8 +609,10 @@ export function Capture(props: { explore?: boolean }) {
     const parsed = parseCaptureLine(line);
     if (!parsed) return;
     const storyWhen = getStoryWhen().trim();
+    const storyUntil = getStoryUntil().trim();
     if (input.current) input.current.value = "";
     if (storyWhenInput.current) storyWhenInput.current.value = "";
+    if (storyUntilInput.current) storyUntilInput.current.value = "";
     draftRef.current = "";
     setHistoryIndex(-1);
     const next = pushHistory(history, line);
@@ -590,6 +622,7 @@ export function Capture(props: { explore?: boolean }) {
       body: parsed.body,
       url: parsed.url,
       ...(storyWhen ? { storyWhen } : {}),
+      ...(storyUntil ? { storyUntil } : {}),
       ...(inCompose && referenceCaptureMode === "thought"
         ? { role: "thought" as const }
         : {}),
@@ -647,9 +680,10 @@ export function Capture(props: { explore?: boolean }) {
     event.preventDefault();
     try {
       const line = getDraftLine().trim();
-      const draft = withStoryWhen(
+      const draft = withStoryFields(
         line ? parseCaptureLine(line) : readCaptureDraft(),
         getStoryWhen(),
+        getStoryUntil(),
       );
       await pasteExploreImage(blob, draft ?? undefined);
     } catch (error) {
@@ -697,9 +731,19 @@ export function Capture(props: { explore?: boolean }) {
               type="text"
               class="capture__story-when"
               data-testid="capture-story-when"
-              aria-label="作中時間"
+              aria-label="作中時間の起点"
               autocomplete="off"
-              placeholder="作中時間"
+              placeholder="起点"
+              disabled={replaying}
+            />
+            <input
+              ref={storyUntilInput}
+              type="text"
+              class="capture__story-until"
+              data-testid="capture-story-until"
+              aria-label="作中時間の帯の端"
+              autocomplete="off"
+              placeholder="帯の端"
               disabled={replaying}
             />
             {explore && !staging
@@ -708,6 +752,7 @@ export function Capture(props: { explore?: boolean }) {
                   disabled={replaying}
                   getDraftLine={getDraftLine}
                   getStoryWhen={getStoryWhen}
+                  getStoryUntil={getStoryUntil}
                 />
               )
               : null}

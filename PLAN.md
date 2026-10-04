@@ -244,7 +244,8 @@ type Card = {
   image?: string; // ローカル添付の media id（IndexedDB Blob）。1カード最大1枚
   tags?: string[];
   foundAt: number; // 自動付与・以後不変。thoughtでは作成時刻として同じ並び順に使う
-  storyWhen?: string; // 任意の作中・証言時間（自由文）。壁時計の foundAt ではない（T069）
+  storyWhen?: string; // 任意の作中・証言時間の起点（自由文）。壁時計の foundAt ではない（T069）
+  storyUntil?: string; // 任意の帯の後ろ（終端時刻または長さ・自由文）。空＝点（T072）
 };
 
 type Link = {

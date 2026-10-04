@@ -41,6 +41,11 @@ export type ProjectEvent =
      * `""` clears. Free text (e.g. `23:17` / `夜` / `Day3`).
      */
     storyWhen?: string;
+    /**
+     * Present only when in-story span end changed (omit keeps previous on replay).
+     * `""` clears. Free text end time or duration (e.g. `13:00` / `20min`).
+     */
+    storyUntil?: string;
   }
   | {
     type: "card_removed";
@@ -89,10 +94,15 @@ export type Card = {
   size?: "m" | "l";
   foundAt: number;
   /**
-   * Optional in-story / testimony time (T069). Free text; omit = unset.
+   * Optional in-story / testimony time point or span start (T069). Free text; omit = unset.
    * Not wall-clock discovery time (`foundAt`).
    */
   storyWhen?: string;
+  /**
+   * Optional in-story span end (T072). Free text end time or duration; omit = point only.
+   * Empty with `storyWhen` = point. Set = span.
+   */
+  storyUntil?: string;
   /** Parent card id when captured from a viewed source (T050 / T059). Immutable after capture. */
   foundVia?: string;
 };

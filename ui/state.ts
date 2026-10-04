@@ -38,6 +38,7 @@ import type { ProjectEvent } from "./types.ts";
 import type { CardSize } from "./node-size.ts";
 import { normalizeCardSize } from "./node-size.ts";
 import type { ParsedCapture } from "./capture-notation.ts";
+import { hasStoryWhen } from "./story-when.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
@@ -251,6 +252,7 @@ export type ExploreImageDraft = {
   body: string;
   url: string;
   storyWhen: string;
+  storyUntil: string;
 };
 
 export const exploreImageDraft = signal<ExploreImageDraft | null>(null);
@@ -263,7 +265,10 @@ export function clearExploreImageDraft(): void {
 
 export function patchExploreImageDraft(
   patch: Partial<
-    Pick<ExploreImageDraft, "title" | "body" | "url" | "storyWhen">
+    Pick<
+      ExploreImageDraft,
+      "title" | "body" | "url" | "storyWhen" | "storyUntil"
+    >
   >,
 ): void {
   const draft = exploreImageDraft.value;
@@ -448,7 +453,7 @@ export const filteredCards = computed(() => {
     if (findingOnly.value && card.role === "thought") return false;
     if (thoughtOnly.value && card.role !== "thought") return false;
     if (openOutcomeOnly.value && card.outcome !== "open") return false;
-    const hasWhen = Boolean(card.storyWhen?.trim());
+    const hasWhen = hasStoryWhen(card);
     if (whenFilter === "with" && !hasWhen) return false;
     if (whenFilter === "without" && hasWhen) return false;
     if (!query) return true;
@@ -457,6 +462,7 @@ export const filteredCards = computed(() => {
       card.body,
       card.url,
       card.storyWhen,
+      card.storyUntil,
       ...(card.tags ?? []),
     ]
       .filter(Boolean)
@@ -672,6 +678,7 @@ export async function addCard(
     body?: string;
     url?: string;
     storyWhen?: string;
+    storyUntil?: string;
   },
 ): Promise<string | null> {
   const cleanTitle = title.trim();
@@ -680,6 +687,9 @@ export async function addCard(
   const url = options?.url?.trim() ? options.url.trim() : undefined;
   const storyWhen = options?.storyWhen?.trim()
     ? options.storyWhen.trim()
+    : undefined;
+  const storyUntil = options?.storyUntil?.trim()
+    ? options.storyUntil.trim()
     : undefined;
 
   // Read + write memory must stay synchronous so overlapping captures
@@ -696,6 +706,7 @@ export async function addCard(
     ...(body ? { body } : {}),
     ...(url ? { url } : {}),
     ...(storyWhen ? { storyWhen } : {}),
+    ...(storyUntil ? { storyUntil } : {}),
     ...(foundVia ? { foundVia } : {}),
   };
   let next = appendEvent(
@@ -752,6 +763,9 @@ async function createCardWithCompressedImage(
   const storyWhen = draft?.storyWhen?.trim()
     ? draft.storyWhen.trim()
     : undefined;
+  const storyUntil = draft?.storyUntil?.trim()
+    ? draft.storyUntil.trim()
+    : undefined;
   const foundVia = resolveDiggingFoundVia();
   const card: Card = {
     id: cardId,
@@ -761,6 +775,7 @@ async function createCardWithCompressedImage(
     ...(body ? { body } : {}),
     ...(url ? { url } : {}),
     ...(storyWhen ? { storyWhen } : {}),
+    ...(storyUntil ? { storyUntil } : {}),
     ...(foundVia ? { foundVia } : {}),
   };
   let next = appendEvent(
@@ -817,6 +832,7 @@ export async function stageExploreImage(
     body: parsed?.body ?? "",
     url: parsed?.url ?? "",
     storyWhen: parsed?.storyWhen ?? "",
+    storyUntil: parsed?.storyUntil ?? "",
   };
 }
 
@@ -829,6 +845,7 @@ export async function commitExploreImageDraft(): Promise<string | null> {
     ...(draft.body.trim() ? { body: draft.body.trim() } : {}),
     ...(draft.url.trim() ? { url: draft.url.trim() } : {}),
     ...(draft.storyWhen.trim() ? { storyWhen: draft.storyWhen.trim() } : {}),
+    ...(draft.storyUntil.trim() ? { storyUntil: draft.storyUntil.trim() } : {}),
   };
   const blob = draft.blob;
   clearExploreImageDraft();
@@ -864,7 +881,10 @@ export async function setSideOpen(open: boolean): Promise<void> {
 
 export async function updateCard(
   id: string,
-  patch: Pick<Card, "title" | "body" | "url"> & { storyWhen?: string },
+  patch: Pick<Card, "title" | "body" | "url"> & {
+    storyWhen?: string;
+    storyUntil?: string;
+  },
 ): Promise<void> {
   const current = assertWritable();
   if (!current) return;
@@ -873,8 +893,12 @@ export async function updateCard(
   const body = patch.body?.trim() ? patch.body.trim() : undefined;
   const url = patch.url?.trim() ? patch.url.trim() : undefined;
   const touchStoryWhen = "storyWhen" in patch;
+  const touchStoryUntil = "storyUntil" in patch;
   const storyWhen = patch.storyWhen?.trim()
     ? patch.storyWhen.trim()
+    : undefined;
+  const storyUntil = patch.storyUntil?.trim()
+    ? patch.storyUntil.trim()
     : undefined;
   const next = {
     ...current,
@@ -884,6 +908,10 @@ export async function updateCard(
       if (touchStoryWhen) {
         if (storyWhen) updated.storyWhen = storyWhen;
         else delete updated.storyWhen;
+      }
+      if (touchStoryUntil) {
+        if (storyUntil) updated.storyUntil = storyUntil;
+        else delete updated.storyUntil;
       }
       return updated;
     }),
@@ -897,6 +925,7 @@ export async function updateCard(
     url,
   };
   if (touchStoryWhen) event.storyWhen = storyWhen ?? "";
+  if (touchStoryUntil) event.storyUntil = storyUntil ?? "";
   await persist(appendEvent(next, event));
 }
 
