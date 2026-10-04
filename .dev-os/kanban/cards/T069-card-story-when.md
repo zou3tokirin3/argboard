@@ -93,5 +93,6 @@ O5「人物特定→時系列」の時間半分（PLAN 改訂13・時間構造�
 - 2026-10-04 impl: 実装完了（c750c60）。`Card.storyWhen`・インスペクタ編集・作中フィルタ（時あり/時なし）・
   APP_PREVIEW=T069。budget --since main: 本体+176 / 操作+3 / 概念+3 / gzip+0.8KB / Won't=No。
   概念+3は ready 時の人間GOどおり。check/test/smoke 緑 → review
+- 2026-10-04 human: 探索キャプチャ時にも時刻を入れたい（入れたときに入れたよい）→ 後続 [T071](T071-capture-story-when.md)
 
 ## 差し戻し履歴（追記のみ）
