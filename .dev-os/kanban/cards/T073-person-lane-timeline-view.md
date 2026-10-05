@@ -1,10 +1,10 @@
 ---
 id: T073
 title: フォーカス隣から作中時間順に並べて見られるようにする
-status: doing
+status: review
 owner: impl
 gate: human
-branch: "task/T073"
+branch: "task/T073-rework"
 template_ver: generic-0.2
 created: 2026-10-04
 updated: 2026-10-04
@@ -94,6 +94,9 @@ review フィードバック（第三タブ＋selectは重い・ソート感不�
 - 2026-10-04 human: ソート感不足・起点select面倒。フォーカス隣「作中で並べる」＋nホップ時系列で試す。
   追記推理は薄い（既存操作）。日付整合は自動矯正せず印で見せる
 - 2026-10-04 planner/impl: rework 確定（フォーカス隣・nホップ・ソート強化）。doing 再取得
+- 2026-10-05 impl: rework 実装完了（85e9ac6）。第三タブ／select 撤去、フォーカス隣「作中で並べる」、
+  nホップ時ありリスト、夜跨ぎソート＋「順が怪しい」印、デモ storyWhen、行クリックでインスペクタ。
+  check/test 緑。budget Δ本体+232 / 操作+3 / 概念+0 → review
 
 ## 差し戻し履歴（追記のみ）
 
