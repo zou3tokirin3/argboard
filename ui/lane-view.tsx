@@ -3,7 +3,8 @@ import {
   clearLaneView,
   expandStoryHops,
   laneView,
-  selectSingleCard,
+  selectCardFromStoryChrono,
+  selectedCardId,
   shrinkStoryHops,
   viewProject,
 } from "./state.ts";
@@ -16,12 +17,13 @@ import {
 export function LaneWorkspace() {
   const current = viewProject.value;
   const { open, originId, hops } = laneView.value;
+  const selectedId = selectedCardId.value;
   if (!current || !open || !originId) return null;
 
   const origin = current.cards.find((card) => card.id === originId);
   if (!origin) {
     return (
-      <div class="lane-panel">
+      <aside class="lane-panel" aria-label="作中で並べる">
         <p class="lane-empty">起点カードが見つかりません</p>
         <button
           type="button"
@@ -30,7 +32,7 @@ export function LaneWorkspace() {
         >
           閉じる
         </button>
-      </div>
+      </aside>
     );
   }
 
@@ -40,7 +42,7 @@ export function LaneWorkspace() {
   const suspicious = storyOrderSuspicious(members);
 
   return (
-    <div class="lane-panel">
+    <aside class="lane-panel" aria-label="作中で並べる">
       <header class="lane-panel__header">
         <div class="lane-panel__title-row">
           <h2>作中で並べる</h2>
@@ -77,7 +79,7 @@ export function LaneWorkspace() {
           </div>
         </div>
         <p class="lane-empty">
-          「{origin.title}」から糸で届く作中時間つきカード。配置は覚えません。
+          「{origin.title}」から糸で届く作中時間つき。配置は覚えません。
         </p>
       </header>
       {members.length === 0
@@ -88,10 +90,13 @@ export function LaneWorkspace() {
               <li key={card.id}>
                 <button
                   type="button"
-                  class="lane-list__row"
+                  class={`lane-list__row${
+                    selectedId === card.id ? " is-selected" : ""
+                  }`}
                   data-testid="story-chrono-row"
                   data-card-id={card.id}
-                  onClick={() => selectSingleCard(card.id)}
+                  aria-current={selectedId === card.id ? "true" : undefined}
+                  onClick={() => selectCardFromStoryChrono(card.id)}
                 >
                   <span class="lane-when">
                     {formatStoryWhenLabel(card) || "—"}
@@ -105,6 +110,6 @@ export function LaneWorkspace() {
             ))}
           </ul>
         )}
-    </div>
+    </aside>
   );
 }

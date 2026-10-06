@@ -364,6 +364,17 @@ export function shrinkStoryHops(): void {
   laneView.value = { ...view, hops: view.hops - 1 };
 }
 
+/** Select from story-chrono; pan the board if the card is placed. */
+export function selectCardFromStoryChrono(cardId: string): void {
+  selectSingleCard(cardId);
+  const board = project.value?.boards[0];
+  if (board?.cardIds.includes(cardId) && board.positions[cardId]) {
+    revealCardId.value = cardId;
+  } else {
+    revealCardId.value = null;
+  }
+}
+
 /** Session-only growth replay index (T025). Not persisted. null = live. */
 export const replayIndex = signal<number | null>(null);
 export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(

@@ -494,8 +494,13 @@ function ContemplateWorkspace() {
       >
         <span aria-hidden="true">{side ? "<" : ">"}</span>
       </button>
-      <div class="contemplate-main">
-        {laneView.value.open ? <LaneWorkspace /> : <BoardView />}
+      <div
+        class={`contemplate-main${
+          laneView.value.open ? " is-chrono-open" : ""
+        }`}
+      >
+        {laneView.value.open ? <LaneWorkspace /> : null}
+        <BoardView />
         <Inspector />
       </div>
     </div>
