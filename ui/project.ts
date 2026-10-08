@@ -422,7 +422,7 @@ export function createEmptyProject(
       cardIds: [],
       positions: {},
     }],
-    ui: { mode: "explore", sideOpen: false },
+    ui: { panelPhase: "wide" },
   };
 }
 
@@ -916,6 +916,6 @@ export function createDemoProject(now = Date.now()): Project {
         "late-train": { x: 280, y: 200 },
       },
     }],
-    ui: { mode: "explore", sideOpen: false },
+    ui: { panelPhase: "rail" },
   };
 }

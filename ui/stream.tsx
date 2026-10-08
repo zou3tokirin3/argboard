@@ -10,6 +10,7 @@ import { debounce } from "./debounce.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
 import { DigClearViaButton, DigStartButton } from "./digging-controls.tsx";
+import { normalizePanelPhase } from "./panel-phase.ts";
 import { buildFoundViaForest, flattenFoundViaForest } from "./project.ts";
 import {
   clearCardFoundVia,
@@ -712,8 +713,9 @@ export function Stream() {
   const current = viewProject.value;
   const replaying = isReplaying.value;
   const boardCardIds = new Set(current?.boards[0]?.cardIds ?? []);
-  const isContemplate = (current?.ui?.mode ?? "explore") === "contemplate";
-  const canDrag = isContemplate && !replaying;
+  const phase = normalizePanelPhase(current?.ui);
+  const isContemplate = phase !== "wide";
+  const canDrag = !replaying && phase !== "closed";
   const cards = current?.cards ?? [];
   const cardById = new Map(cards.map((item) => [item.id, item]));
   const filtered = filteredCards.value;

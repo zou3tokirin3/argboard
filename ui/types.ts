@@ -1,10 +1,13 @@
+import type { PanelPhase } from "./panel-phase.ts";
 import type { ThoughtOutcome } from "./thought-outcome.ts";
 
+/** @deprecated Prefer PanelPhase (T078). Kept for smoke shims / old JSON. */
 export type AppMode = "explore" | "contemplate";
 
+export type { PanelPhase };
+
 export type ProjectUi = {
-  mode: AppMode;
-  sideOpen?: boolean;
+  panelPhase: PanelPhase;
 };
 
 export type ProjectEvent =

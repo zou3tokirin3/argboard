@@ -403,8 +403,8 @@ function CaptureIntentToggle(props: {
   );
 }
 
-function ExploreImageReference(props: { explore?: boolean }) {
-  const surface: PreviewSurface = props.explore ? "explore" : "side";
+function ExploreImageReference(props: { wide?: boolean }) {
+  const surface: PreviewSurface = props.wide ? "wide" : "rail";
   const card = exploreComposeCard.value;
   const replaying = isReplaying.value;
   const captureMode = imageReferenceCaptureMode.value;
@@ -560,10 +560,10 @@ function ExploreImageReference(props: { explore?: boolean }) {
   );
 }
 
-export function Capture(props: { explore?: boolean }) {
-  const explore = props.explore ?? false;
+export function Capture(props: { wide?: boolean }) {
+  const wide = props.wide ?? false;
   const replaying = isReplaying.value;
-  const staging = explore && exploreImageDraft.value;
+  const staging = wide && exploreImageDraft.value;
   const composeCard = exploreComposeCard.value;
   const inCompose = composeCard && isLocalMediaRef(composeCard.image);
   const referenceCaptureMode = inCompose
@@ -667,14 +667,14 @@ export function Capture(props: { explore?: boolean }) {
   }
 
   function onImageDragOver(event: DragEvent) {
-    if (!explore || replaying) return;
+    if (!wide || replaying) return;
     if (!event.dataTransfer?.types.includes("Files")) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
   }
 
   async function onImageDrop(event: DragEvent) {
-    if (!explore || replaying) return;
+    if (!wide || replaying) return;
     const blob = imageBlobFromDataTransfer(event);
     if (!blob) return;
     event.preventDefault();
@@ -695,16 +695,16 @@ export function Capture(props: { explore?: boolean }) {
 
   return (
     <div
-      class={`capture-block${explore ? " capture-block--explore" : ""}${
+      class={`capture-block${wide ? " capture-block--wide" : ""}${
         staging ? " capture-block--staging" : ""
       }${inCompose ? " capture-block--compose" : ""}${
         digging ? " capture-block--digging" : ""
       }`}
-      onDragOver={explore ? onImageDragOver : undefined}
-      onDrop={explore ? onImageDrop : undefined}
+      onDragOver={wide ? onImageDragOver : undefined}
+      onDrop={wide ? onImageDrop : undefined}
     >
       {staging ? <ExploreImageStaging /> : null}
-      {inCompose ? <ExploreImageReference explore={explore} /> : null}
+      {inCompose ? <ExploreImageReference wide={wide} /> : null}
       {!staging && digging ? <CaptureDiggingBar /> : null}
       {!staging
         ? (
@@ -746,7 +746,7 @@ export function Capture(props: { explore?: boolean }) {
               placeholder="帯の端"
               disabled={replaying}
             />
-            {explore && !staging
+            {wide && !staging
               ? (
                 <CaptureImageSlot
                   disabled={replaying}
@@ -789,7 +789,7 @@ export function Capture(props: { explore?: boolean }) {
             <>
               <code>題 // ひとこと</code>{" "}
               · URLはそのまま貼ると出典に · 作中時間は任意 ·
-              {explore
+              {wide
                 ? (
                   <>
                     {" "}

@@ -317,20 +317,20 @@ try {
     await page.evaluate(async () => {
       const api = (globalThis as typeof globalThis & {
         __argboardTest?: {
-          setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
+          setPanelPhase: (phase: "wide" | "rail" | "closed") => Promise<void>;
         };
       }).__argboardTest;
       if (!api) throw new Error("Test hooks were not installed");
-      await api.setAppMode("contemplate");
+      await api.setPanelPhase("rail");
     });
 
     await page.waitForFunction(
       () =>
         (globalThis as typeof globalThis & {
           __argboardTest?: {
-            getState: () => { ui?: { mode?: string } };
+            getState: () => { ui?: { panelPhase?: string } };
           };
-        }).__argboardTest?.getState().ui?.mode === "contemplate",
+        }).__argboardTest?.getState().ui?.panelPhase === "rail",
     );
 
     await page.evaluate(
@@ -463,12 +463,12 @@ try {
     await page.waitForSelector('[data-testid="link-line"]');
     await page.waitForSelector('[data-testid="board-node"]');
 
-    // 探索モード: 画像ペースト → ステージング → 確定でカード化
+    // 広い発見ログ: 画像ペースト → ステージング → 確定でカード化
     const imgStamp = `img-${Date.now()}`;
     await page.evaluate(async (title: string) => {
       const api = (globalThis as typeof globalThis & {
         __argboardTest?: {
-          setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
+          setPanelPhase: (phase: "wide" | "rail" | "closed") => Promise<void>;
           pasteExploreImage: (blob: Blob) => Promise<string | null>;
           commitExploreImageDraft: () => Promise<string | null>;
           patchExploreImageDraft: (
@@ -480,7 +480,7 @@ try {
         };
       }).__argboardTest;
       if (!api) throw new Error("Test hooks were not installed");
-      await api.setAppMode("explore");
+      await api.setPanelPhase("wide");
       const before = api.getState().cards.length;
       const canvas = document.createElement("canvas");
       canvas.width = 2;
@@ -512,18 +512,18 @@ try {
     }, { args: [imgStamp] });
     await page.waitForSelector('[data-testid="capture-input"]');
 
-    // 探索モード: 選択中カードにインライン title input が出る（保存は人間確認）
+    // 広い発見ログ: 選択中カードにインライン title input が出る（保存は人間確認）
     const titleStamp = `inline-edit-${Date.now()}`;
     await page.evaluate(async (from: string) => {
       const api = (globalThis as typeof globalThis & {
         __argboardTest?: {
-          setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
+          setPanelPhase: (phase: "wide" | "rail" | "closed") => Promise<void>;
           addCard: (title: string) => Promise<string | null>;
           selectSingleCard: (cardId: string) => void;
         };
       }).__argboardTest;
       if (!api) throw new Error("Test hooks were not installed");
-      await api.setAppMode("explore");
+      await api.setPanelPhase("wide");
       const cardId = await api.addCard(from);
       if (!cardId) throw new Error("addCard failed");
       api.selectSingleCard(cardId);
