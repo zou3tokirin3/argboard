@@ -1,13 +1,13 @@
 ---
 id: T078
 title: 考察を唯一の作業面にし、発見ログを広い／レール／閉じるの3段にする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T078"
 template_ver: generic-0.2
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 ---
 
 ## 目的
@@ -52,17 +52,17 @@ updated: 2026-10-08
 - [x] PLAN §7 が考察主面＋panelPhase に同期されている
 - [x] 見込み flow: 本体 +150〜250 / 操作 −1〜+1 / 概念 +1 / gzip 中 / Won't=No。超過ならパケットGO
 - [x] check / test / smoke が緑
-- [ ] 人間が「モード切替なしで材料を足してボードに置ける」と確認する
+- [x] 人間が「モード切替なしで材料を足してボードに置ける」と確認する
 
 ## 確認観点（gate: human のとき）
 
-表示: タブ・左上が **`ARGBoard · 0.68+T078`**（review 中）であること。
+表示: タブ・左上が **`ARGBoard · 0.69`**（done 後）であること。
 
-- [ ] モードタブがない。広いパネルから材料を足し、そのままボードへ置ける
-- [ ] パネルをレール／閉じにしても、トグルでキャプチャと発見ログに戻れる
-- [ ] ボードからカード選択で広い→レールになり、ボードが読める
-- [ ] 作中並びはフォーカス隣から開く
-- [ ] 再読込後も panelPhase が残る。旧 explore プロジェクトは wide で開く
+- [x] モードタブがない。広いパネルから材料を足し、そのままボードへ置ける
+- [x] パネルをレール／閉じにしても、トグルでキャプチャと発見ログに戻れる
+- [x] ボードからカード選択で広い→レールになり、ボードが読める
+- [x] 作中並びはフォーカス隣から開く
+- [x] 再読込後も panelPhase が残る。旧 explore プロジェクトは wide で開く
 
 ## このカードでやらない
 
@@ -80,5 +80,7 @@ updated: 2026-10-08
   PLAN §7 同期・APP_PREVIEW=T078。実測 Δ本体行 +98 前後（15 files +328/−230）/
   操作 タブ−2＋phase+1 程度 / 概念 +1（panelPhase）/ gzip 中 / Won't=No。
   check/test/smoke 緑 → review
+- 2026-10-09 human: 方針OK・ひとまずこれでいく → done。APP_RELEASE 0.69、APP_PREVIEW 空。
+  task/T078 worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
