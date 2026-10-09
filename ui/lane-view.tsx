@@ -5,6 +5,7 @@ import {
   laneView,
   selectCardFromStoryChrono,
   selectedCardId,
+  setStoryChronoOrder,
   shrinkStoryHops,
   viewProject,
 } from "./state.ts";
@@ -16,7 +17,7 @@ import {
 
 export function LaneWorkspace() {
   const current = viewProject.value;
-  const { open, originId, hops } = laneView.value;
+  const { open, originId, hops, order } = laneView.value;
   const selectedId = selectedCardId.value;
   if (!current || !open || !originId) return null;
 
@@ -36,9 +37,10 @@ export function LaneWorkspace() {
     );
   }
 
-  const members = sortLaneCards(
+  const ascending = sortLaneCards(
     laneMemberCards(current.links, current.cards, origin.id, hops),
   );
+  const members = order === "desc" ? ascending.toReversed() : ascending;
   const suspicious = storyOrderSuspicious(members);
 
   return (
@@ -77,6 +79,30 @@ export function LaneWorkspace() {
               ×
             </button>
           </div>
+        </div>
+        <div
+          class="lane-panel__order"
+          role="group"
+          aria-label="作中並びの向き"
+        >
+          <button
+            type="button"
+            class="lane-panel__order-btn"
+            data-testid="story-chrono-order-asc"
+            aria-pressed={order === "asc" ? "true" : "false"}
+            onClick={() => setStoryChronoOrder("asc")}
+          >
+            昇順
+          </button>
+          <button
+            type="button"
+            class="lane-panel__order-btn"
+            data-testid="story-chrono-order-desc"
+            aria-pressed={order === "desc" ? "true" : "false"}
+            onClick={() => setStoryChronoOrder("desc")}
+          >
+            降順
+          </button>
         </div>
         <p class="lane-empty">
           「{origin.title}」から糸で届く作中時間つき。配置は覚えません。
