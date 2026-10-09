@@ -1,10 +1,10 @@
 ---
 id: T077
 title: 作中並びの昇順・降順を切り替えられるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: task/T077
 template_ver: generic-0.2
 created: 2026-10-06
 updated: 2026-10-09
@@ -75,5 +75,6 @@ updated: 2026-10-09
 - 2026-10-06 planner: backlog 起票。T073 左パネル上の session 切替スライス
 - 2026-10-09 human: T077 をやる
 - 2026-10-09 planner: ready。スライス確定（2ボタン・表示順で怪しい印・既定昇順）
+- 2026-10-09 impl: claim → doing（task/T077）
 
 ## 差し戻し履歴（追記のみ）
