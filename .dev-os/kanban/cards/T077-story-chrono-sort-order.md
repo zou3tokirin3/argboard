@@ -1,7 +1,7 @@
 ---
 id: T077
 title: 作中並びの昇順・降順を切り替えられるようにする
-status: doing
+status: review
 owner: impl
 gate: human
 branch: task/T077
@@ -76,5 +76,6 @@ updated: 2026-10-09
 - 2026-10-09 human: T077 をやる
 - 2026-10-09 planner: ready。スライス確定（2ボタン・表示順で怪しい印・既定昇順）
 - 2026-10-09 impl: claim → doing（task/T077）
+- 2026-10-09 impl: sortLaneCards 正／逆＋見出し横の昇順／降順。怪しい印は表示順で再計算。session のみ。check/test/smoke 緑 → review（APP_PREVIEW=T077）
 
 ## 差し戻し履歴（追記のみ）
