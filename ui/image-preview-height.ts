@@ -1,4 +1,4 @@
-export type PreviewSurface = "explore" | "side";
+export type PreviewSurface = "wide" | "rail";
 
 export type PreviewHeightStore = {
   getItem(key: string): string | null;
@@ -9,9 +9,17 @@ export const PREVIEW_HEIGHT_KEY = "argboard.imagePreviewHeight";
 export const PREVIEW_MIN_PX = 96;
 const RESERVE_PX = 160;
 const DEFAULTS = {
-  explore: { vh: 0.52, cap: 520 },
-  side: { vh: 0.36, cap: 280 },
+  wide: { vh: 0.52, cap: 520 },
+  rail: { vh: 0.36, cap: 280 },
 } as const;
+
+/** Old surface names from explore/side era (T060). */
+const LEGACY_SURFACE: Record<string, PreviewSurface> = {
+  explore: "wide",
+  side: "rail",
+  wide: "wide",
+  rail: "rail",
+};
 
 function browserStore(): PreviewHeightStore | null {
   try {
@@ -47,8 +55,15 @@ export function readStoredPreviewHeights(
     }
     const out: Partial<Record<PreviewSurface, number>> = {};
     for (const [key, value] of Object.entries(parsed)) {
-      if (key !== "explore" && key !== "side") continue;
-      if (typeof value === "number" && Number.isFinite(value)) out[key] = value;
+      const surface = LEGACY_SURFACE[key];
+      if (!surface) continue;
+      if (typeof value === "number" && Number.isFinite(value)) {
+        // Prefer already-migrated keys over legacy aliases.
+        if (out[surface] != null && (key === "explore" || key === "side")) {
+          continue;
+        }
+        out[surface] = value;
+      }
     }
     return out;
   } catch {

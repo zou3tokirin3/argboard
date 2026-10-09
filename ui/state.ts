@@ -39,10 +39,17 @@ import type { CardSize } from "./node-size.ts";
 import { normalizeCardSize } from "./node-size.ts";
 import type { ParsedCapture } from "./capture-notation.ts";
 import { hasStoryWhen } from "./story-when.ts";
+import {
+  normalizePanelPhase,
+  type PanelPhase,
+  withPanelPhase,
+} from "./panel-phase.ts";
 import type { AppMode, Board, Card, Link, Project } from "./types.ts";
 
 export { createDemoProject, createEmptyProject } from "./project.ts";
 export { replaySteps } from "./project.ts";
+export type { PanelPhase } from "./panel-phase.ts";
+export { normalizePanelPhase } from "./panel-phase.ts";
 
 const ACTIVE_PROJECT_KEY = "argboard.activeProjectId";
 let persistenceRequested = false;
@@ -220,12 +227,12 @@ export function openExploreCompose(
   if (!project.value?.cards.some((item) => item.id === cardId)) return;
   clearExploreImageDraft();
   exploreComposeCardId.value = cardId;
-  const contemplate = (project.value?.ui?.mode ?? "explore") === "contemplate";
-  const mode = options?.mode ?? (contemplate ? "thought" : "dig");
+  const phase = normalizePanelPhase(project.value?.ui);
+  const mode = options?.mode ?? (phase === "wide" ? "dig" : "thought");
   imageReferenceCaptureMode.value = mode;
   startDigging(cardId);
-  if (contemplate && !(project.value?.ui?.sideOpen ?? false)) {
-    void setSideOpen(true);
+  if (phase === "closed") {
+    void setPanelPhase("rail");
   }
 }
 
@@ -294,6 +301,7 @@ export function revealCardInStream(cardId: string): void {
 
 /** Select from the board; scroll the discovery log to the same card. */
 export function selectCardFromBoard(cardId: string): void {
+  protectBoardFromWide();
   selectSingleCard(cardId);
   revealCardInStream(cardId);
 }
@@ -338,15 +346,15 @@ export function clearLaneView(): void {
   laneView.value = { open: false, originId: null, hops: 1 };
 }
 
-/** Open story-chrono from a selected board card (contemplate). */
+/** Open story-chrono from a selected board card. */
 export async function openStoryChrono(cardId: string): Promise<void> {
   const current = project.value;
   if (!current) return;
   clearReplay();
-  if ((current.ui?.mode ?? "explore") !== "contemplate") {
+  if (normalizePanelPhase(current.ui) === "wide") {
     closeExploreCompose();
     clearExploreImageDraft();
-    await persist(withUi(current, { mode: "contemplate" }));
+    await persist(withUi(current, withPanelPhase("rail")));
   }
   selectSingleCard(cardId);
   laneView.value = { open: true, originId: cardId, hops: 1 };
@@ -366,6 +374,7 @@ export function shrinkStoryHops(): void {
 
 /** Select from story-chrono; pan the board if the card is placed. */
 export function selectCardFromStoryChrono(cardId: string): void {
+  protectBoardFromWide();
   selectSingleCard(cardId);
   const board = project.value?.boards[0];
   if (board?.cardIds.includes(cardId) && board.positions[cardId]) {
@@ -468,10 +477,15 @@ function clearTagFocusIfEmpty(cards: readonly Card[]): void {
   if (!still) clearFocusView();
 }
 
-export const appMode = computed<AppMode>(() =>
-  project.value?.ui?.mode ?? "explore"
+export const panelPhase = computed<PanelPhase>(() =>
+  normalizePanelPhase(project.value?.ui)
 );
-export const sideOpen = computed(() => project.value?.ui?.sideOpen ?? false);
+
+/** Drop wide → rail when the board/inspector becomes the focus (T078). */
+function protectBoardFromWide(): void {
+  if (normalizePanelPhase(project.value?.ui) !== "wide") return;
+  void setPanelPhase("rail");
+}
 
 /** Live project, or a display-only slice when replaying. */
 export const viewProject = computed<Project | null>(() => {
@@ -606,14 +620,23 @@ function withUi(
   current: Project,
   patch: Partial<NonNullable<Project["ui"]>>,
 ): Project {
+  const phase = patch.panelPhase ?? normalizePanelPhase(current.ui);
   return {
     ...current,
-    ui: {
-      mode: current.ui?.mode ?? "explore",
-      sideOpen: current.ui?.sideOpen ?? false,
-      ...patch,
-    },
+    ui: { panelPhase: phase },
   };
+}
+
+function migrateProjectUi(next: Project): Project {
+  const wire = next.ui as
+    | { panelPhase?: PanelPhase; mode?: AppMode; sideOpen?: boolean }
+    | undefined;
+  const phase = normalizePanelPhase(wire);
+  const dirty = wire?.panelPhase !== phase ||
+    wire?.mode != null ||
+    wire?.sideOpen != null;
+  if (!dirty) return next;
+  return { ...next, ui: { panelPhase: phase } };
 }
 
 async function activateProject(next: Project): Promise<void> {
@@ -634,7 +657,7 @@ async function activateProject(next: Project): Promise<void> {
   stopDigging();
   clearAllMediaObjectUrls();
   // Snapshot missing births before open so later edits can rewind text/labels.
-  const birthed = withBirthEvents(next);
+  const birthed = withBirthEvents(migrateProjectUi(next));
   const opened = appendEvent(birthed, {
     type: "project_opened",
     at: Date.now(),
@@ -916,23 +939,36 @@ export async function pasteExploreImage(
   return null;
 }
 
-export async function setAppMode(mode: AppMode): Promise<void> {
+export async function setPanelPhase(phase: PanelPhase): Promise<void> {
   const current = project.value;
   if (!current) return;
-  clearLaneView();
-  if ((current.ui?.mode ?? "explore") === mode) return;
-  if (mode === "explore") clearReplay();
-  else {
+  const prev = normalizePanelPhase(current.ui);
+  if (prev === phase) return;
+  if (phase === "wide") clearReplay();
+  if (prev === "wide" && phase !== "wide") {
     closeExploreCompose();
     clearExploreImageDraft();
   }
-  await persist(withUi(current, { mode }));
+  await persist(withUi(current, withPanelPhase(phase)));
 }
 
+/** @deprecated Smoke / old hooks: explore→wide, contemplate→rail. */
+export async function setAppMode(mode: AppMode): Promise<void> {
+  await setPanelPhase(mode === "explore" ? "wide" : "rail");
+}
+
+/** @deprecated Prefer setPanelPhase. */
 export async function setSideOpen(open: boolean): Promise<void> {
   const current = project.value;
-  if (!current || (current.ui?.sideOpen ?? false) === open) return;
-  await persist(withUi(current, { sideOpen: open }));
+  if (!current) return;
+  const prev = normalizePanelPhase(current.ui);
+  if (open) {
+    if (prev !== "closed") return;
+    await setPanelPhase("rail");
+    return;
+  }
+  if (prev === "closed") return;
+  await setPanelPhase("closed");
 }
 
 export async function updateCard(

@@ -17,8 +17,7 @@ function seedViewedCard(options?: { contemplate?: boolean }): string {
     ...createEmptyProject("参照", now),
     cards: [{ id, title: "資料", foundAt: now, image: "media-1" }],
     ui: {
-      mode: options?.contemplate ? "contemplate" : "explore",
-      sideOpen: true,
+      panelPhase: options?.contemplate ? "rail" : "wide",
     },
   };
   diggingCardId.value = null;

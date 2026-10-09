@@ -10,7 +10,6 @@ import { LaneWorkspace } from "./lane-view.tsx";
 import {
   activeProjectId,
   addCard,
-  appMode,
   clearCardFoundVia,
   clearExploreImageDraft,
   closeExploreCompose,
@@ -26,6 +25,7 @@ import {
   initialize,
   isReplaying,
   laneView,
+  panelPhase,
   pasteExploreImage,
   patchExploreImageDraft,
   pickAndImportProject,
@@ -44,8 +44,7 @@ import {
   selectedLinkId,
   selectSingleCard,
   setAppMode,
-  setSideOpen,
-  sideOpen,
+  setPanelPhase,
   spawnThoughtFromLink,
   startDigging,
   stopDigging,
@@ -138,6 +137,7 @@ declare global {
         patch: { label?: string; kind?: "connects" | "contradicts" },
       ) => Promise<void>;
       setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
+      setPanelPhase: (phase: "wide" | "rail" | "closed") => Promise<void>;
       commitExploreImageDraft: () => Promise<string | null>;
       patchExploreImageDraft: (
         patch: { title?: string; body?: string; url?: string },
@@ -173,7 +173,6 @@ function SaveStatusLabel() {
 function TopBar() {
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
   const [projectRename, setProjectRename] = useState("");
-  const mode = appMode.value;
   const renameSource = projectName.value;
   const renameProjectId = activeProjectId.value;
 
@@ -313,49 +312,6 @@ function TopBar() {
         </div>
       </div>
       <div class="topbar__actions">
-        <div
-          class="mode-switch"
-          role="tablist"
-          aria-label="モード"
-          onKeyDown={(event) => {
-            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-              return;
-            }
-            event.preventDefault();
-            const next = mode === "explore" ? "contemplate" : "explore";
-            void setAppMode(next);
-            const root = event.currentTarget;
-            requestAnimationFrame(() => {
-              const selector = next === "explore"
-                ? '[data-testid="mode-explore"]'
-                : '[data-testid="mode-contemplate"]';
-              root.querySelector<HTMLElement>(selector)?.focus();
-            });
-          }}
-        >
-          <button
-            type="button"
-            role="tab"
-            data-testid="mode-explore"
-            aria-selected={mode === "explore"}
-            tabIndex={mode === "explore" ? 0 : -1}
-            class={mode === "explore" ? "is-active" : undefined}
-            onClick={() => void setAppMode("explore")}
-          >
-            探索
-          </button>
-          <button
-            type="button"
-            role="tab"
-            data-testid="mode-contemplate"
-            aria-selected={mode === "contemplate"}
-            tabIndex={mode === "contemplate" ? 0 : -1}
-            class={mode === "contemplate" ? "is-active" : undefined}
-            onClick={() => void setAppMode("contemplate")}
-          >
-            考察
-          </button>
-        </div>
         <SaveStatusLabel />
         <button
           type="button"
@@ -378,10 +334,14 @@ function TopBar() {
   );
 }
 
-function ExploreWorkspace() {
+function Workspace() {
+  const phase = panelPhase.value;
+  const open = phase !== "closed";
+  const wide = phase === "wide";
+
   useEffect(() => {
     function onPaste(event: ClipboardEvent) {
-      if (appMode.value !== "explore") return;
+      if (panelPhase.value !== "wide") return;
       if (isReplaying.value) return;
       const blob = imageBlobFromClipboard(event);
       if (!blob) return;
@@ -394,9 +354,8 @@ function ExploreWorkspace() {
       void pasteExploreImage(blob, draft ?? undefined);
     }
     function onKeyDown(event: KeyboardEvent) {
-      if (appMode.value !== "explore") return;
       if (event.key !== "Escape") return;
-      if (exploreImageDraft.value) {
+      if (panelPhase.value === "wide" && exploreImageDraft.value) {
         event.preventDefault();
         clearExploreImageDraft();
         return;
@@ -406,9 +365,8 @@ function ExploreWorkspace() {
       closeExploreCompose();
     }
     function onPointerDown(event: PointerEvent) {
-      if (appMode.value !== "explore") return;
       const target = event.target as Element | null;
-      if (exploreImageDraft.value) {
+      if (panelPhase.value === "wide" && exploreImageDraft.value) {
         if (target?.closest(".capture-image-staging")) return;
         if (target?.closest('[data-testid="capture-image-slot"]')) return;
         if (target?.closest('[data-testid="capture-image-pick"]')) return;
@@ -417,6 +375,7 @@ function ExploreWorkspace() {
       if (!exploreComposeCardId.value) return;
       if (target?.closest(".capture-block")) return;
       if (target?.closest('[data-testid="stream-card-thumb"]')) return;
+      if (target?.closest(".inspector")) return;
       closeExploreCompose();
     }
     globalThis.addEventListener("paste", onPaste);
@@ -430,70 +389,51 @@ function ExploreWorkspace() {
   }, []);
 
   return (
-    <>
-      <Capture explore />
-      <div class="workspace workspace--explore">
-        <Stream />
-      </div>
-    </>
-  );
-}
-
-function ContemplateWorkspace() {
-  const side = sideOpen.value;
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (appMode.value !== "contemplate") return;
-      if (event.key !== "Escape") return;
-      if (!exploreComposeCardId.value) return;
-      event.preventDefault();
-      closeExploreCompose();
-    }
-    function onPointerDown(event: PointerEvent) {
-      if (appMode.value !== "contemplate") return;
-      if (!exploreComposeCardId.value) return;
-      const target = event.target as Element | null;
-      if (target?.closest(".capture-block")) return;
-      if (target?.closest('[data-testid="stream-card-thumb"]')) return;
-      if (target?.closest(".inspector")) return;
-      closeExploreCompose();
-    }
-    globalThis.addEventListener("keydown", onKeyDown);
-    globalThis.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      globalThis.removeEventListener("keydown", onKeyDown);
-      globalThis.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, []);
-
-  return (
     <div
-      class={`workspace workspace--contemplate ${side ? "is-side-open" : ""}`}
+      class={`workspace workspace--board is-side-${phase}`}
+      data-testid="workspace"
+      data-panel-phase={phase}
     >
       <aside
         class="side-panel"
         id="discovery-side"
-        aria-label="発見ログサイド"
-        aria-hidden={!side}
-        inert={!side || undefined}
+        aria-label="発見ログ"
+        aria-hidden={!open}
+        inert={!open || undefined}
       >
         <div class="side-panel__inner">
-          <Capture />
+          <Capture wide={wide} />
           <Stream />
         </div>
       </aside>
-      <button
-        type="button"
-        class="side-toggle"
-        data-testid={side ? "side-close" : "side-open"}
-        aria-expanded={side}
-        aria-controls="discovery-side"
-        aria-label={side ? "発見ログを閉じる" : "発見ログを開く"}
-        title={side ? "発見ログを閉じる" : "発見ログを開く"}
-        onClick={() => setSideOpen(!side)}
-      >
-        <span aria-hidden="true">{side ? "<" : ">"}</span>
-      </button>
+      <div class="side-chrome">
+        {open
+          ? (
+            <button
+              type="button"
+              class="side-phase"
+              data-testid={wide ? "side-rail" : "side-wide"}
+              aria-label={wide ? "発見ログを狭く" : "発見ログを広く"}
+              title={wide ? "発見ログを狭く" : "発見ログを広く"}
+              onClick={() => void setPanelPhase(wide ? "rail" : "wide")}
+            >
+              <span aria-hidden="true">{wide ? "«" : "»"}</span>
+            </button>
+          )
+          : null}
+        <button
+          type="button"
+          class="side-toggle"
+          data-testid={open ? "side-close" : "side-open"}
+          aria-expanded={open}
+          aria-controls="discovery-side"
+          aria-label={open ? "発見ログを閉じる" : "発見ログを開く"}
+          title={open ? "発見ログを閉じる" : "発見ログを開く"}
+          onClick={() => void setPanelPhase(open ? "closed" : "rail")}
+        >
+          <span aria-hidden="true">{open ? "<" : ">"}</span>
+        </button>
+      </div>
       <div
         class={`contemplate-main${
           laneView.value.open ? " is-chrono-open" : ""
@@ -508,16 +448,15 @@ function ContemplateWorkspace() {
 }
 
 function AppShell() {
-  const mode = appMode.value;
   return (
-    <div class={`app-shell mode-${mode}`}>
+    <div class="app-shell">
       <a class="skip-link" href="#main-content" data-testid="skip-link">
         本文へ
       </a>
       <InstallTip />
       <TopBar />
       <main id="main-content" tabIndex={-1}>
-        {mode === "explore" ? <ExploreWorkspace /> : <ContemplateWorkspace />}
+        <Workspace />
       </main>
     </div>
   );
@@ -538,7 +477,7 @@ function isUsableControl(el: HTMLElement | null): el is HTMLElement {
   return true;
 }
 
-/** Capture → search → mode switch. Mac Tab otherwise leaves the page. */
+/** Capture → search. Mac Tab otherwise leaves the page. */
 function chromeTabCycle(): HTMLElement[] {
   const capture = document.querySelector<HTMLElement>(
     '[data-testid="capture-input"]',
@@ -546,10 +485,7 @@ function chromeTabCycle(): HTMLElement[] {
   const search = document.querySelector<HTMLElement>(
     '.search input[type="search"]',
   );
-  const mode = document.querySelector<HTMLElement>(
-    '.mode-switch [role="tab"][tabindex="0"]',
-  );
-  return [capture, search, mode].filter(isUsableControl);
+  return [capture, search].filter(isUsableControl);
 }
 
 function moveChromeTab(event: KeyboardEvent): boolean {
@@ -636,6 +572,7 @@ if (isTest) {
     spawnThoughtFromLink,
     updateLink,
     setAppMode,
+    setPanelPhase,
     pasteExploreImage,
     commitExploreImageDraft,
     patchExploreImageDraft,
