@@ -665,6 +665,44 @@ body {
   color: var(--ink);
   font: 500 12px/1.4 ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
+.capture-tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 2px 0;
+}
+.capture-compose__fields > .capture-tag-chips {
+  margin: 0;
+}
+.capture-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+.capture-tag-chip:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.capture-tag-chip.is-unsettled {
+  border-style: dashed;
+}
+.capture-tag-chip.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.capture-tag-chip:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
 .capture-block--wide {
   width: min(720px, calc(100% - 48px));
 }

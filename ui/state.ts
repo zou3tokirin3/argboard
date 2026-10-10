@@ -761,6 +761,19 @@ export async function switchProject(id: string): Promise<void> {
   await activateProject(loaded);
 }
 
+function normalizeCardTags(raw: string[] | undefined): string[] | undefined {
+  if (!raw?.length) return undefined;
+  const next: string[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    const name = normalizeTag(item);
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    next.push(name);
+  }
+  return next.length ? next : undefined;
+}
+
 export async function addCard(
   title: string,
   options?: {
@@ -770,6 +783,7 @@ export async function addCard(
     url?: string;
     storyWhen?: string;
     storyUntil?: string;
+    tags?: string[];
   },
 ): Promise<string | null> {
   const cleanTitle = title.trim();
@@ -782,6 +796,7 @@ export async function addCard(
   const storyUntil = options?.storyUntil?.trim()
     ? options.storyUntil.trim()
     : undefined;
+  const tags = normalizeCardTags(options?.tags);
 
   // Read + write memory must stay synchronous so overlapping captures
   // cannot both snapshot the same Project and drop a later card.
@@ -798,6 +813,7 @@ export async function addCard(
     ...(url ? { url } : {}),
     ...(storyWhen ? { storyWhen } : {}),
     ...(storyUntil ? { storyUntil } : {}),
+    ...(tags ? { tags } : {}),
     ...(foundVia ? { foundVia } : {}),
   };
   let next = appendEvent(
@@ -857,6 +873,7 @@ async function createCardWithCompressedImage(
   const storyUntil = draft?.storyUntil?.trim()
     ? draft.storyUntil.trim()
     : undefined;
+  const tags = normalizeCardTags(draft?.tags);
   const foundVia = resolveDiggingFoundVia();
   const card: Card = {
     id: cardId,
@@ -867,6 +884,7 @@ async function createCardWithCompressedImage(
     ...(url ? { url } : {}),
     ...(storyWhen ? { storyWhen } : {}),
     ...(storyUntil ? { storyUntil } : {}),
+    ...(tags ? { tags } : {}),
     ...(foundVia ? { foundVia } : {}),
   };
   let next = appendEvent(
@@ -928,15 +946,19 @@ export async function stageExploreImage(
 }
 
 /** Turn the staged screenshot into a card. */
-export async function commitExploreImageDraft(): Promise<string | null> {
+export async function commitExploreImageDraft(
+  options?: { tags?: string[] },
+): Promise<string | null> {
   const draft = exploreImageDraft.value;
   if (!draft) return null;
+  const tags = normalizeCardTags(options?.tags);
   const parsed: ParsedCapture = {
     title: draft.title.trim() || "（無題）",
     ...(draft.body.trim() ? { body: draft.body.trim() } : {}),
     ...(draft.url.trim() ? { url: draft.url.trim() } : {}),
     ...(draft.storyWhen.trim() ? { storyWhen: draft.storyWhen.trim() } : {}),
     ...(draft.storyUntil.trim() ? { storyUntil: draft.storyUntil.trim() } : {}),
+    ...(tags ? { tags } : {}),
   };
   const blob = draft.blob;
   clearExploreImageDraft();

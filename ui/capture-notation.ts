@@ -6,6 +6,8 @@ export type ParsedCapture = {
   storyWhen?: string;
   /** Optional in-story span end from capture UI (not parsed from the line). */
   storyUntil?: string;
+  /** Optional existing tags from capture chip strip (T068; not parsed from the line). */
+  tags?: string[];
 };
 
 /** Pull the first http(s) URL out of a capture line. */
