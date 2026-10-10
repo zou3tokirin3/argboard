@@ -339,7 +339,7 @@ function ExploreImageStaging(props: {
         <textarea
           class="capture-compose__body"
           data-testid="capture-image-staging-body"
-          rows={5}
+          rows={3}
           value={draft.body}
           placeholder="事実や考察を書く…"
           disabled={replaying}

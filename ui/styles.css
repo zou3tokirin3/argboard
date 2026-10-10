@@ -882,8 +882,12 @@ body {
   display: block;
   width: 100%;
   height: auto;
-  max-height: min(52vh, 520px);
   object-fit: contain;
+}
+/* Staging (first paste): short preview so title/submit stay on-screen.
+   Dig/reference (T060) keeps its own height via .capture-image-reference__preview. */
+.capture-image-staging:not(.capture-image-reference) .capture-image-staging__preview img {
+  max-height: min(28vh, 240px);
 }
 .capture-image-reference__preview {
   position: relative;
@@ -1194,12 +1198,8 @@ kbd {
 .side-panel .capture-block--compose {
   width: calc(100% - 16px);
 }
-.workspace--board.is-side-rail .capture-image-staging__preview img,
 .workspace--board.is-side-rail .capture-image-reference__preview img {
   max-height: min(36vh, 280px);
-}
-.workspace--board.is-side-wide .capture-image-staging__preview img {
-  max-height: min(52vh, 520px);
 }
 .side-panel .capture-image-reference__preview img {
   max-height: 100%;
