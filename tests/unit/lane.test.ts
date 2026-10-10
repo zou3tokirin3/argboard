@@ -79,6 +79,28 @@ Deno.test("storyOrderSuspicious marks early-morning clock-only", () => {
   if (!flags[nightIdx]) throw new Error("bucket after clock should be flagged");
 });
 
+Deno.test("story-chrono desc reverses sortLaneCards; flags follow display", () => {
+  const cards = [
+    card("eve", "ロッカー", { storyWhen: "22:40" }),
+    card("late", "短波", { storyWhen: "23:17" }),
+    card("early", "終電後", { storyWhen: "1:05" }),
+    card("night", "屋上", { storyWhen: "夜" }),
+  ];
+  const ascending = sortLaneCards(cards);
+  const descending = ascending.toReversed();
+  if (descending.map((c) => c.id).join(",") !== "night,early,late,eve") {
+    throw new Error(`bad desc: ${descending.map((c) => c.id).join(",")}`);
+  }
+  const flags = storyOrderSuspicious(descending);
+  const earlyIdx = descending.findIndex((c) => c.id === "early");
+  const nightIdx = descending.findIndex((c) => c.id === "night");
+  if (!flags[earlyIdx]) throw new Error("1:05 should stay flagged in desc");
+  // In desc, night (bucket) is above early (clock) — not a clock→bucket edge.
+  if (flags[nightIdx]) {
+    throw new Error("bucket-first in desc must not use asc adjacency flag");
+  }
+});
+
 Deno.test("storyWhenSortKey reads day and clock", () => {
   const key = storyWhenSortKey({ storyWhen: "3/1 23:17" });
   if (key.kind !== "clock" || key.day == null || key.minute !== 23 * 60 + 17) {

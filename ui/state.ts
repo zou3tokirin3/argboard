@@ -330,20 +330,27 @@ export const revealCardId = signal<string | null>(null);
 /** Session-only focus view (T018 card / T033 tag). Not persisted. */
 export const focusOrigin = signal<FocusOrigin | null>(null);
 export const focusHops = signal(1);
+/** Session-only sort direction for story-chrono (T077). Default asc. */
+export type StoryChronoOrder = "asc" | "desc";
+
 /**
- * Session-only story-chrono list (T073). Not persisted in Project.ui.mode.
+ * Session-only story-chrono list (T073/T077). Not persisted in Project.ui.mode.
  * Entered from the board focus bar; cleared on reload / mode tab switch.
  */
-export const laneView = signal<
-  { open: boolean; originId: string | null; hops: number }
->({
+export const laneView = signal<{
+  open: boolean;
+  originId: string | null;
+  hops: number;
+  order: StoryChronoOrder;
+}>({
   open: false,
   originId: null,
   hops: 1,
+  order: "asc",
 });
 
 export function clearLaneView(): void {
-  laneView.value = { open: false, originId: null, hops: 1 };
+  laneView.value = { open: false, originId: null, hops: 1, order: "asc" };
 }
 
 /** Open story-chrono from a selected board card. */
@@ -357,7 +364,7 @@ export async function openStoryChrono(cardId: string): Promise<void> {
     await persist(withUi(current, withPanelPhase("rail")));
   }
   selectSingleCard(cardId);
-  laneView.value = { open: true, originId: cardId, hops: 1 };
+  laneView.value = { open: true, originId: cardId, hops: 1, order: "asc" };
 }
 
 export function expandStoryHops(): void {
@@ -370,6 +377,13 @@ export function shrinkStoryHops(): void {
   const view = laneView.value;
   if (!view.open || !view.originId || view.hops <= 1) return;
   laneView.value = { ...view, hops: view.hops - 1 };
+}
+
+/** Asc/desc for the story-chrono list only (session; T077). */
+export function setStoryChronoOrder(order: StoryChronoOrder): void {
+  const view = laneView.value;
+  if (!view.open || !view.originId || view.order === order) return;
+  laneView.value = { ...view, order };
 }
 
 /** Select from story-chrono; pan the board if the card is placed. */
