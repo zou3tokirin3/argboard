@@ -1,10 +1,10 @@
 ---
 id: T068
 title: 発見キャプチャ近くのクリックで既出タグを付けられるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T068"
 template_ver: generic-0.2
 created: 2026-09-10
 updated: 2026-10-10
@@ -94,5 +94,6 @@ gzip +2KB未満 / Won't=No。しきい値内 → 評価パケット不要。
 - 2026-10-10 human: T068やろう
 - 2026-10-10 planner: ready 確定（直下チップ帯・考察/画像も同導線・新規作成なし）。
   見込み flow=本体行+80〜150 / 操作+1〜2 / 概念+0 / gzip +2KB未満 / Won't=No。しきい値内 → ready
+- 2026-10-10 impl: 取得。task/T068 worktree でチップ帯を実装する
 
 ## 差し戻し履歴（追記のみ）
