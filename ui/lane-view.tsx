@@ -89,19 +89,23 @@ export function LaneWorkspace() {
             type="button"
             class="lane-panel__order-btn"
             data-testid="story-chrono-order-asc"
+            aria-label="昇順"
             aria-pressed={order === "asc" ? "true" : "false"}
+            title="昇順"
             onClick={() => setStoryChronoOrder("asc")}
           >
-            昇順
+            ↑
           </button>
           <button
             type="button"
             class="lane-panel__order-btn"
             data-testid="story-chrono-order-desc"
+            aria-label="降順"
             aria-pressed={order === "desc" ? "true" : "false"}
+            title="降順"
             onClick={() => setStoryChronoOrder("desc")}
           >
-            降順
+            ↓
           </button>
         </div>
         <p class="lane-empty">

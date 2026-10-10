@@ -1022,11 +1022,13 @@ kbd {
   border-radius: var(--radius);
   background: var(--bg);
   color: var(--ink);
+  width: 26px;
   height: 26px;
-  padding: 0 8px;
+  padding: 0;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1;
 }
 .lane-panel__order-btn[aria-pressed="true"] {
   background: var(--panel);
