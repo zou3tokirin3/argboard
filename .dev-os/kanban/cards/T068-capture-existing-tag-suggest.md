@@ -1,7 +1,7 @@
 ---
 id: T068
 title: 発見キャプチャ近くのクリックで既出タグを付けられるようにする
-status: doing
+status: review
 owner: impl
 gate: human
 branch: "task/T068"
@@ -101,6 +101,8 @@ gzip +2KB未満 / Won't=No。しきい値内 → 評価パケット不要。
   flow 実測=本体行+135 / 操作+2 / 概念+0 / gzip +589B / Won't=No → review（APP_PREVIEW=T068）
 - 2026-10-10 human: タグはタイトルの下に。画像新規入力は固定長で画面に入らない→別チケット可
 - 2026-10-10 impl: rework→doing。チップをタイトル直下へ寄せる。画像はみ出しは T079
+- 2026-10-10 impl: 1行キャプチャは入力行直下、画像ステージングはタイトル直下（メモの上）へ。
+  check/test/smoke 緑 → review
 
 ## 差し戻し履歴（追記のみ）
 
