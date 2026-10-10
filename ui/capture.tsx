@@ -262,6 +262,8 @@ function CaptureImageSlot(props: {
 
 function ExploreImageStaging(props: {
   selectedTags: string[];
+  disabled: boolean;
+  onToggleTag: (name: string) => void;
   onCommitted: () => void;
 }) {
   const draft = exploreImageDraft.value;
@@ -328,6 +330,11 @@ function ExploreImageStaging(props: {
           aria-label="タイトル"
           onInput={(event) =>
             patchExploreImageDraft({ title: event.currentTarget.value })}
+        />
+        <CaptureTagChips
+          selected={props.selectedTags}
+          disabled={props.disabled}
+          onToggle={props.onToggleTag}
         />
         <textarea
           class="capture-compose__body"
@@ -772,6 +779,8 @@ export function Capture(props: { wide?: boolean }) {
         ? (
           <ExploreImageStaging
             selectedTags={selectedTags}
+            disabled={replaying}
+            onToggleTag={toggleCaptureTag}
             onCommitted={clearSelectedTags}
           />
         )
@@ -780,70 +789,72 @@ export function Capture(props: { wide?: boolean }) {
       {!staging && digging ? <CaptureDiggingBar /> : null}
       {!staging
         ? (
-          <form class="capture" onSubmit={submit}>
-            <span class="capture__plus" aria-hidden="true">＋</span>
-            <input
-              ref={input}
-              data-testid="capture-input"
-              aria-label={inCompose ? "画像を見ながら追加" : "新しい手がかり"}
-              aria-describedby="capture-hint"
-              autocomplete="off"
-              placeholder={inCompose && referenceCaptureMode === "thought"
-                ? `「${composeCard!.title}」を見ながら考える…`
-                : captureSourceCard
-                ? `「${captureSourceCard.title}」から見つけたこと…`
-                : "見つけたことを1行で…"}
-              onKeyDown={onHistoryKey}
-              onInput={() => {
-                if (historyIndex >= 0) setHistoryIndex(-1);
-              }}
-            />
-            <input
-              ref={storyWhenInput}
-              type="text"
-              class="capture__story-when"
-              data-testid="capture-story-when"
-              aria-label="作中時間の起点"
-              autocomplete="off"
-              placeholder="起点"
+          <>
+            <form class="capture" onSubmit={submit}>
+              <span class="capture__plus" aria-hidden="true">＋</span>
+              <input
+                ref={input}
+                data-testid="capture-input"
+                aria-label={inCompose ? "画像を見ながら追加" : "新しい手がかり"}
+                aria-describedby="capture-hint"
+                autocomplete="off"
+                placeholder={inCompose && referenceCaptureMode === "thought"
+                  ? `「${composeCard!.title}」を見ながら考える…`
+                  : captureSourceCard
+                  ? `「${captureSourceCard.title}」から見つけたこと…`
+                  : "見つけたことを1行で…"}
+                onKeyDown={onHistoryKey}
+                onInput={() => {
+                  if (historyIndex >= 0) setHistoryIndex(-1);
+                }}
+              />
+              <input
+                ref={storyWhenInput}
+                type="text"
+                class="capture__story-when"
+                data-testid="capture-story-when"
+                aria-label="作中時間の起点"
+                autocomplete="off"
+                placeholder="起点"
+                disabled={replaying}
+              />
+              <input
+                ref={storyUntilInput}
+                type="text"
+                class="capture__story-until"
+                data-testid="capture-story-until"
+                aria-label="作中時間の帯の端"
+                autocomplete="off"
+                placeholder="帯の端"
+                disabled={replaying}
+              />
+              {wide
+                ? (
+                  <CaptureImageSlot
+                    disabled={replaying}
+                    getDraftLine={getDraftLine}
+                    getStoryWhen={getStoryWhen}
+                    getStoryUntil={getStoryUntil}
+                  />
+                )
+                : null}
+              {
+                /*
+                Multiple text fields disable implicit Enter-submit unless a
+                default submit button exists. Keep the 1-line Enter path.
+              */
+              }
+              <button type="submit" class="capture__submit-sr">追加</button>
+              <kbd>↵</kbd>
+            </form>
+            <CaptureTagChips
+              selected={selectedTags}
               disabled={replaying}
+              onToggle={toggleCaptureTag}
             />
-            <input
-              ref={storyUntilInput}
-              type="text"
-              class="capture__story-until"
-              data-testid="capture-story-until"
-              aria-label="作中時間の帯の端"
-              autocomplete="off"
-              placeholder="帯の端"
-              disabled={replaying}
-            />
-            {wide && !staging
-              ? (
-                <CaptureImageSlot
-                  disabled={replaying}
-                  getDraftLine={getDraftLine}
-                  getStoryWhen={getStoryWhen}
-                  getStoryUntil={getStoryUntil}
-                />
-              )
-              : null}
-            {
-              /*
-              Multiple text fields disable implicit Enter-submit unless a
-              default submit button exists. Keep the 1-line Enter path.
-            */
-            }
-            <button type="submit" class="capture__submit-sr">追加</button>
-            <kbd>↵</kbd>
-          </form>
+          </>
         )
         : null}
-      <CaptureTagChips
-        selected={selectedTags}
-        disabled={replaying}
-        onToggle={toggleCaptureTag}
-      />
       <p class="capture-hint" id="capture-hint">
         {staging
           ? (
@@ -851,7 +862,7 @@ export function Capture(props: { wide?: boolean }) {
               画像を準備中 · <kbd>⌘/Ctrl+↵</kbd> またはタイトルで<kbd>↵</kbd>
               で追加 · メモは<kbd>Shift+↵</kbd>で改行 ·{" "}
               <kbd>Esc</kbd>／やめるで取消 · もう一度貼ると差し替え ·
-              下のチップで既出タグ
+              タイトル下のチップで既出タグ
             </>
           )
           : inCompose
@@ -861,7 +872,7 @@ export function Capture(props: { wide?: boolean }) {
                 考察
               </strong>
               を切替 · <kbd>↵</kbd>で新カード ·{" "}
-              <kbd>Esc</kbd>／閉じるで終了 · 下のチップで既出タグ
+              <kbd>Esc</kbd>／閉じるで終了 · タイトル下のチップで既出タグ
             </>
           )
           : (
@@ -877,7 +888,7 @@ export function Capture(props: { wide?: boolean }) {
                 )
                 : null}
               <kbd>↑</kbd>/<kbd>↓</kbd>{" "}
-              で入力履歴 · 下のチップで既出タグ（任意）
+              で入力履歴 · タイトル下のチップで既出タグ（任意）
             </>
           )}
       </p>

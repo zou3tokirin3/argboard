@@ -669,7 +669,10 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: 8px 2px 0;
+  margin: 6px 2px 0;
+}
+.capture-compose__fields > .capture-tag-chips {
+  margin: 0;
 }
 .capture-tag-chip {
   display: inline-flex;
