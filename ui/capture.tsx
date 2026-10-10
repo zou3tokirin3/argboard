@@ -33,6 +33,7 @@ import {
   setImageReferenceCaptureMode,
   stopDigging,
 } from "./state.ts";
+import { collectTagUsage, normalizeTag } from "./tags.ts";
 
 const HISTORY_KEY = "argboard.captureHistory";
 const HISTORY_MAX = 50;
@@ -120,6 +121,46 @@ function withStoryFields(
     ...(when ? { storyWhen: when } : {}),
     ...(until ? { storyUntil: until } : {}),
   };
+}
+
+function CaptureTagChips(props: {
+  selected: string[];
+  disabled: boolean;
+  onToggle: (name: string) => void;
+}) {
+  const usage = collectTagUsage(project.value?.cards ?? []);
+  if (usage.length === 0) return null;
+  const selected = new Set(props.selected.map(normalizeTag).filter(Boolean));
+  return (
+    <div
+      class="capture-tag-chips"
+      data-testid="capture-tag-chips"
+      role="group"
+      aria-label="付けるタグ（既出のみ）"
+    >
+      {usage.map((entry) => {
+        const on = selected.has(entry.name);
+        const unsettled = entry.count === 1;
+        return (
+          <button
+            type="button"
+            key={entry.name}
+            class={`capture-tag-chip${on ? " is-on" : ""}${
+              unsettled ? " is-unsettled" : ""
+            }`}
+            data-testid="capture-tag-chip"
+            aria-pressed={on}
+            disabled={props.disabled}
+            title={unsettled ? `未定着（1枚のみ）: ${entry.name}` : entry.name}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => props.onToggle(entry.name)}
+          >
+            #{entry.name}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function CaptureImageSlot(props: {
@@ -219,7 +260,10 @@ function CaptureImageSlot(props: {
   );
 }
 
-function ExploreImageStaging() {
+function ExploreImageStaging(props: {
+  selectedTags: string[];
+  onCommitted: () => void;
+}) {
   const draft = exploreImageDraft.value;
   const replaying = isReplaying.value;
   const titleRef = useRef<HTMLInputElement>(null);
@@ -233,7 +277,10 @@ function ExploreImageStaging() {
   async function commitStaging() {
     if (replaying) return;
     try {
-      await commitExploreImageDraft();
+      await commitExploreImageDraft(
+        props.selectedTags.length ? { tags: props.selectedTags } : undefined,
+      );
+      props.onCommitted();
     } catch (error) {
       alert(
         error instanceof Error ? error.message : "カードを追加できませんでした",
@@ -582,6 +629,7 @@ export function Capture(props: { wide?: boolean }) {
   const storyUntilInput = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState(readHistory);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const draftRef = useRef("");
 
   function getDraftLine(): string {
@@ -603,6 +651,20 @@ export function Capture(props: { wide?: boolean }) {
     input.current.setSelectionRange(end, end);
   }
 
+  function toggleCaptureTag(name: string): void {
+    const tag = normalizeTag(name);
+    if (!tag) return;
+    setSelectedTags((current) =>
+      current.some((item) => normalizeTag(item) === tag)
+        ? current.filter((item) => normalizeTag(item) !== tag)
+        : [...current, tag]
+    );
+  }
+
+  function clearSelectedTags(): void {
+    setSelectedTags([]);
+  }
+
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     const line = input.current?.value ?? "";
@@ -610,11 +672,13 @@ export function Capture(props: { wide?: boolean }) {
     if (!parsed) return;
     const storyWhen = getStoryWhen().trim();
     const storyUntil = getStoryUntil().trim();
+    const tags = selectedTags;
     if (input.current) input.current.value = "";
     if (storyWhenInput.current) storyWhenInput.current.value = "";
     if (storyUntilInput.current) storyUntilInput.current.value = "";
     draftRef.current = "";
     setHistoryIndex(-1);
+    clearSelectedTags();
     const next = pushHistory(history, line);
     setHistory(next);
     writeHistory(next);
@@ -623,6 +687,7 @@ export function Capture(props: { wide?: boolean }) {
       url: parsed.url,
       ...(storyWhen ? { storyWhen } : {}),
       ...(storyUntil ? { storyUntil } : {}),
+      ...(tags.length ? { tags } : {}),
       ...(inCompose && referenceCaptureMode === "thought"
         ? { role: "thought" as const }
         : {}),
@@ -703,7 +768,14 @@ export function Capture(props: { wide?: boolean }) {
       onDragOver={wide ? onImageDragOver : undefined}
       onDrop={wide ? onImageDrop : undefined}
     >
-      {staging ? <ExploreImageStaging /> : null}
+      {staging
+        ? (
+          <ExploreImageStaging
+            selectedTags={selectedTags}
+            onCommitted={clearSelectedTags}
+          />
+        )
+        : null}
       {inCompose ? <ExploreImageReference wide={wide} /> : null}
       {!staging && digging ? <CaptureDiggingBar /> : null}
       {!staging
@@ -767,13 +839,19 @@ export function Capture(props: { wide?: boolean }) {
           </form>
         )
         : null}
+      <CaptureTagChips
+        selected={selectedTags}
+        disabled={replaying}
+        onToggle={toggleCaptureTag}
+      />
       <p class="capture-hint" id="capture-hint">
         {staging
           ? (
             <>
               画像を準備中 · <kbd>⌘/Ctrl+↵</kbd> またはタイトルで<kbd>↵</kbd>
               で追加 · メモは<kbd>Shift+↵</kbd>で改行 ·{" "}
-              <kbd>Esc</kbd>／やめるで取消 · もう一度貼ると差し替え
+              <kbd>Esc</kbd>／やめるで取消 · もう一度貼ると差し替え ·
+              下のチップで既出タグ
             </>
           )
           : inCompose
@@ -782,7 +860,8 @@ export function Capture(props: { wide?: boolean }) {
               画像を見ながら1行で追加 · 上で<strong>掘る</strong>／<strong>
                 考察
               </strong>
-              を切替 · <kbd>↵</kbd>で新カード · <kbd>Esc</kbd>／閉じるで終了
+              を切替 · <kbd>↵</kbd>で新カード ·{" "}
+              <kbd>Esc</kbd>／閉じるで終了 · 下のチップで既出タグ
             </>
           )
           : (
@@ -797,7 +876,8 @@ export function Capture(props: { wide?: boolean }) {
                   </>
                 )
                 : null}
-              <kbd>↑</kbd>/<kbd>↓</kbd> で入力履歴 · タグはカード選択後に追加
+              <kbd>↑</kbd>/<kbd>↓</kbd>{" "}
+              で入力履歴 · 下のチップで既出タグ（任意）
             </>
           )}
       </p>
