@@ -1,7 +1,7 @@
 ---
 id: T061
 title: 狭い画面でもキャプチャまで手が届くようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T061"
@@ -53,9 +53,9 @@ PLAN: モバイルは閲覧＋キャプチャができれば十分。ボード�
 表示: タブ・左上が **`ARGBoard · <release>+<id>`**（review 中）または **`ARGBoard · <release>`**（done 後）であること。
 `<release>` は `ui/release.ts` の `APP_RELEASE`。review 中は `APP_PREVIEW` に本カード id を入れる。
 
-- [ ] 390px 相当で起動し、案内を閉じたあと入力欄が見える
-- [ ] タッチ相当で `⌘` ヒントが消えている
-- [ ] デスクトップ幅では既存の探索レイアウトが破綻していない
+- [x] 390px 相当で起動し、案内を閉じたあと入力欄が見える
+- [x] タッチ相当で `⌘` ヒントが消えている
+- [x] デスクトップ幅では既存の探索レイアウトが破綻していない
 
 ## このカードでやらない
 
@@ -77,5 +77,6 @@ PLAN: モバイルは閲覧＋キャプチャができれば十分。ボード�
   touch-action=manipulation。check/test/smoke 緑。flow 本体 +〜80行前後 / 操作+0 / 概念+0（ヒント床のみ）/
   gzip bundle +約2KB / Won't=No。しきい値内。task/T061 を main へ merge → review。
   確認は http://localhost:8000/ 。タブ・左上が `ARGBoard · 0.73+T061` であること。
+- 2026-10-11 human: オッケー → done。APP_RELEASE 0.74、APP_PREVIEW 空。task/T061 branch 削除
 
 ## 差し戻し履歴（追記のみ）
