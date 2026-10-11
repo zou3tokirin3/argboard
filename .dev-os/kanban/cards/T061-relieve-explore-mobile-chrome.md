@@ -1,10 +1,10 @@
 ---
 id: T061
 title: 狭い画面でもキャプチャまで手が届くようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: "task/T061"
 template_ver: generic-0.2
 created: 2026-08-23
 updated: 2026-10-11
@@ -72,5 +72,6 @@ PLAN: モバイルは閲覧＋キャプチャができれば十分。ボード�
 
 - 2026-08-23 planner: UI評価から起票。T016とは対象を分ける（探索の縦クロム）
 - 2026-10-11 human/planner: A案採択（ヒント抑制中心・TopBar非変更・足りなければB）。T064は後続。見込み flow しきい値内 → ready
+- 2026-10-11 impl: 取得。worktree=.worktrees/T061（task/T061）で A案（ヒント短文化・touch/safe-area）を実装する
 
 ## 差し戻し履歴（追記のみ）
