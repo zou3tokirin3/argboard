@@ -1753,14 +1753,6 @@ span.card-image-field__preview {
 .stream__filter-group--story-when .stream__filter-group-label {
   color: color-mix(in srgb, #3d7ea6 65%, var(--muted));
 }
-.stream__filter-group-btns {
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  padding: 1px;
-  border-radius: var(--radius-box);
-  background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
-}
 .stream__filter-btn {
   display: grid;
   place-items: center;

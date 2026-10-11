@@ -87,6 +87,79 @@ function streamEmptyReason(input: {
   return "表示できる手がかりはありません";
 }
 
+type PlacementFilter = "all" | "unplaced" | "placed";
+type RoleFilter = "all" | "finding" | "thought";
+
+function placementFilterOf(
+  unplaced: boolean,
+  placed: boolean,
+): PlacementFilter {
+  if (unplaced) return "unplaced";
+  if (placed) return "placed";
+  return "all";
+}
+
+function cyclePlacementFilter(): void {
+  const cur = placementFilterOf(unplacedOnly.value, placedOnly.value);
+  if (cur === "all") {
+    unplacedOnly.value = true;
+    placedOnly.value = false;
+  } else if (cur === "unplaced") {
+    unplacedOnly.value = false;
+    placedOnly.value = true;
+  } else {
+    unplacedOnly.value = false;
+    placedOnly.value = false;
+  }
+}
+
+function roleFilterOf(finding: boolean, thought: boolean): RoleFilter {
+  if (finding) return "finding";
+  if (thought) return "thought";
+  return "all";
+}
+
+function cycleRoleFilter(): void {
+  const cur = roleFilterOf(findingOnly.value, thoughtOnly.value);
+  if (cur === "all") {
+    findingOnly.value = true;
+    thoughtOnly.value = false;
+  } else if (cur === "finding") {
+    findingOnly.value = false;
+    thoughtOnly.value = true;
+  } else {
+    findingOnly.value = false;
+    thoughtOnly.value = false;
+  }
+}
+
+function cycleStoryWhenFilter(): void {
+  const cur = storyWhenFilter.value;
+  storyWhenFilter.value = cur === "off"
+    ? "with"
+    : cur === "with"
+    ? "without"
+    : "off";
+}
+
+function placementFilterLabel(state: PlacementFilter): string {
+  if (state === "unplaced") return "未配";
+  if (state === "placed") return "掲載";
+  return "すべて";
+}
+
+function roleFilterLabel(state: RoleFilter): string {
+  if (state === "finding") return "発見";
+  if (state === "thought") return "考察";
+  return "すべて";
+}
+
+function storyWhenFilterLabel(state: StoryWhenFilter): string {
+  if (state === "with") return "時あり";
+  if (state === "without") return "時なし";
+  return "すべて";
+}
+
 function sourceLabel(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "") || url;
@@ -738,6 +811,10 @@ export function Stream() {
       exploreComposeCard.value &&
       isLocalMediaRef(exploreComposeCard.value.image),
   );
+  const placement = placementFilterOf(unplacedOnly.value, placedOnly.value);
+  const role = roleFilterOf(findingOnly.value, thoughtOnly.value);
+  const when = storyWhenFilter.value;
+  const outcomeOn = openOutcomeOnly.value;
 
   useEffect(() => {
     if (!revealId) return;
@@ -792,44 +869,25 @@ export function Stream() {
             aria-label="配置"
           >
             <span class="stream__filter-group-label">配置</span>
-            <div class="stream__filter-group-btns">
-              <IconTip align="start" label="配置 · 未配置のみ（ボード未掲載）">
-                <button
-                  type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--text${
-                    unplacedOnly.value ? " is-active" : ""
-                  }`}
-                  data-testid="stream-unplaced-only"
-                  aria-pressed={unplacedOnly.value}
-                  aria-label="未配置のみ"
-                  onClick={() => {
-                    const next = !unplacedOnly.value;
-                    unplacedOnly.value = next;
-                    if (next) placedOnly.value = false;
-                  }}
-                >
-                  <span class="stream__filter-btn-label">未配</span>
-                </button>
-              </IconTip>
-              <IconTip align="start" label="配置 · 配置済のみ（ボード掲載）">
-                <button
-                  type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--text${
-                    placedOnly.value ? " is-active" : ""
-                  }`}
-                  data-testid="stream-placed-only"
-                  aria-pressed={placedOnly.value}
-                  aria-label="配置済のみ"
-                  onClick={() => {
-                    const next = !placedOnly.value;
-                    placedOnly.value = next;
-                    if (next) unplacedOnly.value = false;
-                  }}
-                >
-                  <span class="stream__filter-btn-label">掲載</span>
-                </button>
-              </IconTip>
-            </div>
+            <IconTip
+              align="start"
+              label="配置 · クリックで すべて → 未配 → 掲載"
+            >
+              <button
+                type="button"
+                class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--text${
+                  placement !== "all" ? " is-active" : ""
+                }`}
+                data-testid="stream-placement-filter"
+                aria-pressed={placement !== "all"}
+                aria-label={`配置: ${placementFilterLabel(placement)}`}
+                onClick={cyclePlacementFilter}
+              >
+                <span class="stream__filter-btn-label">
+                  {placementFilterLabel(placement)}
+                </span>
+              </button>
+            </IconTip>
           </div>
           <div
             class="stream__filter-group stream__filter-group--role"
@@ -837,60 +895,52 @@ export function Stream() {
             aria-label="種別"
           >
             <span class="stream__filter-group-label">種別</span>
-            <div class="stream__filter-group-btns">
-              <IconTip align="start" label="種別 · 発見カードのみ">
-                <button
-                  type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--finding${
-                    findingOnly.value ? " is-active" : ""
-                  }`}
-                  data-testid="stream-finding-only"
-                  aria-pressed={findingOnly.value}
-                  aria-label="発見のみ"
-                  onClick={() => {
-                    const next = !findingOnly.value;
-                    findingOnly.value = next;
-                    if (next) thoughtOnly.value = false;
-                  }}
-                >
-                  <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <circle cx="8" cy="8" r="3.5" fill="currentColor" />
-                  </svg>
-                  <span class="stream__filter-btn-label">発見</span>
-                </button>
-              </IconTip>
-              <IconTip align="start" label="種別 · 考察カードのみ">
-                <button
-                  type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--thought${
-                    thoughtOnly.value ? " is-active" : ""
-                  }`}
-                  data-testid="stream-thought-only"
-                  aria-pressed={thoughtOnly.value}
-                  aria-label="考察のみ"
-                  onClick={() => {
-                    const next = !thoughtOnly.value;
-                    thoughtOnly.value = next;
-                    if (next) findingOnly.value = false;
-                  }}
-                >
-                  <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <rect
-                      x="3.5"
-                      y="3.5"
-                      width="9"
-                      height="9"
-                      rx="2"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-dasharray="2.5 2"
-                    />
-                  </svg>
-                  <span class="stream__filter-btn-label">考察</span>
-                </button>
-              </IconTip>
-            </div>
+            <IconTip
+              align="start"
+              label="種別 · クリックで すべて → 発見 → 考察"
+            >
+              <button
+                type="button"
+                class={`stream__filter-btn stream__filter-btn--chip${
+                  role === "finding"
+                    ? " stream__filter-btn--finding is-active"
+                    : role === "thought"
+                    ? " stream__filter-btn--thought is-active"
+                    : " stream__filter-btn--text"
+                }`}
+                data-testid="stream-role-filter"
+                aria-pressed={role !== "all"}
+                aria-label={`種別: ${roleFilterLabel(role)}`}
+                onClick={cycleRoleFilter}
+              >
+                {role === "finding"
+                  ? (
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                      <circle cx="8" cy="8" r="3.5" fill="currentColor" />
+                    </svg>
+                  )
+                  : role === "thought"
+                  ? (
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                      <rect
+                        x="3.5"
+                        y="3.5"
+                        width="9"
+                        height="9"
+                        rx="2"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-dasharray="2.5 2"
+                      />
+                    </svg>
+                  )
+                  : null}
+                <span class="stream__filter-btn-label">
+                  {roleFilterLabel(role)}
+                </span>
+              </button>
+            </IconTip>
           </div>
           <div
             class="stream__filter-group stream__filter-group--outcome"
@@ -898,25 +948,27 @@ export function Stream() {
             aria-label="成否"
           >
             <span class="stream__filter-group-label">成否</span>
-            <div class="stream__filter-group-btns">
-              <IconTip align="start" label="成否 · 未検証の仮説のみ">
-                <button
-                  type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--open${
-                    openOutcomeOnly.value ? " is-active" : ""
-                  }`}
-                  data-testid="stream-open-outcome-only"
-                  aria-pressed={openOutcomeOnly.value}
-                  aria-label="未検証"
-                  onClick={() => {
-                    openOutcomeOnly.value = !openOutcomeOnly.value;
-                  }}
-                >
-                  <ThoughtOutcomeIcon outcome="open" />
-                  <span class="stream__filter-btn-label">未検</span>
-                </button>
-              </IconTip>
-            </div>
+            <IconTip align="start" label="成否 · クリックで すべて ↔ 未検">
+              <button
+                type="button"
+                class={`stream__filter-btn stream__filter-btn--chip${
+                  outcomeOn
+                    ? " stream__filter-btn--open is-active"
+                    : " stream__filter-btn--text"
+                }`}
+                data-testid="stream-open-outcome-only"
+                aria-pressed={outcomeOn}
+                aria-label={`成否: ${outcomeOn ? "未検" : "すべて"}`}
+                onClick={() => {
+                  openOutcomeOnly.value = !openOutcomeOnly.value;
+                }}
+              >
+                {outcomeOn ? <ThoughtOutcomeIcon outcome="open" /> : null}
+                <span class="stream__filter-btn-label">
+                  {outcomeOn ? "未検" : "すべて"}
+                </span>
+              </button>
+            </IconTip>
           </div>
           <div
             class="stream__filter-group stream__filter-group--story-when"
@@ -924,85 +976,71 @@ export function Stream() {
             aria-label="作中時間"
           >
             <span class="stream__filter-group-label">作中</span>
-            <div class="stream__filter-group-btns">
-              <IconTip
-                align="start"
-                label="作中 · 時間付きのみ（壁時計の発見時刻ではない）"
+            <IconTip
+              align="start"
+              label="作中 · クリックで すべて → 時あり → 時なし（壁時計の発見時刻ではない）"
+            >
+              <button
+                type="button"
+                class={`stream__filter-btn stream__filter-btn--chip${
+                  when === "with"
+                    ? " stream__filter-btn--story-when is-active"
+                    : when === "without"
+                    ? " stream__filter-btn--no-story-when is-active"
+                    : " stream__filter-btn--text"
+                }`}
+                data-testid="stream-story-when-filter"
+                aria-pressed={when !== "off"}
+                aria-label={`作中: ${storyWhenFilterLabel(when)}`}
+                onClick={cycleStoryWhenFilter}
               >
-                <button
-                  type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--story-when${
-                    storyWhenFilter.value === "with" ? " is-active" : ""
-                  }`}
-                  data-testid="stream-story-when-only"
-                  aria-pressed={storyWhenFilter.value === "with"}
-                  aria-label="時あり"
-                  onClick={() => {
-                    storyWhenFilter.value = storyWhenFilter.value === "with"
-                      ? "off"
-                      : "with";
-                  }}
-                >
-                  <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <path
-                      d="M2 8h12"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.4"
-                      stroke-linecap="round"
-                    />
-                    <path
-                      d="M3 5.5v5M13 5.5v5"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.3"
-                      stroke-linecap="round"
-                    />
-                    <circle cx="8" cy="8" r="2" fill="currentColor" />
-                  </svg>
-                  <span class="stream__filter-btn-label">時あり</span>
-                </button>
-              </IconTip>
-              <IconTip
-                align="start"
-                label="作中 · 時間なしのみ（作中時間が未設定）"
-              >
-                <button
-                  type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--no-story-when${
-                    storyWhenFilter.value === "without" ? " is-active" : ""
-                  }`}
-                  data-testid="stream-no-story-when-only"
-                  aria-pressed={storyWhenFilter.value === "without"}
-                  aria-label="時なし"
-                  onClick={() => {
-                    storyWhenFilter.value = storyWhenFilter.value === "without"
-                      ? "off"
-                      : "without";
-                  }}
-                >
-                  <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <path
-                      d="M2 8h12"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.4"
-                      stroke-linecap="round"
-                      stroke-dasharray="2.2 1.8"
-                    />
-                    <path
-                      d="M3 5.5v5M13 5.5v5"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.3"
-                      stroke-linecap="round"
-                      opacity="0.55"
-                    />
-                  </svg>
-                  <span class="stream__filter-btn-label">時なし</span>
-                </button>
-              </IconTip>
-            </div>
+                {when === "with"
+                  ? (
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                      <path
+                        d="M2 8h12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                      />
+                      <path
+                        d="M3 5.5v5M13 5.5v5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.3"
+                        stroke-linecap="round"
+                      />
+                      <circle cx="8" cy="8" r="2" fill="currentColor" />
+                    </svg>
+                  )
+                  : when === "without"
+                  ? (
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                      <path
+                        d="M2 8h12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.4"
+                        stroke-linecap="round"
+                        stroke-dasharray="2.2 1.8"
+                      />
+                      <path
+                        d="M3 5.5v5M13 5.5v5"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.3"
+                        stroke-linecap="round"
+                        opacity="0.55"
+                      />
+                    </svg>
+                  )
+                  : null}
+                <span class="stream__filter-btn-label">
+                  {storyWhenFilterLabel(when)}
+                </span>
+              </button>
+            </IconTip>
           </div>
         </div>
         <TagFocusControls />
