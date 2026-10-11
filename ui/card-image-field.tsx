@@ -3,6 +3,7 @@ import {
   imageBlobFromClipboard,
   imageBlobFromDataTransfer,
 } from "./clipboard-image.ts";
+import { useCompactChromeHints } from "./compact-chrome.ts";
 import { isLocalMediaRef } from "./media.ts";
 import { clearCardImage, resolveMediaUrl, setCardImage } from "./state.ts";
 
@@ -15,6 +16,7 @@ export function CardImageField(props: {
   testId?: string;
 }) {
   const variant = props.variant ?? "compact";
+  const compactHints = useCompactChromeHints();
   const [url, setUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const hasImage = isLocalMediaRef(props.image);
@@ -101,8 +103,10 @@ export function CardImageField(props: {
           : (
             <p class="card-image-field__hint">
               {variant === "inline"
-                ? "⌘V"
-                : "ここに貼り付け（⌘V）またはドロップ"}
+                ? (compactHints ? "画像" : "⌘V")
+                : (compactHints
+                  ? "ファイルを選ぶ／貼り付け"
+                  : "ここに貼り付け（⌘V）またはドロップ")}
             </p>
           )}
       </div>

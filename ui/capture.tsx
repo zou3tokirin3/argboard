@@ -33,6 +33,7 @@ import {
   setImageReferenceCaptureMode,
   stopDigging,
 } from "./state.ts";
+import { useCompactChromeHints } from "./compact-chrome.ts";
 import { collectTagUsage, normalizeTag } from "./tags.ts";
 
 const HISTORY_KEY = "argboard.captureHistory";
@@ -169,6 +170,7 @@ function CaptureImageSlot(props: {
   getStoryWhen: () => string;
   getStoryUntil: () => string;
 }) {
+  const compactHints = useCompactChromeHints();
   const [busy, setBusy] = useState(false);
 
   function draftFromLine() {
@@ -233,12 +235,15 @@ function CaptureImageSlot(props: {
 
   return (
     <>
-      <label class="capture__image-slot" title="スクショを貼る（⌘V）">
+      <label
+        class="capture__image-slot"
+        title={compactHints ? "スクショを選ぶ" : "スクショを貼る（⌘V）"}
+      >
         <input
           type="file"
           accept="image/*"
           data-testid="capture-image-slot"
-          aria-label="スクショを貼り付け"
+          aria-label={compactHints ? "スクショを選ぶ" : "スクショを貼り付け"}
           disabled={props.disabled || busy}
           onPaste={onPaste}
           onChange={onFileChange}
@@ -616,6 +621,7 @@ function ExploreImageReference(props: { wide?: boolean }) {
 
 export function Capture(props: { wide?: boolean }) {
   const wide = props.wide ?? false;
+  const compactHints = useCompactChromeHints();
   const replaying = isReplaying.value;
   const staging = wide && exploreImageDraft.value;
   const composeCard = exploreComposeCard.value;
@@ -858,38 +864,63 @@ export function Capture(props: { wide?: boolean }) {
       <p class="capture-hint" id="capture-hint">
         {staging
           ? (
-            <>
-              画像を準備中 · <kbd>⌘/Ctrl+↵</kbd> またはタイトルで<kbd>↵</kbd>
-              で追加 · メモは<kbd>Shift+↵</kbd>で改行 ·{" "}
-              <kbd>Esc</kbd>／やめるで取消 · もう一度貼ると差し替え ·
-              タイトル下のチップで既出タグ
-            </>
+            compactHints
+              ? <>画像を準備中 · タイトルで追加 · やめるで取消 · タグは任意</>
+              : (
+                <>
+                  画像を準備中 · <kbd>⌘/Ctrl+↵</kbd>{" "}
+                  またはタイトルで<kbd>↵</kbd>
+                  で追加 · メモは<kbd>Shift+↵</kbd>で改行 ·{" "}
+                  <kbd>Esc</kbd>／やめるで取消 · もう一度貼ると差し替え ·
+                  タイトル下のチップで既出タグ
+                </>
+              )
           )
           : inCompose
           ? (
-            <>
-              画像を見ながら1行で追加 · 上で<strong>掘る</strong>／<strong>
-                考察
-              </strong>
-              を切替 · <kbd>↵</kbd>で新カード ·{" "}
-              <kbd>Esc</kbd>／閉じるで終了 · タイトル下のチップで既出タグ
-            </>
+            compactHints
+              ? (
+                <>
+                  画像を見ながら1行で追加 · 上で<strong>掘る</strong>／<strong>
+                    考察
+                  </strong>
+                  を切替 · ↵で新カード · 閉じるで終了
+                </>
+              )
+              : (
+                <>
+                  画像を見ながら1行で追加 · 上で<strong>掘る</strong>／<strong>
+                    考察
+                  </strong>
+                  を切替 · <kbd>↵</kbd>で新カード ·{" "}
+                  <kbd>Esc</kbd>／閉じるで終了 · タイトル下のチップで既出タグ
+                </>
+              )
           )
           : (
-            <>
-              <code>題 // ひとこと</code>{" "}
-              · URLはそのまま貼ると出典に · 作中時間は任意 ·
-              {wide
-                ? (
-                  <>
-                    {" "}
-                    <kbd>⌘V</kbd>／ドラッグでスクショ（確定前に編集） ·
-                  </>
-                )
-                : null}
-              <kbd>↑</kbd>/<kbd>↓</kbd>{" "}
-              で入力履歴 · タイトル下のチップで既出タグ（任意）
-            </>
+            compactHints
+              ? (
+                <>
+                  <code>題 // ひとこと</code>{" "}
+                  · URLは出典 · 画像はファイル選択 · タグは任意
+                </>
+              )
+              : (
+                <>
+                  <code>題 // ひとこと</code>{" "}
+                  · URLはそのまま貼ると出典に · 作中時間は任意 ·
+                  {wide
+                    ? (
+                      <>
+                        {" "}
+                        <kbd>⌘V</kbd>／ドラッグでスクショ（確定前に編集） ·
+                      </>
+                    )
+                    : null}
+                  <kbd>↑</kbd>/<kbd>↓</kbd>{" "}
+                  で入力履歴 · タイトル下のチップで既出タグ（任意）
+                </>
+              )
           )}
       </p>
     </div>

@@ -114,6 +114,7 @@
 }
 html {
   color-scheme: light;
+  touch-action: manipulation;
 }
 html,
 body,
@@ -149,6 +150,9 @@ body {
   min-height: 100%;
   overflow: hidden;
   background: var(--bg);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .skip-link {
   position: absolute;
@@ -427,6 +431,7 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 16px;
+  padding-top: max(8px, env(safe-area-inset-top, 0px));
   border-bottom: 1px solid var(--line);
   background: var(--bg-soft);
   color: var(--ink);
@@ -3154,4 +3159,9 @@ span.card-image-field__preview {
     border-left: 0;
     border-top: 1px solid var(--line-strong);
   }
+}
+
+/* T061: notch / home indicator — after layout MQ so padding wins */
+.app-shell:not(:has(.install-tip)) .topbar {
+  padding-top: max(10px, env(safe-area-inset-top, 0px));
 }
