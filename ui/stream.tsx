@@ -796,7 +796,7 @@ export function Stream() {
               <IconTip align="start" label="配置 · 未配置のみ（ボード未掲載）">
                 <button
                   type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip${
+                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--text${
                     unplacedOnly.value ? " is-active" : ""
                   }`}
                   data-testid="stream-unplaced-only"
@@ -808,22 +808,13 @@ export function Stream() {
                     if (next) placedOnly.value = false;
                   }}
                 >
-                  <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <path
-                      d="M8 2.5C6.2 2.5 5 3.9 5 5.6c0 2.3 3 6 3 6s3-3.7 3-6C11 3.9 9.8 2.5 8 2.5z"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.4"
-                      stroke-dasharray="2.2 1.6"
-                    />
-                  </svg>
                   <span class="stream__filter-btn-label">未配</span>
                 </button>
               </IconTip>
               <IconTip align="start" label="配置 · 配置済のみ（ボード掲載）">
                 <button
                   type="button"
-                  class={`stream__filter-btn stream__filter-btn--chip${
+                  class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--text${
                     placedOnly.value ? " is-active" : ""
                   }`}
                   data-testid="stream-placed-only"
@@ -835,12 +826,6 @@ export function Stream() {
                     if (next) unplacedOnly.value = false;
                   }}
                 >
-                  <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <path
-                      d="M8 2.5C6.2 2.5 5 3.9 5 5.6c0 2.3 3 6 3 6s3-3.7 3-6C11 3.9 9.8 2.5 8 2.5z"
-                      fill="currentColor"
-                    />
-                  </svg>
                   <span class="stream__filter-btn-label">掲載</span>
                 </button>
               </IconTip>
@@ -959,21 +944,21 @@ export function Stream() {
                   }}
                 >
                   <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <circle
-                      cx="8"
-                      cy="8"
-                      r="5.5"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.4"
-                    />
                     <path
-                      d="M8 4.5V8l2.2 1.4"
+                      d="M2 8h12"
                       fill="none"
                       stroke="currentColor"
                       stroke-width="1.4"
                       stroke-linecap="round"
                     />
+                    <path
+                      d="M3 5.5v5M13 5.5v5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.3"
+                      stroke-linecap="round"
+                    />
+                    <circle cx="8" cy="8" r="2" fill="currentColor" />
                   </svg>
                   <span class="stream__filter-btn-label">時あり</span>
                 </button>
@@ -997,14 +982,21 @@ export function Stream() {
                   }}
                 >
                   <svg viewBox="0 0 16 16" aria-hidden="true">
-                    <circle
-                      cx="8"
-                      cy="8"
-                      r="5.5"
+                    <path
+                      d="M2 8h12"
                       fill="none"
                       stroke="currentColor"
                       stroke-width="1.4"
-                      stroke-dasharray="2.2 1.6"
+                      stroke-linecap="round"
+                      stroke-dasharray="2.2 1.8"
+                    />
+                    <path
+                      d="M3 5.5v5M13 5.5v5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.3"
+                      stroke-linecap="round"
+                      opacity="0.55"
                     />
                   </svg>
                   <span class="stream__filter-btn-label">時なし</span>
