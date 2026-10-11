@@ -1,7 +1,7 @@
 ---
 id: T080
 title: 発見ログのフィルタ帯を用途が伝わる見た目に再設計する
-status: review
+status: done
 owner: impl
 gate: human
 branch: "task/T080"
@@ -67,17 +67,16 @@ PLAN §8 操作クロム（view choice 族） / T077 作業ログ（↑↓ も�
 - [x] PLAN §8 の view choice 約束と矛盾しない
 - [x] flow しきい値を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
 - [x] 最新コミットで check / test / smoke が緑
-- [ ] 人間が「フィルタ帯が前よりスマート／読める」と確認する
+- [x] 人間が「フィルタ帯が前よりスマート／読める」と確認する
 
 ## 確認観点（gate: human のとき）
 
-表示: タブ・左上が **`ARGBoard · 0.72+T080`**（review 中）であること。
-`<release>` は `ui/release.ts` の `APP_RELEASE`。review 中は `APP_PREVIEW` に本カード id を入れる。
+表示: タブ・左上が **`ARGBoard · 0.73`**（done 後）であること。
 
-- [ ] 配置が1ボタンで、すべて／未配／掲載がラベルで分かる
-- [ ] 種別・作中も同様に1ボタン循環
-- [ ] 成否はすべて／未検の切替
-- [ ] 狭い幅でも帯が過度に縦に伸びない
+- [x] 配置が1ボタンで、すべて／未配／掲載がラベルで分かる
+- [x] 種別・作中も同様に1ボタン循環
+- [x] 成否はすべて／未検の切替
+- [x] 狭い幅でも帯が過度に縦に伸びない
 
 ## このカードでやらない
 
@@ -104,6 +103,8 @@ PLAN §8 操作クロム（view choice 族） / T077 作業ログ（↑↓ も�
 - 2026-10-11 impl: 配置/種別/作中を1ボタン循環、成否はすべて↔未検。
   check/test/smoke 緑。flow 実測=本体行+26 / 操作-3 / 概念+0 / gzip +59B / Won't=No
   → review（APP_PREVIEW=T080）
+- 2026-10-11 human: OK（良くなった）→ done。
+  APP_RELEASE 0.73、APP_PREVIEW 空。task/T080 worktree/branch 削除
 
 ## 差し戻し履歴（追記のみ）
 
