@@ -21,10 +21,10 @@ template_ver: generic-0.2
 
 - 概要: [README.md](../README.md) / 仕様は [PLAN.md](../PLAN.md) が唯一の正本
 - セットアップ / ビルド / テスト:
-  - 前提: `mise install`（Deno 2 は [mise.toml](../mise.toml)）
+  - 前提: `mise install`（Deno 2 は [mise.toml](../mise.toml)）— **移行完了までは現行**。Deno 公式終了に伴いツールチェーン離脱がユーザー意図（PLAN §14 改訂30・親カード T081）。**まだ移行済みではない**
   - 開発: `mise exec -- deno task dev`
   - 検証ループ: `mise exec -- deno task check && mise exec -- deno task test && mise exec -- deno task smoke`
-  - ビルド成果物: `dist/`（GitHub Pages 公開用）
+  - ビルド成果物: `dist/`（GitHub Pages / Cloudflare Workers 静的アセット公開用）
 - 触ってはいけない場所:
   - `PLAN.md` の Won't リスト（§12）に書かれた機能は提案・実装しない
   - 本体予算: 15 ファイル / 3,000 行は警告基準（§11-3）。超過見込みは評価パケット→人間GO
