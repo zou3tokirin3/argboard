@@ -1,13 +1,13 @@
 ---
 id: T064
 title: 倍率固定の拡大表示で左も右も画像を見ながらメモできるようにする
-status: ready
-owner: none
+status: doing
+owner: impl
 gate: human
-branch: ""
+branch: task/T064
 template_ver: generic-0.2
 created: 2026-08-26
-updated: 2026-10-17
+updated: 2026-10-20
 ---
 
 ## 目的
@@ -69,5 +69,7 @@ updated: 2026-10-17
 - 2026-10-17 human: T065 を dropped、T064 を ready にしてよいと承認
 - 2026-10-17 planner: 倍率ルール確定＝**自然ピクセル 1×**。ビューポートに収まらなければネイティブスクロール（contain 固定は採らない）。T061 done につき前提クリア → ready
 - 2026-10-17 planner: flow 見込み（着手前）: 本体行 +120〜180 / 操作 +2（拡大を開く・閉じる）/ 概念 +1（拡大表示）/ gzip +1KB 未満 / Won't No
+
+- 2026-10-20 human: 「T064をスタートして」→ ready→doing（branch task/T064）
 
 ## 差し戻し履歴（追記のみ）
