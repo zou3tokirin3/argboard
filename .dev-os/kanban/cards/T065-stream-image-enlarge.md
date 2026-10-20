@@ -1,13 +1,13 @@
 ---
 id: T065
 title: 発見ログの写真を拡大して見られるようにする
-status: backlog
+status: dropped
 owner: none
 gate: human
 branch: ""
 template_ver: generic-0.2
 created: 2026-08-26
-updated: 2026-08-26
+updated: 2026-10-17
 ---
 
 ## 目的
@@ -31,5 +31,7 @@ updated: 2026-08-26
 - 2026-08-26 planner: 人間「拡大モード付けるの面倒？？」→ ライトボックス起票
 - 2026-08-26 human: 倍率固定拡大で左も右も盛り込みたい
 - 2026-08-26 planner: T064 に統合。本カードは人間の dropped 待ち（dropped は人間のみ）
+
+- 2026-10-17 human: dropped 承認（理由: 倍率固定拡大で左右を T064 に一本化）
 
 ## 差し戻し履歴（追記のみ）
