@@ -7,7 +7,7 @@ gate: human
 branch: ""
 template_ver: generic-0.2
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-20
 ---
 
 ## 目的
@@ -32,5 +32,9 @@ Deno ランタイムの公式開発終了（Deploy 停止・ランタイム保�
 ## 作業ログ（追記のみ）
 
 - 2026-10-16 planner: 起票（backlog）。意図の記録のみ。§14 改訂30 と同期
+
+- 2026-10-20 planner: 移行プランを `.dev-os/plans/cloudflare-migration.md` に作成（提案・採択待ち）。子カードはプラン §3〜§5 を出典に、採択後に起票する
+
+- 2026-10-20 human: 移行プランを採択。planner: フェーズAを T085 として起票
 
 ## 差し戻し履歴（追記のみ）
