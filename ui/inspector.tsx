@@ -9,18 +9,22 @@ import { debounce } from "./debounce.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
 import { CardImageField } from "./card-image-field.tsx";
+import { ImageOverlay } from "./image-overlay.tsx";
 import { IconTip } from "./icon-tip.tsx";
 import { isLocalMediaRef } from "./media.ts";
 import {
   attachTagToCards,
   clearCardSelection,
   clearReplay,
+  closeImageOverlay,
   consumeInspectorTitleFocus,
   detachTagFromCards,
   enterReplay,
+  imageOverlayCardId,
   isReplaying,
   mergeProjectTags,
   openExploreCompose,
+  openImageOverlay,
   removeCard,
   removeLink,
   renameProjectTag,
@@ -682,6 +686,7 @@ export function Inspector() {
           disabled={replaying}
           variant="compact"
           testId="inspector-image"
+          onEnlarge={() => openImageOverlay(card.id)}
         />
         {isLocalMediaRef(card.image)
           ? (
@@ -697,6 +702,18 @@ export function Inspector() {
           )
           : null}
       </div>
+      {imageOverlayCardId.value === card.id && isLocalMediaRef(card.image)
+        ? (
+          <ImageOverlay
+            title={card.title}
+            image={card.image}
+            onClose={() => {
+              flushCardFields();
+              closeImageOverlay();
+            }}
+          />
+        )
+        : null}
       {cardLinks.length
         ? (
           <label class="inspector__field">

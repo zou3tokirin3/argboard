@@ -150,6 +150,19 @@ export const exploreComposeCard = computed(() => {
   return project.value?.cards.find((item) => item.id === id) ?? null;
 });
 
+/** Fixed-scale screenshot viewer (T064). Session only. */
+export const imageOverlayCardId = signal<string | null>(null);
+
+/** Select the card first so the inspector owns the only memo draft. */
+export function openImageOverlay(cardId: string): void {
+  selectSingleCard(cardId);
+  imageOverlayCardId.value = cardId;
+}
+
+export function closeImageOverlay(): void {
+  imageOverlayCardId.value = null;
+}
+
 export function stopDigging(): void {
   diggingCardId.value = null;
 }

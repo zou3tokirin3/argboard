@@ -3165,3 +3165,104 @@ span.card-image-field__preview {
 .app-shell:not(:has(.install-tip)) .topbar {
   padding-top: max(10px, env(safe-area-inset-top, 0px));
 }
+
+/* T064: fixed-scale screenshot overlay (image-overlay.tsx) */
+.stream-card__thumb-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+.image-enlarge-btn,
+.image-enlarge-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1;
+  box-shadow: var(--shadow);
+}
+.image-enlarge-btn {
+  padding: 0;
+  cursor: pointer;
+}
+.stream-card__enlarge {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+}
+.card-image-field__enlarge {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+.card-image-field__enlarge .image-enlarge-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.image-enlarge-btn:hover,
+.card-image-field__enlarge:hover .image-enlarge-badge {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+/* Leaves the inspector (300px column) visible and editable. */
+.image-overlay {
+  position: fixed;
+  inset: 0 301px 0 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: rgb(15 20 25 / 92%);
+  color: #fff;
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+}
+.image-overlay__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+.image-overlay__hint {
+  flex: 1;
+  color: rgb(255 255 255 / 70%);
+  font-size: 12px;
+}
+.image-overlay__head button {
+  min-height: 32px;
+  color: var(--ink);
+}
+.image-overlay__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.image-overlay__img {
+  display: block;
+  max-width: none;
+}
+@media (max-width: 800px) {
+  .image-overlay {
+    inset: 0 0 auto 0;
+    height: 55vh;
+  }
+  /* Narrow: dock the inspector under the image instead of stacking. */
+  .app-shell:has(.image-overlay) .inspector {
+    position: fixed;
+    inset: 55vh 0 0 0;
+    z-index: 61;
+    border-top: 1px solid var(--line-strong);
+  }
+  .image-overlay__hint {
+    display: none;
+  }
+}

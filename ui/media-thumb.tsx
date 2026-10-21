@@ -1,6 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { isLocalMediaRef } from "./media.ts";
-import { resolveMediaUrl } from "./state.ts";
+import { useMediaUrl } from "./use-media-url.ts";
 
 /** Extreme aspect → center-crop; otherwise show the whole image. */
 function fitForNaturalSize(
@@ -27,7 +27,7 @@ export function MediaThumb(props: {
   width?: number;
   height?: number;
 }) {
-  const [url, setUrl] = useState<string | null>(null);
+  const url = useMediaUrl(props.image);
   const [fit, setFit] = useState<"contain" | "cover">(
     props.preferContain ? "contain" : "cover",
   );
@@ -36,17 +36,8 @@ export function MediaThumb(props: {
   const height = props.height ?? 66;
 
   useEffect(() => {
-    let cancelled = false;
-    setUrl(null);
     setFit(props.preferContain ? "contain" : "cover");
-    if (!has) return;
-    void resolveMediaUrl(props.image).then((resolved) => {
-      if (!cancelled) setUrl(resolved);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [props.image, has, props.preferContain]);
+  }, [props.image, props.preferContain]);
 
   if (!has) return null;
   const className = [

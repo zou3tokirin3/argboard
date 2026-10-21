@@ -46,6 +46,7 @@ import {
   updateCard,
   viewProject,
 } from "./state.ts";
+import { ImageEnlargeButton } from "./image-overlay.tsx";
 import { MediaThumb } from "./media-thumb.tsx";
 import { isLocalMediaRef } from "./media.ts";
 import { formatStoryWhenLabel, hasStoryWhen } from "./story-when.ts";
@@ -515,28 +516,35 @@ function StreamCardRow(props: StreamCardRowProps) {
                 </span>
                 {isLocalMediaRef(card.image)
                   ? (
-                    <IconTip align="end" label="画像 · 大きく見ながら書く">
-                      <button
-                        type="button"
-                        class="stream-card__thumb-btn"
-                        data-testid="stream-card-thumb"
-                        aria-label="大きく見ながら書く"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (selectedCardId.value !== card.id) {
-                            selectSingleCard(card.id);
-                          }
-                          openExploreCompose(card.id);
-                        }}
-                      >
-                        <MediaThumb
-                          image={card.image}
-                          className="stream-card__thumb"
-                          width={88}
-                          height={66}
-                        />
-                      </button>
-                    </IconTip>
+                    <span class="stream-card__thumb-wrap">
+                      <IconTip align="end" label="画像 · 大きく見ながら書く">
+                        <button
+                          type="button"
+                          class="stream-card__thumb-btn"
+                          data-testid="stream-card-thumb"
+                          aria-label="大きく見ながら書く"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (selectedCardId.value !== card.id) {
+                              selectSingleCard(card.id);
+                            }
+                            openExploreCompose(card.id);
+                          }}
+                        >
+                          <MediaThumb
+                            image={card.image}
+                            className="stream-card__thumb"
+                            width={88}
+                            height={66}
+                          />
+                        </button>
+                      </IconTip>
+                      <ImageEnlargeButton
+                        cardId={card.id}
+                        className="stream-card__enlarge"
+                        testId="stream-card-enlarge"
+                      />
+                    </span>
                   )
                   : null}
               </span>
@@ -586,28 +594,35 @@ function StreamCardRow(props: StreamCardRowProps) {
                 </span>
                 {isLocalMediaRef(card.image)
                   ? (
-                    <IconTip align="end" label="画像 · 大きく見ながら書く">
-                      <button
-                        type="button"
-                        class="stream-card__thumb-btn"
-                        data-testid="stream-card-thumb"
-                        aria-label="大きく見ながら書く"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          if (selectedCardId.value !== card.id) {
-                            selectSingleCard(card.id);
-                          }
-                          openExploreCompose(card.id);
-                        }}
-                      >
-                        <MediaThumb
-                          image={card.image}
-                          className="stream-card__thumb"
-                          width={88}
-                          height={66}
-                        />
-                      </button>
-                    </IconTip>
+                    <span class="stream-card__thumb-wrap">
+                      <IconTip align="end" label="画像 · 大きく見ながら書く">
+                        <button
+                          type="button"
+                          class="stream-card__thumb-btn"
+                          data-testid="stream-card-thumb"
+                          aria-label="大きく見ながら書く"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (selectedCardId.value !== card.id) {
+                              selectSingleCard(card.id);
+                            }
+                            openExploreCompose(card.id);
+                          }}
+                        >
+                          <MediaThumb
+                            image={card.image}
+                            className="stream-card__thumb"
+                            width={88}
+                            height={66}
+                          />
+                        </button>
+                      </IconTip>
+                      <ImageEnlargeButton
+                        cardId={card.id}
+                        className="stream-card__enlarge"
+                        testId="stream-card-enlarge"
+                      />
+                    </span>
                   )
                   : null}
               </span>

@@ -15,6 +15,7 @@ import {
   imageBlobFromDataTransfer,
 } from "./clipboard-image.ts";
 import { isLocalMediaRef } from "./media.ts";
+import { useMediaUrl } from "./use-media-url.ts";
 import {
   addCard,
   clearExploreImageDraft,
@@ -29,7 +30,6 @@ import {
   pasteExploreImage,
   patchExploreImageDraft,
   project,
-  resolveMediaUrl,
   setImageReferenceCaptureMode,
   stopDigging,
 } from "./state.ts";
@@ -468,25 +468,11 @@ function ExploreImageReference(props: { wide?: boolean }) {
   const replaying = isReplaying.value;
   const captureMode = imageReferenceCaptureMode.value;
   const diggingId = diggingCardId.value;
-  const [url, setUrl] = useState<string | null>(null);
+  const url = useMediaUrl(card?.image);
   const [previewHeight, setPreviewHeight] = useState(() =>
     resolvePreviewHeight(surface, globalThis.innerHeight)
   );
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!card || !isLocalMediaRef(card.image)) {
-      setUrl(null);
-      return;
-    }
-    void resolveMediaUrl(card.image).then((resolved) => {
-      if (!cancelled) setUrl(resolved);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [card?.id, card?.image]);
 
   function persistHeight(next: number) {
     setPreviewHeight(next);

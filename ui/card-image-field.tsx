@@ -1,11 +1,12 @@
-import { useEffect, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 import {
   imageBlobFromClipboard,
   imageBlobFromDataTransfer,
 } from "./clipboard-image.ts";
 import { useCompactChromeHints } from "./compact-chrome.ts";
 import { isLocalMediaRef } from "./media.ts";
-import { clearCardImage, resolveMediaUrl, setCardImage } from "./state.ts";
+import { clearCardImage, setCardImage } from "./state.ts";
+import { useMediaUrl } from "./use-media-url.ts";
 
 export function CardImageField(props: {
   cardId: string;
@@ -14,24 +15,15 @@ export function CardImageField(props: {
   /** compact = inspector; inline = capture compose beside fields */
   variant?: "compact" | "inline";
   testId?: string;
+  /** When set, the preview opens the fixed-scale overlay (T064). */
+  onEnlarge?: () => void;
 }) {
   const variant = props.variant ?? "compact";
   const compactHints = useCompactChromeHints();
-  const [url, setUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const hasImage = isLocalMediaRef(props.image);
 
-  useEffect(() => {
-    let cancelled = false;
-    setUrl(null);
-    if (!hasImage) return;
-    void resolveMediaUrl(props.image).then((resolved) => {
-      if (!cancelled) setUrl(resolved);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [props.cardId, props.image, hasImage]);
+  const url = useMediaUrl(props.image);
 
   async function applyBlob(blob: Blob | undefined) {
     if (!blob || props.disabled || busy) return;
@@ -88,7 +80,27 @@ export function CardImageField(props: {
           void applyBlob(imageBlobFromDataTransfer(event));
         }}
       >
-        {url
+        {url && props.onEnlarge
+          ? (
+            <button
+              type="button"
+              class="card-image-field__enlarge"
+              data-testid="inspector-image-enlarge"
+              aria-label="画像を拡大して見る（1×）"
+              title="拡大して見る（1×）"
+              onClick={props.onEnlarge}
+            >
+              <img
+                class="card-image-field__preview"
+                src={url}
+                alt="添付スクショ"
+                width={1600}
+                height={1000}
+              />
+              <span class="image-enlarge-badge" aria-hidden="true">⤢</span>
+            </button>
+          )
+          : url
           ? (
             <img
               class="card-image-field__preview"
