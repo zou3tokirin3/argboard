@@ -1,7 +1,7 @@
 ---
 id: T081
 title: Deno ツールチェーンから離れる（親）
-status: backlog
+status: done
 owner: none
 gate: human
 branch: ""
@@ -36,5 +36,6 @@ Deno ランタイムの公式開発終了（Deploy 停止・ランタイム保�
 - 2026-10-20 planner: 移行プランを `.dev-os/plans/cloudflare-migration.md` に作成（提案・採択待ち）。子カードはプラン §3〜§5 を出典に、採択後に起票する
 
 - 2026-10-20 human: 移行プランを採択。planner: フェーズAを T085 として起票
+- 2026-10-21 claude: フェーズB（T086〜T091）完了。deno.json/serve.ts/smoke.ts 削除。pnpm run build/check/test/smoke 全緑。done。
 
 ## 差し戻し履歴（追記のみ）
