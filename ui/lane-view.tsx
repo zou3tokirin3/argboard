@@ -80,11 +80,7 @@ export function LaneWorkspace() {
             </button>
           </div>
         </div>
-        <div
-          class="lane-panel__order"
-          role="group"
-          aria-label="作中並びの向き"
-        >
+        <div class="lane-panel__order" role="group" aria-label="作中並びの向き">
           <button
             type="button"
             class="lane-panel__order-btn"
@@ -112,34 +108,34 @@ export function LaneWorkspace() {
           「{origin.title}」から糸で届く作中時間つき。配置は覚えません。
         </p>
       </header>
-      {members.length === 0
-        ? <p class="lane-empty">この範囲に作中時間つきカードがありません</p>
-        : (
-          <ul class="lane-list">
-            {members.map((card, index) => (
-              <li key={card.id}>
-                <button
-                  type="button"
-                  class={`lane-list__row${
-                    selectedId === card.id ? " is-selected" : ""
-                  }`}
-                  data-testid="story-chrono-row"
-                  data-card-id={card.id}
-                  aria-current={selectedId === card.id ? "true" : undefined}
-                  onClick={() => selectCardFromStoryChrono(card.id)}
-                >
-                  <span class="lane-when">
-                    {formatStoryWhenLabel(card) || "—"}
-                  </span>
-                  <span class="lane-list__title">{card.title}</span>
-                  {suspicious[index]
-                    ? <span class="lane-flag">順が怪しい</span>
-                    : null}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+      {members.length === 0 ? (
+        <p class="lane-empty">この範囲に作中時間つきカードがありません</p>
+      ) : (
+        <ul class="lane-list">
+          {members.map((card, index) => (
+            <li key={card.id}>
+              <button
+                type="button"
+                class={`lane-list__row${
+                  selectedId === card.id ? " is-selected" : ""
+                }`}
+                data-testid="story-chrono-row"
+                data-card-id={card.id}
+                aria-current={selectedId === card.id ? "true" : undefined}
+                onClick={() => selectCardFromStoryChrono(card.id)}
+              >
+                <span class="lane-when">
+                  {formatStoryWhenLabel(card) || "—"}
+                </span>
+                <span class="lane-list__title">{card.title}</span>
+                {suspicious[index] ? (
+                  <span class="lane-flag">順が怪しい</span>
+                ) : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </aside>
   );
 }

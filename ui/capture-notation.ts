@@ -15,9 +15,9 @@ function takeUrl(text: string): { rest: string; url?: string } {
   const match = text.match(/https?:\/\/[^\s<>"']+/i);
   if (!match || match.index === undefined) return { rest: text };
   const raw = match[0].replace(/[),.\]]+$/, "");
-  const rest = `${text.slice(0, match.index)} ${
-    text.slice(match.index + match[0].length)
-  }`
+  const rest = `${text.slice(0, match.index)} ${text.slice(
+    match.index + match[0].length,
+  )}`
     .replace(/\s+/g, " ")
     .trim();
   return { rest, url: raw };

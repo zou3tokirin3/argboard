@@ -18,11 +18,11 @@ export function IconTip({
 }: IconTipProps) {
   const alignClass = align === "center" ? "" : ` icon-tip--align-${align}`;
   return (
-    <span
-      class={`icon-tip${alignClass}${className ? ` ${className}` : ""}`}
-    >
+    <span class={`icon-tip${alignClass}${className ? ` ${className}` : ""}`}>
       {children}
-      <span class="icon-tip__bubble" role="tooltip">{label}</span>
+      <span class="icon-tip__bubble" role="tooltip">
+        {label}
+      </span>
     </span>
   );
 }

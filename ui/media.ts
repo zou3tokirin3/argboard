@@ -171,8 +171,8 @@ export function parseZip(bytes: Uint8Array): ZipEntry[] {
 }
 
 export function projectJsonFromZip(entries: ZipEntry[]): string {
-  const hit = entries.find((e) =>
-    e.name === "project.json" || e.name.endsWith("/project.json")
+  const hit = entries.find(
+    (e) => e.name === "project.json" || e.name.endsWith("/project.json"),
   );
   if (!hit) throw new Error("zipに project.json がありません");
   return td.decode(hit.data);

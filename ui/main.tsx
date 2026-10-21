@@ -7,6 +7,7 @@ import { imageBlobFromClipboard } from "./clipboard-image.ts";
 import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import { LaneWorkspace } from "./lane-view.tsx";
+import { appTitle } from "./release.ts";
 import {
   activeProjectId,
   addCard,
@@ -52,7 +53,6 @@ import {
   updateCardRole,
   updateLink,
 } from "./state.ts";
-import { appTitle } from "./release.ts";
 import { Stream } from "./stream.tsx";
 
 const INSTALL_TIP_KEY = "argboard.installTipDismissed";
@@ -139,9 +139,11 @@ declare global {
       setAppMode: (mode: "explore" | "contemplate") => Promise<void>;
       setPanelPhase: (phase: "wide" | "rail" | "closed") => Promise<void>;
       commitExploreImageDraft: () => Promise<string | null>;
-      patchExploreImageDraft: (
-        patch: { title?: string; body?: string; url?: string },
-      ) => void;
+      patchExploreImageDraft: (patch: {
+        title?: string;
+        body?: string;
+        url?: string;
+      }) => void;
       pasteExploreImage: (
         blob: Blob,
         draft?: { title: string; body?: string; url?: string },
@@ -158,11 +160,12 @@ declare global {
 
 function SaveStatusLabel() {
   const status = saveStatus.value;
-  const label = status === "saving"
-    ? "保存中…"
-    : status === "error"
-    ? "保存できませんでした"
-    : "このブラウザに保存済み";
+  const label =
+    status === "saving"
+      ? "保存中…"
+      : status === "error"
+        ? "保存できませんでした"
+        : "このブラウザに保存済み";
   return (
     <span class={`save-status is-${status}`} aria-live="polite">
       {label}
@@ -220,91 +223,90 @@ function TopBar() {
           >
             プロジェクト
           </button>
-          {projectMenuOpen
-            ? (
-              <div
-                id="project-menu-panel"
-                class="project-menu__panel"
-                role="menu"
-                aria-label="プロジェクト操作"
+          {projectMenuOpen ? (
+            <div
+              id="project-menu-panel"
+              class="project-menu__panel"
+              role="menu"
+              aria-label="プロジェクト操作"
+            >
+              <label class="project-menu__field">
+                <span>切替</span>
+                <select
+                  data-testid="project-select"
+                  aria-label="プロジェクト切替"
+                  value={activeProjectId.value}
+                  onChange={(event) => {
+                    void switchProject(event.currentTarget.value);
+                    setProjectMenuOpen(false);
+                  }}
+                >
+                  {projectSummaries.value
+                    .toSorted((left, right) => right.updatedAt - left.updatedAt)
+                    .map((item) => {
+                      const when = new Date(item.updatedAt).toLocaleString(
+                        "ja",
+                        {
+                          month: "numeric",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        },
+                      );
+                      return (
+                        <option key={item.id} value={item.id}>
+                          {item.name}（{item.cardCount}枚・{when}）
+                        </option>
+                      );
+                    })}
+                </select>
+              </label>
+              <button
+                type="button"
+                class="project-menu__action"
+                data-testid="project-create"
+                role="menuitem"
+                onClick={() => {
+                  void createProject();
+                  setProjectMenuOpen(false);
+                }}
+              >
+                新規作成
+              </button>
+              <form
+                class="project-menu__rename"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void renameProject(projectRename);
+                  setProjectMenuOpen(false);
+                }}
               >
                 <label class="project-menu__field">
-                  <span>切替</span>
-                  <select
-                    data-testid="project-select"
-                    aria-label="プロジェクト切替"
-                    value={activeProjectId.value}
-                    onChange={(event) => {
-                      void switchProject(event.currentTarget.value);
-                      setProjectMenuOpen(false);
-                    }}
-                  >
-                    {projectSummaries.value
-                      .toSorted((left, right) =>
-                        right.updatedAt - left.updatedAt
-                      )
-                      .map((item) => {
-                        const when = new Date(item.updatedAt).toLocaleString(
-                          "ja",
-                          {
-                            month: "numeric",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        );
-                        return (
-                          <option key={item.id} value={item.id}>
-                            {item.name}（{item.cardCount}枚・{when}）
-                          </option>
-                        );
-                      })}
-                  </select>
+                  <span>名前変更</span>
+                  <input
+                    data-testid="project-rename-input"
+                    aria-label="プロジェクト名"
+                    value={projectRename}
+                    onInput={(event) =>
+                      setProjectRename(event.currentTarget.value)
+                    }
+                  />
                 </label>
                 <button
-                  type="button"
+                  type="submit"
                   class="project-menu__action"
-                  data-testid="project-create"
-                  role="menuitem"
-                  onClick={() => {
-                    void createProject();
-                    setProjectMenuOpen(false);
-                  }}
+                  data-testid="project-rename-save"
                 >
-                  新規作成
+                  保存
                 </button>
-                <form
-                  class="project-menu__rename"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void renameProject(projectRename);
-                    setProjectMenuOpen(false);
-                  }}
-                >
-                  <label class="project-menu__field">
-                    <span>名前変更</span>
-                    <input
-                      data-testid="project-rename-input"
-                      aria-label="プロジェクト名"
-                      value={projectRename}
-                      onInput={(event) =>
-                        setProjectRename(event.currentTarget.value)}
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    class="project-menu__action"
-                    data-testid="project-rename-save"
-                  >
-                    保存
-                  </button>
-                </form>
-              </div>
-            )
-            : null}
+              </form>
+            </div>
+          ) : null}
         </div>
         <div class="brand">
-          <span class="brand__mark" aria-hidden="true">A</span>
+          <span class="brand__mark" aria-hidden="true">
+            A
+          </span>
           <div>
             <h1 data-testid="app-release">{appTitle()}</h1>
             <small>{projectName.value}</small>
@@ -407,20 +409,18 @@ function Workspace() {
         </div>
       </aside>
       <div class="side-chrome">
-        {open
-          ? (
-            <button
-              type="button"
-              class="side-phase"
-              data-testid={wide ? "side-rail" : "side-wide"}
-              aria-label={wide ? "発見ログを狭く" : "発見ログを広く"}
-              title={wide ? "発見ログを狭く" : "発見ログを広く"}
-              onClick={() => void setPanelPhase(wide ? "rail" : "wide")}
-            >
-              <span aria-hidden="true">{wide ? "«" : "»"}</span>
-            </button>
-          )
-          : null}
+        {open ? (
+          <button
+            type="button"
+            class="side-phase"
+            data-testid={wide ? "side-rail" : "side-wide"}
+            aria-label={wide ? "発見ログを狭く" : "発見ログを広く"}
+            title={wide ? "発見ログを狭く" : "発見ログを広く"}
+            onClick={() => void setPanelPhase(wide ? "rail" : "wide")}
+          >
+            <span aria-hidden="true">{wide ? "«" : "»"}</span>
+          </button>
+        ) : null}
         <button
           type="button"
           class="side-toggle"
@@ -529,7 +529,8 @@ function App() {
       const target = event.target as HTMLElement | null;
       if (
         target &&
-        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" ||
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
           target.isContentEditable)
       ) {
         return;
@@ -585,8 +586,8 @@ if (isTest) {
   };
   document.documentElement.dataset.test = "true";
 } else if ("serviceWorker" in navigator) {
-  const localDev = location.hostname === "localhost" ||
-    location.hostname === "127.0.0.1";
+  const localDev =
+    location.hostname === "localhost" || location.hostname === "127.0.0.1";
   if (localDev) {
     // Local verify: an old shell worker makes every reload look stale.
     void navigator.serviceWorker.getRegistrations().then((registrations) => {

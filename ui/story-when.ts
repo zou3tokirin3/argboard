@@ -32,9 +32,10 @@ export type StorySortKey = {
   bucketLabel: string;
 };
 
-const BUCKET_RULES: Array<
-  { re: RegExp; rank: number | ((m: RegExpMatchArray) => number) }
-> = [
+const BUCKET_RULES: Array<{
+  re: RegExp;
+  rank: number | ((m: RegExpMatchArray) => number);
+}> = [
   { re: /^朝$/, rank: 10 },
   { re: /^昼$/, rank: 20 },
   { re: /^夕方$/, rank: 30 },
@@ -66,9 +67,7 @@ function parseDayOrdinal(text: string): number | null {
   return null;
 }
 
-function parseBucket(
-  text: string,
-): { rank: number; label: string } | null {
+function parseBucket(text: string): { rank: number; label: string } | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
   for (const rule of BUCKET_RULES) {
@@ -172,9 +171,7 @@ export function storyOrderSuspicious(
   const flags = cards.map(() => false);
   for (let i = 0; i < cards.length; i += 1) {
     const key = storyWhenSortKey(cards[i]!);
-    if (
-      key.kind === "clock" && key.day == null && (key.minute ?? 0) < 6 * 60
-    ) {
+    if (key.kind === "clock" && key.day == null && (key.minute ?? 0) < 6 * 60) {
       flags[i] = true;
     }
   }

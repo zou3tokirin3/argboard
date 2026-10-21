@@ -5,12 +5,11 @@ import {
   useRef,
   useState,
 } from "preact/hooks";
-import { debounce } from "./debounce.ts";
-import { CardRoleToggle } from "./card-role-toggle.tsx";
-import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
 import { CardImageField } from "./card-image-field.tsx";
-import { ImageOverlay } from "./image-overlay.tsx";
+import { CardRoleToggle } from "./card-role-toggle.tsx";
+import { debounce } from "./debounce.ts";
 import { IconTip } from "./icon-tip.tsx";
+import { ImageOverlay } from "./image-overlay.tsx";
 import { isLocalMediaRef } from "./media.ts";
 import {
   attachTagToCards,
@@ -50,6 +49,7 @@ import {
   type TagSuggestItem,
   type TagUsage,
 } from "./tags.ts";
+import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
 
 async function organizeTag(tag: string, usage: TagUsage[]): Promise<void> {
   const others = usage.filter((e) => e.name !== tag).map((e) => e.name);
@@ -115,7 +115,10 @@ function TagField(props: {
   const [active, setActive] = useState(0);
   const { items, atLimit } = buildTagSuggestions(draft, usage, attached);
   const q = normalizeTag(draft);
-  const blocked = atLimit && !!q && !usage.some((e) => e.name === q) &&
+  const blocked =
+    atLimit &&
+    !!q &&
+    !usage.some((e) => e.name === q) &&
     !attached.some((t) => normalizeTag(t) === q);
   const counts = new Map(usage.map((e) => [e.name, e.count]));
   const resetKey = bulk ? ids.join(",") : props.cardId;
@@ -166,65 +169,61 @@ function TagField(props: {
           ? `タグ（${ids.length}枚・共通のみ外せる）`
           : `タグ（上限${TAG_KIND_LIMIT}・新規は候補から）`}
       </span>
-      {attached.length > 0
-        ? (
-          <div class="inspector__tag-chips">
-            {attached.map((tag) => {
-              const unsettled = !bulk && (counts.get(tag) ?? 1) === 1;
-              return (
-                <span
-                  key={tag}
-                  class={`inspector__tag-chip${
-                    unsettled ? " is-unsettled" : ""
-                  }`}
-                  title={unsettled ? "未定着（1枚のみ）" : tag}
-                >
-                  <span class="inspector__tag-chip-label">#{tag}</span>
-                  {unsettled
-                    ? (
-                      <button
-                        type="button"
-                        class="inspector__tag-organize-btn"
-                        disabled={props.disabled}
-                        title="改名または統合"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          if (!props.disabled) void organizeTag(tag, usage);
-                        }}
-                      >
-                        整理
-                      </button>
-                    )
-                    : null}
+      {attached.length > 0 ? (
+        <div class="inspector__tag-chips">
+          {attached.map((tag) => {
+            const unsettled = !bulk && (counts.get(tag) ?? 1) === 1;
+            return (
+              <span
+                key={tag}
+                class={`inspector__tag-chip${unsettled ? " is-unsettled" : ""}`}
+                title={unsettled ? "未定着（1枚のみ）" : tag}
+              >
+                <span class="inspector__tag-chip-label">#{tag}</span>
+                {unsettled ? (
                   <button
                     type="button"
-                    class="inspector__tag-chip-remove"
+                    class="inspector__tag-organize-btn"
                     disabled={props.disabled}
-                    aria-label={bulk
-                      ? `「${tag}」を選んだカードすべてから外す`
-                      : `「${tag}」を外す`}
+                    title="改名または統合"
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      if (props.disabled) return;
-                      if (bulk) void detachTagFromCards(ids, tag);
-                      else {
-                        void updateCardTags(
-                          props.cardId,
-                          detachTag(attached, tag) ?? [],
-                        );
-                      }
+                      if (!props.disabled) void organizeTag(tag, usage);
                     }}
                   >
-                    ×
+                    整理
                   </button>
-                </span>
-              );
-            })}
-          </div>
-        )
-        : null}
+                ) : null}
+                <button
+                  type="button"
+                  class="inspector__tag-chip-remove"
+                  disabled={props.disabled}
+                  aria-label={
+                    bulk
+                      ? `「${tag}」を選んだカードすべてから外す`
+                      : `「${tag}」を外す`
+                  }
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    if (props.disabled) return;
+                    if (bulk) void detachTagFromCards(ids, tag);
+                    else {
+                      void updateCardTags(
+                        props.cardId,
+                        detachTag(attached, tag) ?? [],
+                      );
+                    }
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
       <div class="inspector__tag-input-wrap">
         <input
           type="text"
@@ -241,46 +240,43 @@ function TagField(props: {
           onBlur={() => setTimeout(() => setOpen(false), 120)}
           onKeyDown={onKeyDown}
         />
-        {open && (items.length || blocked)
-          ? (
-            <ul
-              class="inspector__tag-suggest"
-              data-testid="inspector-tag-suggest"
-              role="listbox"
-            >
-              {items.map((item, index) => (
-                <li key={`${item.kind}:${item.name}`}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={index === active}
-                    class={`inspector__tag-suggest-item${
-                      index === active ? " is-active" : ""
-                    }`}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      void apply(item);
-                    }}
-                  >
-                    {item.kind === "create" ? `「${item.name}」を新規作成` : (
-                      <>
-                        #{item.name}
-                        {item.unsettled ? <small>未定着</small> : null}
-                      </>
-                    )}
-                  </button>
-                </li>
-              ))}
-              {blocked
-                ? (
-                  <li class="inspector__tag-suggest-hint">
-                    種類上限です。既存から選ぶか整理してください
-                  </li>
-                )
-                : null}
-            </ul>
-          )
-          : null}
+        {open && (items.length || blocked) ? (
+          <ul
+            class="inspector__tag-suggest"
+            data-testid="inspector-tag-suggest"
+          >
+            {items.map((item, index) => (
+              <li key={`${item.kind}:${item.name}`}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={index === active}
+                  class={`inspector__tag-suggest-item${
+                    index === active ? " is-active" : ""
+                  }`}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    void apply(item);
+                  }}
+                >
+                  {item.kind === "create" ? (
+                    `「${item.name}」を新規作成`
+                  ) : (
+                    <>
+                      #{item.name}
+                      {item.unsettled ? <small>未定着</small> : null}
+                    </>
+                  )}
+                </button>
+              </li>
+            ))}
+            {blocked ? (
+              <li class="inspector__tag-suggest-hint">
+                種類上限です。既存から選ぶか整理してください
+              </li>
+            ) : null}
+          </ul>
+        ) : null}
       </div>
     </div>
   );
@@ -316,9 +312,7 @@ export function Inspector() {
   // Tracks which fields the inspector itself has modified since the last card load.
   // Only dirty fields are written back, so external edits (e.g. from the log) are never overwritten.
   const dirtyFieldsRef = useRef(
-    new Set<
-      "title" | "body" | "url" | "storyWhen" | "storyUntil"
-    >(),
+    new Set<"title" | "body" | "url" | "storyWhen" | "storyUntil">(),
   );
 
   const saveCardFields = useCallback(async (id: string) => {
@@ -464,27 +458,28 @@ export function Inspector() {
             onChange={(event) =>
               updateLink(link.id, {
                 kind: event.currentTarget.value as "connects" | "contradicts",
-              })}
+              })
+            }
           >
             <option value="connects">通常</option>
             <option value="contradicts">要検討</option>
           </select>
         </label>
-        {replaying
-          ? <p class="inspector__hint">タイムライン表示中は読めます</p>
-          : (
-            <>
-              <button
-                type="button"
-                class="inspector__danger"
-                data-testid="link-delete"
-                onClick={() => removeLink(link.id)}
-              >
-                この糸を削除
-              </button>
-              <p class="inspector__hint">Delete キーでも削除できます</p>
-            </>
-          )}
+        {replaying ? (
+          <p class="inspector__hint">タイムライン表示中は読めます</p>
+        ) : (
+          <>
+            <button
+              type="button"
+              class="inspector__danger"
+              data-testid="link-delete"
+              onClick={() => removeLink(link.id)}
+            >
+              この糸を削除
+            </button>
+            <p class="inspector__hint">Delete キーでも削除できます</p>
+          </>
+        )}
         <HistoryEntry />
       </aside>
     );
@@ -520,9 +515,7 @@ export function Inspector() {
   if (!card) {
     return (
       <aside class="inspector" aria-label="カード編集">
-        <p class="inspector__empty">
-          カードか糸を選ぶと、ここで編集できます
-        </p>
+        <p class="inspector__empty">カードか糸を選ぶと、ここで編集できます</p>
         <HistoryEntry />
       </aside>
     );
@@ -535,8 +528,8 @@ export function Inspector() {
 
   const cards = viewProject.value?.cards ?? [];
   const cardLinks =
-    viewProject.value?.links.filter((item) =>
-      item.from === card.id || item.to === card.id
+    viewProject.value?.links.filter(
+      (item) => item.from === card.id || item.to === card.id,
     ) ?? [];
 
   return (
@@ -625,20 +618,14 @@ export function Inspector() {
           onBlur={flushCardFields}
         />
       </label>
-      {card.role === "thought"
-        ? (
-          <ThoughtOutcomeField
-            cardId={card.id}
-            outcome={card.outcome}
-            disabled={replaying}
-          />
-        )
-        : null}
-      <TagField
-        cardId={card.id}
-        tags={card.tags}
-        disabled={replaying}
-      />
+      {card.role === "thought" ? (
+        <ThoughtOutcomeField
+          cardId={card.id}
+          outcome={card.outcome}
+          disabled={replaying}
+        />
+      ) : null}
+      <TagField cardId={card.id} tags={card.tags} disabled={replaying} />
       <label class="inspector__field">
         <span>出典URL</span>
         <input
@@ -675,7 +662,9 @@ export function Inspector() {
               if (event.key === "Enter") event.currentTarget.blur();
             }}
           />
-          <span class="inspector__story-when-sep" aria-hidden="true">〜</span>
+          <span class="inspector__story-when-sep" aria-hidden="true">
+            〜
+          </span>
           <input
             type="text"
             data-testid="inspector-story-until"
@@ -722,78 +711,71 @@ export function Inspector() {
           testId="inspector-image"
           onEnlarge={() => openImageOverlay(card.id)}
         />
-        {isLocalMediaRef(card.image)
-          ? (
-            <button
-              type="button"
-              class="inspector__image-reference"
-              data-testid="inspector-image-reference"
-              disabled={replaying}
-              onClick={() => openExploreCompose(card.id)}
-            >
-              大きく見ながら書く
-            </button>
-          )
-          : null}
+        {isLocalMediaRef(card.image) ? (
+          <button
+            type="button"
+            class="inspector__image-reference"
+            data-testid="inspector-image-reference"
+            disabled={replaying}
+            onClick={() => openExploreCompose(card.id)}
+          >
+            大きく見ながら書く
+          </button>
+        ) : null}
       </div>
-      {imageOverlayCardId.value === card.id && isLocalMediaRef(card.image)
-        ? (
-          <ImageOverlay
-            title={card.title}
-            image={card.image}
-            onClose={() => {
-              flushCardFields();
-              closeImageOverlay();
+      {imageOverlayCardId.value === card.id && isLocalMediaRef(card.image) ? (
+        <ImageOverlay
+          title={card.title}
+          image={card.image}
+          onClose={() => {
+            flushCardFields();
+            closeImageOverlay();
+          }}
+        />
+      ) : null}
+      {cardLinks.length ? (
+        <label class="inspector__field">
+          <span>つながり</span>
+          <select
+            data-testid="card-links"
+            value=""
+            onChange={(event) => {
+              const id = event.currentTarget.value;
+              if (!id) return;
+              selectedLinkId.value = id;
+              clearCardSelection();
             }}
-          />
-        )
-        : null}
-      {cardLinks.length
-        ? (
-          <label class="inspector__field">
-            <span>つながり</span>
-            <select
-              data-testid="card-links"
-              value=""
-              onChange={(event) => {
-                const id = event.currentTarget.value;
-                if (!id) return;
-                selectedLinkId.value = id;
-                clearCardSelection();
-              }}
-            >
-              <option value="">糸を選ぶ…</option>
-              {cardLinks.map((item) => {
-                const other = cards.find((c) =>
-                  c.id === (item.from === card.id ? item.to : item.from)
-                );
-                return (
-                  <option key={item.id} value={item.id}>
-                    {other?.title ?? "？"} · {item.label || "（ラベルなし）"} ·
-                    {" "}
-                    {item.kind === "contradicts" ? "要検討" : "通常"}
-                  </option>
-                );
-              })}
-            </select>
-          </label>
-        )
-        : null}
-      {replaying
-        ? <p class="inspector__hint">タイムライン表示中は読めます</p>
-        : (
-          <>
-            <button
-              type="button"
-              class="inspector__danger"
-              data-testid="card-delete"
-              onClick={() => removeCard(card.id)}
-            >
-              このカードを削除
-            </button>
-            <p class="inspector__hint">Delete キーでも削除できます</p>
-          </>
-        )}
+          >
+            <option value="">糸を選ぶ…</option>
+            {cardLinks.map((item) => {
+              const other = cards.find(
+                (c) => c.id === (item.from === card.id ? item.to : item.from),
+              );
+              return (
+                <option key={item.id} value={item.id}>
+                  {other?.title ?? "？"} · {item.label || "（ラベルなし）"} ·{" "}
+                  {item.kind === "contradicts" ? "要検討" : "通常"}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      ) : null}
+      {replaying ? (
+        <p class="inspector__hint">タイムライン表示中は読めます</p>
+      ) : (
+        <>
+          <button
+            type="button"
+            class="inspector__danger"
+            data-testid="card-delete"
+            onClick={() => removeCard(card.id)}
+          >
+            このカードを削除
+          </button>
+          <p class="inspector__hint">Delete キーでも削除できます</p>
+        </>
+      )}
       <HistoryEntry />
     </aside>
   );

@@ -2,20 +2,20 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { readCaptureDraft } from "./capture-draft.ts";
 import { parseCaptureLine } from "./capture-notation.ts";
 import {
+  imageBlobFromClipboard,
+  imageBlobFromDataTransfer,
+} from "./clipboard-image.ts";
+import { useCompactChromeHints } from "./compact-chrome.ts";
+import { DigShovelIcon, DigStopButton } from "./digging-controls.tsx";
+import type { PreviewSurface } from "./image-preview-height.ts";
+import {
   clampPreviewHeight,
   maxPreviewHeight,
   PREVIEW_MIN_PX,
   resolvePreviewHeight,
   writeStoredPreviewHeight,
 } from "./image-preview-height.ts";
-import type { PreviewSurface } from "./image-preview-height.ts";
-import { DigShovelIcon, DigStopButton } from "./digging-controls.tsx";
-import {
-  imageBlobFromClipboard,
-  imageBlobFromDataTransfer,
-} from "./clipboard-image.ts";
 import { isLocalMediaRef } from "./media.ts";
-import { useMediaUrl } from "./use-media-url.ts";
 import {
   addCard,
   clearExploreImageDraft,
@@ -33,8 +33,8 @@ import {
   setImageReferenceCaptureMode,
   stopDigging,
 } from "./state.ts";
-import { useCompactChromeHints } from "./compact-chrome.ts";
 import { collectTagUsage, normalizeTag } from "./tags.ts";
+import { useMediaUrl } from "./use-media-url.ts";
 
 const HISTORY_KEY = "argboard.captureHistory";
 const HISTORY_MAX = 50;
@@ -204,13 +204,13 @@ function CaptureImageSlot(props: {
   function applyFile(file: File | undefined) {
     if (!file || props.disabled || busy) return;
     setBusy(true);
-    void pasteExploreImage(file, draftFromLine() ?? undefined).catch(
-      (error) => {
+    void pasteExploreImage(file, draftFromLine() ?? undefined)
+      .catch((error) => {
         alert(
           error instanceof Error ? error.message : "画像を添付できませんでした",
         );
-      },
-    ).finally(() => setBusy(false));
+      })
+      .finally(() => setBusy(false));
   }
 
   function onPick(event: Event) {
@@ -334,7 +334,8 @@ function ExploreImageStaging(props: {
           disabled={replaying}
           aria-label="タイトル"
           onInput={(event) =>
-            patchExploreImageDraft({ title: event.currentTarget.value })}
+            patchExploreImageDraft({ title: event.currentTarget.value })
+          }
         />
         <CaptureTagChips
           selected={props.selectedTags}
@@ -350,7 +351,8 @@ function ExploreImageStaging(props: {
           disabled={replaying}
           aria-label="メモ"
           onInput={(event) =>
-            patchExploreImageDraft({ body: event.currentTarget.value })}
+            patchExploreImageDraft({ body: event.currentTarget.value })
+          }
         />
       </div>
       <div class="capture-compose__meta">
@@ -363,7 +365,8 @@ function ExploreImageStaging(props: {
           disabled={replaying}
           aria-label="作中時間の起点"
           onInput={(event) =>
-            patchExploreImageDraft({ storyWhen: event.currentTarget.value })}
+            patchExploreImageDraft({ storyWhen: event.currentTarget.value })
+          }
         />
         <input
           type="text"
@@ -374,7 +377,8 @@ function ExploreImageStaging(props: {
           disabled={replaying}
           aria-label="作中時間の帯の端"
           onInput={(event) =>
-            patchExploreImageDraft({ storyUntil: event.currentTarget.value })}
+            patchExploreImageDraft({ storyUntil: event.currentTarget.value })
+          }
         />
         <input
           type="url"
@@ -385,7 +389,8 @@ function ExploreImageStaging(props: {
           disabled={replaying}
           aria-label="出典URL"
           onInput={(event) =>
-            patchExploreImageDraft({ url: event.currentTarget.value })}
+            patchExploreImageDraft({ url: event.currentTarget.value })
+          }
         />
         <button
           type="submit"
@@ -470,7 +475,7 @@ function ExploreImageReference(props: { wide?: boolean }) {
   const diggingId = diggingCardId.value;
   const url = useMediaUrl(card?.image);
   const [previewHeight, setPreviewHeight] = useState(() =>
-    resolvePreviewHeight(surface, globalThis.innerHeight)
+    resolvePreviewHeight(surface, globalThis.innerHeight),
   );
   const dragRef = useRef<{ startY: number; startH: number } | null>(null);
 
@@ -530,17 +535,15 @@ function ExploreImageReference(props: { wide?: boolean }) {
         class="capture-image-staging__preview capture-image-reference__preview"
         style={{ height: `${previewHeight}px` }}
       >
-        {url
-          ? (
-            <img
-              src={url}
-              alt={card.title}
-              width={1600}
-              height={1000}
-              data-testid="capture-compose-preview"
-            />
-          )
-          : null}
+        {url ? (
+          <img
+            src={url}
+            alt={card.title}
+            width={1600}
+            height={1000}
+            data-testid="capture-compose-preview"
+          />
+        ) : null}
         <div
           class="capture-image-reference__resize"
           role="separator"
@@ -564,33 +567,29 @@ function ExploreImageReference(props: { wide?: boolean }) {
         data-testid="capture-image-reference-bar"
       >
         <span class="capture-image-reference__source">
-          {digging
-            ? (
-              <span
-                class="dig-act is-active capture__digging-badge"
-                aria-hidden="true"
-              >
-                <DigShovelIcon />
-              </span>
-            )
-            : null}
+          {digging ? (
+            <span
+              class="dig-act is-active capture__digging-badge"
+              aria-hidden="true"
+            >
+              <DigShovelIcon />
+            </span>
+          ) : null}
           <strong>{card.title}</strong>
-          {digging
-            ? (
-              <span class="capture-image-reference__digging-label">
-                {captureMode === "thought" ? "を見ながら考察" : "から掘り中"}
-              </span>
-            )
-            : null}
+          {digging ? (
+            <span class="capture-image-reference__digging-label">
+              {captureMode === "thought" ? "を見ながら考察" : "から掘り中"}
+            </span>
+          ) : null}
         </span>
         <CaptureIntentToggle
           mode={captureMode}
           disabled={replaying}
           onChange={setImageReferenceCaptureMode}
         />
-        {digging && captureMode === "dig"
-          ? <DigStopButton onClick={() => stopDigging()} />
-          : null}
+        {digging && captureMode === "dig" ? (
+          <DigStopButton onClick={() => stopDigging()} />
+        ) : null}
         <button
           type="button"
           class="capture-compose__cancel"
@@ -615,12 +614,14 @@ export function Capture(props: { wide?: boolean }) {
   const referenceCaptureMode = inCompose
     ? imageReferenceCaptureMode.value
     : null;
-  const captureSourceCard = inCompose && referenceCaptureMode === "dig"
-    ? composeCard
-    : diggingCardId.value
-    ? project.value?.cards.find((item) => item.id === diggingCardId.value)
-    : undefined;
-  const digging = Boolean(captureSourceCard) &&
+  const captureSourceCard =
+    inCompose && referenceCaptureMode === "dig"
+      ? composeCard
+      : diggingCardId.value
+        ? project.value?.cards.find((item) => item.id === diggingCardId.value)
+        : undefined;
+  const digging =
+    Boolean(captureSourceCard) &&
     diggingCardId.value === captureSourceCard?.id &&
     !inCompose;
   const input = useRef<HTMLInputElement>(null);
@@ -656,7 +657,7 @@ export function Capture(props: { wide?: boolean }) {
     setSelectedTags((current) =>
       current.some((item) => normalizeTag(item) === tag)
         ? current.filter((item) => normalizeTag(item) !== tag)
-        : [...current, tag]
+        : [...current, tag],
     );
   }
 
@@ -697,9 +698,10 @@ export function Capture(props: { wide?: boolean }) {
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     if (history.length === 0) return;
 
-    const value = event.currentTarget instanceof HTMLInputElement
-      ? event.currentTarget.value
-      : "";
+    const value =
+      event.currentTarget instanceof HTMLInputElement
+        ? event.currentTarget.value
+        : "";
 
     if (event.key === "ArrowUp") {
       if (historyIndex < 0 && value.trim()) return;
@@ -767,147 +769,130 @@ export function Capture(props: { wide?: boolean }) {
       onDragOver={wide ? onImageDragOver : undefined}
       onDrop={wide ? onImageDrop : undefined}
     >
-      {staging
-        ? (
-          <ExploreImageStaging
-            selectedTags={selectedTags}
-            disabled={replaying}
-            onToggleTag={toggleCaptureTag}
-            onCommitted={clearSelectedTags}
-          />
-        )
-        : null}
+      {staging ? (
+        <ExploreImageStaging
+          selectedTags={selectedTags}
+          disabled={replaying}
+          onToggleTag={toggleCaptureTag}
+          onCommitted={clearSelectedTags}
+        />
+      ) : null}
       {inCompose ? <ExploreImageReference wide={wide} /> : null}
       {!staging && digging ? <CaptureDiggingBar /> : null}
-      {!staging
-        ? (
-          <>
-            <form class="capture" onSubmit={submit}>
-              <span class="capture__plus" aria-hidden="true">＋</span>
-              <input
-                ref={input}
-                data-testid="capture-input"
-                aria-label={inCompose ? "画像を見ながら追加" : "新しい手がかり"}
-                aria-describedby="capture-hint"
-                autocomplete="off"
-                placeholder={inCompose && referenceCaptureMode === "thought"
+      {!staging ? (
+        <>
+          <form class="capture" onSubmit={submit}>
+            <span class="capture__plus" aria-hidden="true">
+              ＋
+            </span>
+            <input
+              ref={input}
+              data-testid="capture-input"
+              aria-label={inCompose ? "画像を見ながら追加" : "新しい手がかり"}
+              aria-describedby="capture-hint"
+              autocomplete="off"
+              placeholder={
+                inCompose && referenceCaptureMode === "thought"
                   ? `「${composeCard!.title}」を見ながら考える…`
                   : captureSourceCard
-                  ? `「${captureSourceCard.title}」から見つけたこと…`
-                  : "見つけたことを1行で…"}
-                onKeyDown={onHistoryKey}
-                onInput={() => {
-                  if (historyIndex >= 0) setHistoryIndex(-1);
-                }}
-              />
-              <input
-                ref={storyWhenInput}
-                type="text"
-                class="capture__story-when"
-                data-testid="capture-story-when"
-                aria-label="作中時間の起点"
-                autocomplete="off"
-                placeholder="起点"
+                    ? `「${captureSourceCard.title}」から見つけたこと…`
+                    : "見つけたことを1行で…"
+              }
+              onKeyDown={onHistoryKey}
+              onInput={() => {
+                if (historyIndex >= 0) setHistoryIndex(-1);
+              }}
+            />
+            <input
+              ref={storyWhenInput}
+              type="text"
+              class="capture__story-when"
+              data-testid="capture-story-when"
+              aria-label="作中時間の起点"
+              autocomplete="off"
+              placeholder="起点"
+              disabled={replaying}
+            />
+            <input
+              ref={storyUntilInput}
+              type="text"
+              class="capture__story-until"
+              data-testid="capture-story-until"
+              aria-label="作中時間の帯の端"
+              autocomplete="off"
+              placeholder="帯の端"
+              disabled={replaying}
+            />
+            {wide ? (
+              <CaptureImageSlot
                 disabled={replaying}
+                getDraftLine={getDraftLine}
+                getStoryWhen={getStoryWhen}
+                getStoryUntil={getStoryUntil}
               />
-              <input
-                ref={storyUntilInput}
-                type="text"
-                class="capture__story-until"
-                data-testid="capture-story-until"
-                aria-label="作中時間の帯の端"
-                autocomplete="off"
-                placeholder="帯の端"
-                disabled={replaying}
-              />
-              {wide
-                ? (
-                  <CaptureImageSlot
-                    disabled={replaying}
-                    getDraftLine={getDraftLine}
-                    getStoryWhen={getStoryWhen}
-                    getStoryUntil={getStoryUntil}
-                  />
-                )
-                : null}
-              {
-                /*
+            ) : null}
+            {/*
                 Multiple text fields disable implicit Enter-submit unless a
                 default submit button exists. Keep the 1-line Enter path.
-              */
-              }
-              <button type="submit" class="capture__submit-sr">追加</button>
-              <kbd>↵</kbd>
-            </form>
-            <CaptureTagChips
-              selected={selectedTags}
-              disabled={replaying}
-              onToggle={toggleCaptureTag}
-            />
-          </>
-        )
-        : null}
+              */}
+            <button type="submit" class="capture__submit-sr">
+              追加
+            </button>
+            <kbd>↵</kbd>
+          </form>
+          <CaptureTagChips
+            selected={selectedTags}
+            disabled={replaying}
+            onToggle={toggleCaptureTag}
+          />
+        </>
+      ) : null}
       <p class="capture-hint" id="capture-hint">
-        {staging
-          ? (
-            compactHints
-              ? <>画像を準備中 · タイトルで追加 · やめるで取消 · タグは任意</>
-              : (
-                <>
-                  画像を準備中 · <kbd>⌘/Ctrl+↵</kbd>{" "}
-                  またはタイトルで<kbd>↵</kbd>
-                  で追加 · メモは<kbd>Shift+↵</kbd>で改行 ·{" "}
-                  <kbd>Esc</kbd>／やめるで取消 · もう一度貼ると差し替え ·
-                  タイトル下のチップで既出タグ
-                </>
-              )
+        {staging ? (
+          compactHints ? (
+            <>画像を準備中 · タイトルで追加 · やめるで取消 · タグは任意</>
+          ) : (
+            <>
+              画像を準備中 · <kbd>⌘/Ctrl+↵</kbd> またはタイトルで<kbd>↵</kbd>
+              で追加 · メモは<kbd>Shift+↵</kbd>で改行 · <kbd>Esc</kbd>
+              ／やめるで取消 · もう一度貼ると差し替え ·
+              タイトル下のチップで既出タグ
+            </>
           )
-          : inCompose
-          ? (
-            compactHints
-              ? (
-                <>
-                  画像を見ながら1行で追加 · 上で<strong>掘る</strong>／<strong>
-                    考察
-                  </strong>
-                  を切替 · ↵で新カード · 閉じるで終了
-                </>
-              )
-              : (
-                <>
-                  画像を見ながら1行で追加 · 上で<strong>掘る</strong>／<strong>
-                    考察
-                  </strong>
-                  を切替 · <kbd>↵</kbd>で新カード ·{" "}
-                  <kbd>Esc</kbd>／閉じるで終了 · タイトル下のチップで既出タグ
-                </>
-              )
+        ) : inCompose ? (
+          compactHints ? (
+            <>
+              画像を見ながら1行で追加 · 上で<strong>掘る</strong>／
+              <strong>考察</strong>
+              を切替 · ↵で新カード · 閉じるで終了
+            </>
+          ) : (
+            <>
+              画像を見ながら1行で追加 · 上で<strong>掘る</strong>／
+              <strong>考察</strong>
+              を切替 · <kbd>↵</kbd>で新カード · <kbd>Esc</kbd>／閉じるで終了 ·
+              タイトル下のチップで既出タグ
+            </>
           )
-          : (
-            compactHints
-              ? (
-                <>
-                  <code>題 // ひとこと</code>{" "}
-                  · URLは出典 · 画像はファイル選択 · タグは任意
-                </>
-              )
-              : (
-                <>
-                  <code>題 // ひとこと</code>{" "}
-                  · URLはそのまま貼ると出典に · 作中時間は任意 ·
-                  {wide
-                    ? (
-                      <>
-                        {" "}
-                        <kbd>⌘V</kbd>／ドラッグでスクショ（確定前に編集） ·
-                      </>
-                    )
-                    : null}
-                  <kbd>↑</kbd>/<kbd>↓</kbd>{" "}
-                  で入力履歴 · タイトル下のチップで既出タグ（任意）
-                </>
-              )
-          )}
+        ) : compactHints ? (
+          <>
+            <code>題 {/* ひとこと */}</code> · URLは出典 · 画像はファイル選択 ·
+            タグは任意
+          </>
+        ) : (
+          <>
+            <code>題 {/* ひとこと */}</code> · URLはそのまま貼ると出典に ·
+            作中時間は任意 ·
+            {wide ? (
+              <>
+                {" "}
+                <kbd>⌘V</kbd>／ドラッグでスクショ（確定前に編集） ·
+              </>
+            ) : null}
+            <kbd>↑</kbd>/<kbd>↓</kbd> で入力履歴 ·
+            タイトル下のチップで既出タグ（任意）
+          </>
+        )}
       </p>
     </div>
   );

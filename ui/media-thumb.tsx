@@ -3,10 +3,7 @@ import { isLocalMediaRef } from "./media.ts";
 import { useMediaUrl } from "./use-media-url.ts";
 
 /** Extreme aspect → center-crop; otherwise show the whole image. */
-function fitForNaturalSize(
-  width: number,
-  height: number,
-): "contain" | "cover" {
+function fitForNaturalSize(width: number, height: number): "contain" | "cover" {
   if (width <= 0 || height <= 0) return "contain";
   const ratio = height / width;
   // Very tall scroll-capture or ultra-wide strip: crop to center.
@@ -43,14 +40,12 @@ export function MediaThumb(props: {
   const className = [
     props.className ?? "media-thumb",
     props.preferContain ? `is-fit-${fit}` : null,
-  ].filter(Boolean).join(" ");
+  ]
+    .filter(Boolean)
+    .join(" ");
   if (!url) {
     return (
-      <span
-        class={className}
-        data-testid={props.testId}
-        aria-hidden="true"
-      />
+      <span class={className} data-testid={props.testId} aria-hidden="true" />
     );
   }
   return (
@@ -62,12 +57,14 @@ export function MediaThumb(props: {
       height={height}
       data-testid={props.testId}
       draggable={false}
-      onLoad={props.preferContain
-        ? (event) => {
-          const img = event.currentTarget;
-          setFit(fitForNaturalSize(img.naturalWidth, img.naturalHeight));
-        }
-        : undefined}
+      onLoad={
+        props.preferContain
+          ? (event) => {
+              const img = event.currentTarget;
+              setFit(fitForNaturalSize(img.naturalWidth, img.naturalHeight));
+            }
+          : undefined
+      }
     />
   );
 }

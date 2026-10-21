@@ -5,11 +5,13 @@ import {
   useRef,
   useState,
 } from "preact/hooks";
-import { IconTip } from "./icon-tip.tsx";
-import { debounce } from "./debounce.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
-import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
+import { debounce } from "./debounce.ts";
 import { DigClearViaButton, DigStartButton } from "./digging-controls.tsx";
+import { IconTip } from "./icon-tip.tsx";
+import { ImageEnlargeButton } from "./image-overlay.tsx";
+import { isLocalMediaRef } from "./media.ts";
+import { MediaThumb } from "./media-thumb.tsx";
 import { normalizePanelPhase } from "./panel-phase.ts";
 import { buildFoundViaForest, flattenFoundViaForest } from "./project.ts";
 import {
@@ -30,6 +32,7 @@ import {
   placedOnly,
   removeCard,
   revealStreamCardId,
+  type StoryWhenFilter,
   search,
   selectCardFromStream,
   selectedCardId,
@@ -38,7 +41,6 @@ import {
   setFocusViewByTag,
   shrinkFocusHops,
   startDigging,
-  type StoryWhenFilter,
   storyWhenFilter,
   thoughtOnly,
   toggleStreamBranchCollapsed,
@@ -46,14 +48,12 @@ import {
   updateCard,
   viewProject,
 } from "./state.ts";
-import { ImageEnlargeButton } from "./image-overlay.tsx";
-import { MediaThumb } from "./media-thumb.tsx";
-import { isLocalMediaRef } from "./media.ts";
 import { formatStoryWhenLabel, hasStoryWhen } from "./story-when.ts";
 import { StreamStickyTrail } from "./stream-sticky-trail.tsx";
-import { ThoughtOutcomeIcon } from "./thought-outcome-icon.tsx";
-import { thoughtOutcomeLabel, thoughtOutcomeShort } from "./thought-outcome.ts";
 import { collectTagUsage } from "./tags.ts";
+import { thoughtOutcomeLabel, thoughtOutcomeShort } from "./thought-outcome.ts";
+import { ThoughtOutcomeField } from "./thought-outcome-field.tsx";
+import { ThoughtOutcomeIcon } from "./thought-outcome-icon.tsx";
 import type { Card } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
 
@@ -136,11 +136,8 @@ function cycleRoleFilter(): void {
 
 function cycleStoryWhenFilter(): void {
   const cur = storyWhenFilter.value;
-  storyWhenFilter.value = cur === "off"
-    ? "with"
-    : cur === "with"
-    ? "without"
-    : "off";
+  storyWhenFilter.value =
+    cur === "off" ? "with" : cur === "with" ? "without" : "off";
 }
 
 function placementFilterLabel(state: PlacementFilter): string {
@@ -214,8 +211,8 @@ function scrollStreamRowIntoView(list: HTMLElement, cardId: string): boolean {
   if (!row) return false;
   const listRect = list.getBoundingClientRect();
   const rowRect = row.getBoundingClientRect();
-  const delta = (rowRect.top + rowRect.height / 2) -
-    (listRect.top + listRect.height / 2);
+  const delta =
+    rowRect.top + rowRect.height / 2 - (listRect.top + listRect.height / 2);
   list.scrollTo({
     top: list.scrollTop + delta,
     behavior: "smooth",
@@ -331,8 +328,8 @@ function StreamCardRow(props: StreamCardRowProps) {
     allCards,
     onToggleBranch,
   } = props;
-  const selected = selectedCardIds.value.includes(card.id) ||
-    selectedCardId.value === card.id;
+  const selected =
+    selectedCardIds.value.includes(card.id) || selectedCardId.value === card.id;
   const status = streamCardStatus(card, boardCardIds);
   const digging = diggingCardId.value === card.id;
   const viaCard = card.foundVia
@@ -381,266 +378,252 @@ function StreamCardRow(props: StreamCardRowProps) {
             selectCardFromStream(card.id);
           }}
         >
-          {childCount > 0
-            ? (
-              <IconTip
-                align="start"
-                label={branchCollapsed ? "枝を開く" : "枝を畳む"}
+          {childCount > 0 ? (
+            <IconTip
+              align="start"
+              label={branchCollapsed ? "枝を開く" : "枝を畳む"}
+            >
+              <button
+                type="button"
+                class="stream__branch-toggle"
+                data-testid="stream-branch-toggle"
+                aria-expanded={!branchCollapsed}
+                aria-label={branchCollapsed ? "枝を開く" : "枝を畳む"}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleBranch?.();
+                }}
               >
-                <button
-                  type="button"
-                  class="stream__branch-toggle"
-                  data-testid="stream-branch-toggle"
-                  aria-expanded={!branchCollapsed}
-                  aria-label={branchCollapsed ? "枝を開く" : "枝を畳む"}
+                {branchCollapsed ? "▸" : "▾"}
+              </button>
+            </IconTip>
+          ) : depth > 0 ? (
+            <span class="stream-tree__leaf-spacer" aria-hidden="true" />
+          ) : null}
+          {depth > 0 ? (
+            <span class="stream-tree__nest-mark" aria-hidden="true">
+              ↳
+            </span>
+          ) : null}
+          <time>{timeFormatter.format(card.foundAt)}</time>
+          {hasStoryWhen(card) ? (
+            <span class="stream-card__story-when" title="作中時間">
+              {formatStoryWhenLabel(card)}
+            </span>
+          ) : null}
+          {selected && !replaying ? (
+            <span class="stream-card__meta-tools">
+              <CardRoleToggle
+                cardId={card.id}
+                role={card.role}
+                testIdPrefix="stream"
+                tipAlign="end"
+              />
+              {card.role === "thought" ? (
+                <ThoughtOutcomeField
+                  cardId={card.id}
+                  outcome={card.outcome}
+                  testIdPrefix="stream"
+                  compact
+                  tipAlign="end"
+                />
+              ) : null}
+              <DigStartButton
+                active={digging}
+                tipAlign="end"
+                onClick={
+                  digging
+                    ? undefined
+                    : (event) => {
+                        event.stopPropagation();
+                        startDigging(card.id);
+                      }
+                }
+              />
+              {card.foundVia ? (
+                <DigClearViaButton
+                  tipAlign="end"
+                  title={
+                    viaCard
+                      ? `「${viaCard.title}」からの発見を埋める`
+                      : "間違えて掘った分を埋める"
+                  }
                   onClick={(event) => {
                     event.stopPropagation();
-                    onToggleBranch?.();
+                    void clearCardFoundVia(card.id);
                   }}
-                >
-                  {branchCollapsed ? "▸" : "▾"}
-                </button>
-              </IconTip>
-            )
-            : depth > 0
-            ? <span class="stream-tree__leaf-spacer" aria-hidden="true" />
-            : null}
-          {depth > 0
-            ? <span class="stream-tree__nest-mark" aria-hidden="true">↳</span>
-            : null}
-          <time>{timeFormatter.format(card.foundAt)}</time>
-          {hasStoryWhen(card)
-            ? (
-              <span class="stream-card__story-when" title="作中時間">
-                {formatStoryWhenLabel(card)}
+                />
+              ) : null}
+              <span class="stream-card__status">{status}</span>
+              <button
+                type="button"
+                class="stream-card__delete-inline"
+                data-testid="stream-card-delete"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  void removeCard(card.id);
+                }}
+              >
+                削除
+              </button>
+            </span>
+          ) : (
+            <span class="stream-card__meta-label">
+              {streamMetaLabel(card, status, childCount)}
+            </span>
+          )}
+        </div>
+        {canEditTitle ? (
+          <div
+            class="stream-card__main stream-card__main--editable"
+            onClick={() => selectCardFromStream(card.id)}
+          >
+            <span class="stream-card__body-row">
+              <span class="stream-card__text">
+                <StreamCardTitle card={card} editable />
+                {card.body ? <small>{card.body}</small> : null}
+                {card.tags?.length ? (
+                  <span class="tags">
+                    {card.tags.map((tag) => (
+                      <i key={tag}>#{tag}</i>
+                    ))}
+                  </span>
+                ) : null}
+                {card.outcome ? (
+                  <IconTip
+                    align="start"
+                    label={`仮説 · ${thoughtOutcomeLabel(card.outcome)}`}
+                  >
+                    <span
+                      class={`stream-card__outcome is-${card.outcome}`}
+                      aria-label={thoughtOutcomeLabel(card.outcome)}
+                    >
+                      <ThoughtOutcomeIcon outcome={card.outcome} />
+                      <span class="stream-card__outcome-label">
+                        {thoughtOutcomeShort(card.outcome)}
+                      </span>
+                    </span>
+                  </IconTip>
+                ) : null}
               </span>
-            )
-            : null}
-          {selected && !replaying
-            ? (
-              <span class="stream-card__meta-tools">
-                <CardRoleToggle
-                  cardId={card.id}
-                  role={card.role}
-                  testIdPrefix="stream"
-                  tipAlign="end"
-                />
-                {card.role === "thought"
-                  ? (
-                    <ThoughtOutcomeField
-                      cardId={card.id}
-                      outcome={card.outcome}
-                      testIdPrefix="stream"
-                      compact
-                      tipAlign="end"
-                    />
-                  )
-                  : null}
-                <DigStartButton
-                  active={digging}
-                  tipAlign="end"
-                  onClick={digging ? undefined : (event) => {
-                    event.stopPropagation();
-                    startDigging(card.id);
-                  }}
-                />
-                {card.foundVia
-                  ? (
-                    <DigClearViaButton
-                      tipAlign="end"
-                      title={viaCard
-                        ? `「${viaCard.title}」からの発見を埋める`
-                        : "間違えて掘った分を埋める"}
+              {isLocalMediaRef(card.image) ? (
+                <span class="stream-card__thumb-wrap">
+                  <IconTip align="end" label="画像 · 大きく見ながら書く">
+                    <button
+                      type="button"
+                      class="stream-card__thumb-btn"
+                      data-testid="stream-card-thumb"
+                      aria-label="大きく見ながら書く"
                       onClick={(event) => {
                         event.stopPropagation();
-                        void clearCardFoundVia(card.id);
+                        if (selectedCardId.value !== card.id) {
+                          selectSingleCard(card.id);
+                        }
+                        openExploreCompose(card.id);
                       }}
-                    />
-                  )
-                  : null}
-                <span class="stream-card__status">{status}</span>
-                <button
-                  type="button"
-                  class="stream-card__delete-inline"
-                  data-testid="stream-card-delete"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    void removeCard(card.id);
-                  }}
-                >
-                  削除
-                </button>
-              </span>
-            )
-            : (
-              <span class="stream-card__meta-label">
-                {streamMetaLabel(card, status, childCount)}
-              </span>
-            )}
-        </div>
-        {canEditTitle
-          ? (
-            <div
-              class="stream-card__main stream-card__main--editable"
-              onClick={() => selectCardFromStream(card.id)}
-            >
-              <span class="stream-card__body-row">
-                <span class="stream-card__text">
-                  <StreamCardTitle card={card} editable />
-                  {card.body ? <small>{card.body}</small> : null}
-                  {card.tags?.length
-                    ? (
-                      <span class="tags">
-                        {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
-                      </span>
-                    )
-                    : null}
-                  {card.outcome
-                    ? (
-                      <IconTip
-                        align="start"
-                        label={`仮説 · ${thoughtOutcomeLabel(card.outcome)}`}
-                      >
-                        <span
-                          class={`stream-card__outcome is-${card.outcome}`}
-                          aria-label={thoughtOutcomeLabel(card.outcome)}
-                        >
-                          <ThoughtOutcomeIcon outcome={card.outcome} />
-                          <span class="stream-card__outcome-label">
-                            {thoughtOutcomeShort(card.outcome)}
-                          </span>
-                        </span>
-                      </IconTip>
-                    )
-                    : null}
-                </span>
-                {isLocalMediaRef(card.image)
-                  ? (
-                    <span class="stream-card__thumb-wrap">
-                      <IconTip align="end" label="画像 · 大きく見ながら書く">
-                        <button
-                          type="button"
-                          class="stream-card__thumb-btn"
-                          data-testid="stream-card-thumb"
-                          aria-label="大きく見ながら書く"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (selectedCardId.value !== card.id) {
-                              selectSingleCard(card.id);
-                            }
-                            openExploreCompose(card.id);
-                          }}
-                        >
-                          <MediaThumb
-                            image={card.image}
-                            className="stream-card__thumb"
-                            width={88}
-                            height={66}
-                          />
-                        </button>
-                      </IconTip>
-                      <ImageEnlargeButton
-                        cardId={card.id}
-                        className="stream-card__enlarge"
-                        testId="stream-card-enlarge"
+                    >
+                      <MediaThumb
+                        image={card.image}
+                        className="stream-card__thumb"
+                        width={88}
+                        height={66}
                       />
-                    </span>
-                  )
-                  : null}
-              </span>
-            </div>
-          )
-          : (
-            <div
-              class="stream-card__main"
-              role="button"
-              tabIndex={0}
-              onClick={() => selectCardFromStream(card.id)}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" && event.key !== " ") return;
-                event.preventDefault();
-                selectCardFromStream(card.id);
-              }}
-            >
-              <span class="stream-card__body-row">
-                <span class="stream-card__text">
-                  <StreamCardTitle card={card} editable={false} />
-                  {card.body ? <small>{card.body}</small> : null}
-                  {card.tags?.length
-                    ? (
-                      <span class="tags">
-                        {card.tags.map((tag) => <i key={tag}>#{tag}</i>)}
-                      </span>
-                    )
-                    : null}
-                  {card.outcome
-                    ? (
-                      <IconTip
-                        align="start"
-                        label={`仮説 · ${thoughtOutcomeLabel(card.outcome)}`}
-                      >
-                        <span
-                          class={`stream-card__outcome is-${card.outcome}`}
-                          aria-label={thoughtOutcomeLabel(card.outcome)}
-                        >
-                          <ThoughtOutcomeIcon outcome={card.outcome} />
-                          <span class="stream-card__outcome-label">
-                            {thoughtOutcomeShort(card.outcome)}
-                          </span>
-                        </span>
-                      </IconTip>
-                    )
-                    : null}
+                    </button>
+                  </IconTip>
+                  <ImageEnlargeButton
+                    cardId={card.id}
+                    className="stream-card__enlarge"
+                    testId="stream-card-enlarge"
+                  />
                 </span>
-                {isLocalMediaRef(card.image)
-                  ? (
-                    <span class="stream-card__thumb-wrap">
-                      <IconTip align="end" label="画像 · 大きく見ながら書く">
-                        <button
-                          type="button"
-                          class="stream-card__thumb-btn"
-                          data-testid="stream-card-thumb"
-                          aria-label="大きく見ながら書く"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (selectedCardId.value !== card.id) {
-                              selectSingleCard(card.id);
-                            }
-                            openExploreCompose(card.id);
-                          }}
-                        >
-                          <MediaThumb
-                            image={card.image}
-                            className="stream-card__thumb"
-                            width={88}
-                            height={66}
-                          />
-                        </button>
-                      </IconTip>
-                      <ImageEnlargeButton
-                        cardId={card.id}
-                        className="stream-card__enlarge"
-                        testId="stream-card-enlarge"
-                      />
+              ) : null}
+            </span>
+          </div>
+        ) : (
+          <div
+            class="stream-card__main"
+            role="button"
+            tabIndex={0}
+            onClick={() => selectCardFromStream(card.id)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              selectCardFromStream(card.id);
+            }}
+          >
+            <span class="stream-card__body-row">
+              <span class="stream-card__text">
+                <StreamCardTitle card={card} editable={false} />
+                {card.body ? <small>{card.body}</small> : null}
+                {card.tags?.length ? (
+                  <span class="tags">
+                    {card.tags.map((tag) => (
+                      <i key={tag}>#{tag}</i>
+                    ))}
+                  </span>
+                ) : null}
+                {card.outcome ? (
+                  <IconTip
+                    align="start"
+                    label={`仮説 · ${thoughtOutcomeLabel(card.outcome)}`}
+                  >
+                    <span
+                      class={`stream-card__outcome is-${card.outcome}`}
+                      aria-label={thoughtOutcomeLabel(card.outcome)}
+                    >
+                      <ThoughtOutcomeIcon outcome={card.outcome} />
+                      <span class="stream-card__outcome-label">
+                        {thoughtOutcomeShort(card.outcome)}
+                      </span>
                     </span>
-                  )
-                  : null}
+                  </IconTip>
+                ) : null}
               </span>
-            </div>
-          )}
-        {card.url
-          ? (
-            <a
-              class="stream-card__url"
-              data-testid="stream-card-url"
-              href={card.url}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {sourceLabel(card.url)}
-            </a>
-          )
-          : null}
+              {isLocalMediaRef(card.image) ? (
+                <span class="stream-card__thumb-wrap">
+                  <IconTip align="end" label="画像 · 大きく見ながら書く">
+                    <button
+                      type="button"
+                      class="stream-card__thumb-btn"
+                      data-testid="stream-card-thumb"
+                      aria-label="大きく見ながら書く"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (selectedCardId.value !== card.id) {
+                          selectSingleCard(card.id);
+                        }
+                        openExploreCompose(card.id);
+                      }}
+                    >
+                      <MediaThumb
+                        image={card.image}
+                        className="stream-card__thumb"
+                        width={88}
+                        height={66}
+                      />
+                    </button>
+                  </IconTip>
+                  <ImageEnlargeButton
+                    cardId={card.id}
+                    className="stream-card__enlarge"
+                    testId="stream-card-enlarge"
+                  />
+                </span>
+              ) : null}
+            </span>
+          </div>
+        )}
+        {card.url ? (
+          <a
+            class="stream-card__url"
+            data-testid="stream-card-url"
+            href={card.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {sourceLabel(card.url)}
+          </a>
+        ) : null}
       </div>
     </div>
   );
@@ -681,47 +664,45 @@ function TagFocusControls() {
           ))}
         </div>
       </div>
-      {tagFocus
-        ? (
-          <div class="stream__tag-focus-ops" aria-label={`視点 #${tagFocus}`}>
-            <span class="board__focus-meta" aria-live="polite">
-              視点 · {hops}
-            </span>
-            <IconTip label="視点 · 一周戻す">
-              <button
-                type="button"
-                class="board__focus-icon"
-                disabled={hops <= 1}
-                aria-label="一周戻す"
-                onClick={() => shrinkFocusHops()}
-              >
-                −
-              </button>
-            </IconTip>
-            <IconTip label="視点 · もう一周広げる">
-              <button
-                type="button"
-                class="board__focus-icon"
-                aria-label="もう一周広げる"
-                onClick={() => expandFocusHops()}
-              >
-                ＋
-              </button>
-            </IconTip>
-            <IconTip label="視点 · やめる">
-              <button
-                type="button"
-                class="board__focus-icon"
-                data-testid="tag-focus-clear"
-                aria-label="視点をやめる"
-                onClick={() => clearFocusView()}
-              >
-                ×
-              </button>
-            </IconTip>
-          </div>
-        )
-        : null}
+      {tagFocus ? (
+        <div class="stream__tag-focus-ops" aria-label={`視点 #${tagFocus}`}>
+          <span class="board__focus-meta" aria-live="polite">
+            視点 · {hops}
+          </span>
+          <IconTip label="視点 · 一周戻す">
+            <button
+              type="button"
+              class="board__focus-icon"
+              disabled={hops <= 1}
+              aria-label="一周戻す"
+              onClick={() => shrinkFocusHops()}
+            >
+              −
+            </button>
+          </IconTip>
+          <IconTip label="視点 · もう一周広げる">
+            <button
+              type="button"
+              class="board__focus-icon"
+              aria-label="もう一周広げる"
+              onClick={() => expandFocusHops()}
+            >
+              ＋
+            </button>
+          </IconTip>
+          <IconTip label="視点 · やめる">
+            <button
+              type="button"
+              class="board__focus-icon"
+              data-testid="tag-focus-clear"
+              aria-label="視点をやめる"
+              onClick={() => clearFocusView()}
+            >
+              ×
+            </button>
+          </IconTip>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -756,7 +737,7 @@ function StreamTreeBranch(props: StreamTreeBranchProps) {
   const branchCollapsed = collapsed.has(card.id);
   const children = branchCollapsed
     ? []
-    : forest.childrenByParent.get(card.id) ?? [];
+    : (forest.childrenByParent.get(card.id) ?? []);
 
   return (
     <>
@@ -772,27 +753,25 @@ function StreamTreeBranch(props: StreamTreeBranchProps) {
         allCards={allCards}
         onToggleBranch={() => toggleStreamBranchCollapsed(card.id)}
       />
-      {children.length > 0
-        ? (
-          <div class="stream-tree__branch" data-branch-depth={depth + 1}>
-            {children.map((child) => (
-              <StreamTreeBranch
-                key={child.id}
-                card={child}
-                depth={depth + 1}
-                forest={forest}
-                collapsed={collapsed}
-                childCountByParent={childCountByParent}
-                boardCardIds={boardCardIds}
-                canDrag={canDrag}
-                replaying={replaying}
-                isContemplate={isContemplate}
-                allCards={allCards}
-              />
-            ))}
-          </div>
-        )
-        : null}
+      {children.length > 0 ? (
+        <div class="stream-tree__branch" data-branch-depth={depth + 1}>
+          {children.map((child) => (
+            <StreamTreeBranch
+              key={child.id}
+              card={child}
+              depth={depth + 1}
+              forest={forest}
+              collapsed={collapsed}
+              childCountByParent={childCountByParent}
+              boardCardIds={boardCardIds}
+              canDrag={canDrag}
+              replaying={replaying}
+              isContemplate={isContemplate}
+              allCards={allCards}
+            />
+          ))}
+        </div>
+      ) : null}
     </>
   );
 }
@@ -920,37 +899,33 @@ export function Stream() {
                   role === "finding"
                     ? " stream__filter-btn--finding is-active"
                     : role === "thought"
-                    ? " stream__filter-btn--thought is-active"
-                    : " stream__filter-btn--text"
+                      ? " stream__filter-btn--thought is-active"
+                      : " stream__filter-btn--text"
                 }`}
                 data-testid="stream-role-filter"
                 aria-pressed={role !== "all"}
                 aria-label={`種別: ${roleFilterLabel(role)}`}
                 onClick={cycleRoleFilter}
               >
-                {role === "finding"
-                  ? (
-                    <svg viewBox="0 0 16 16" aria-hidden="true">
-                      <circle cx="8" cy="8" r="3.5" fill="currentColor" />
-                    </svg>
-                  )
-                  : role === "thought"
-                  ? (
-                    <svg viewBox="0 0 16 16" aria-hidden="true">
-                      <rect
-                        x="3.5"
-                        y="3.5"
-                        width="9"
-                        height="9"
-                        rx="2"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-dasharray="2.5 2"
-                      />
-                    </svg>
-                  )
-                  : null}
+                {role === "finding" ? (
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <circle cx="8" cy="8" r="3.5" fill="currentColor" />
+                  </svg>
+                ) : role === "thought" ? (
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <rect
+                      x="3.5"
+                      y="3.5"
+                      width="9"
+                      height="9"
+                      rx="2"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-dasharray="2.5 2"
+                    />
+                  </svg>
+                ) : null}
                 <span class="stream__filter-btn-label">
                   {roleFilterLabel(role)}
                 </span>
@@ -1001,56 +976,52 @@ export function Stream() {
                   when === "with"
                     ? " stream__filter-btn--story-when is-active"
                     : when === "without"
-                    ? " stream__filter-btn--no-story-when is-active"
-                    : " stream__filter-btn--text"
+                      ? " stream__filter-btn--no-story-when is-active"
+                      : " stream__filter-btn--text"
                 }`}
                 data-testid="stream-story-when-filter"
                 aria-pressed={when !== "off"}
                 aria-label={`作中: ${storyWhenFilterLabel(when)}`}
                 onClick={cycleStoryWhenFilter}
               >
-                {when === "with"
-                  ? (
-                    <svg viewBox="0 0 16 16" aria-hidden="true">
-                      <path
-                        d="M2 8h12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.4"
-                        stroke-linecap="round"
-                      />
-                      <path
-                        d="M3 5.5v5M13 5.5v5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.3"
-                        stroke-linecap="round"
-                      />
-                      <circle cx="8" cy="8" r="2" fill="currentColor" />
-                    </svg>
-                  )
-                  : when === "without"
-                  ? (
-                    <svg viewBox="0 0 16 16" aria-hidden="true">
-                      <path
-                        d="M2 8h12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.4"
-                        stroke-linecap="round"
-                        stroke-dasharray="2.2 1.8"
-                      />
-                      <path
-                        d="M3 5.5v5M13 5.5v5"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1.3"
-                        stroke-linecap="round"
-                        opacity="0.55"
-                      />
-                    </svg>
-                  )
-                  : null}
+                {when === "with" ? (
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                      d="M2 8h12"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M3 5.5v5M13 5.5v5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.3"
+                      stroke-linecap="round"
+                    />
+                    <circle cx="8" cy="8" r="2" fill="currentColor" />
+                  </svg>
+                ) : when === "without" ? (
+                  <svg viewBox="0 0 16 16" aria-hidden="true">
+                    <path
+                      d="M2 8h12"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      stroke-linecap="round"
+                      stroke-dasharray="2.2 1.8"
+                    />
+                    <path
+                      d="M3 5.5v5M13 5.5v5"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.3"
+                      stroke-linecap="round"
+                      opacity="0.55"
+                    />
+                  </svg>
+                ) : null}
                 <span class="stream__filter-btn-label">
                   {storyWhenFilterLabel(when)}
                 </span>
@@ -1060,46 +1031,44 @@ export function Stream() {
         </div>
         <TagFocusControls />
         <div class="stream__list" ref={listRef}>
-          {filtered.length === 0
-            ? (
-              <p class="stream__empty" data-testid="stream-empty">
-                {streamEmptyReason({
-                  total: cards.length,
-                  query: search.value.trim(),
-                  unplacedOnly: unplacedOnly.value,
-                  placedOnly: placedOnly.value,
-                  findingOnly: findingOnly.value,
-                  thoughtOnly: thoughtOnly.value,
-                  openOutcomeOnly: openOutcomeOnly.value,
-                  storyWhenFilter: storyWhenFilter.value,
-                })}
-              </p>
-            )
-            : (
-              <>
-                <StreamStickyTrail
-                  listRef={listRef}
-                  visibleCards={displayCards}
-                  cardById={cardById}
-                  visibleIds={visibleIds}
+          {filtered.length === 0 ? (
+            <p class="stream__empty" data-testid="stream-empty">
+              {streamEmptyReason({
+                total: cards.length,
+                query: search.value.trim(),
+                unplacedOnly: unplacedOnly.value,
+                placedOnly: placedOnly.value,
+                findingOnly: findingOnly.value,
+                thoughtOnly: thoughtOnly.value,
+                openOutcomeOnly: openOutcomeOnly.value,
+                storyWhenFilter: storyWhenFilter.value,
+              })}
+            </p>
+          ) : (
+            <>
+              <StreamStickyTrail
+                listRef={listRef}
+                visibleCards={displayCards}
+                cardById={cardById}
+                visibleIds={visibleIds}
+              />
+              {forest.roots.map((card) => (
+                <StreamTreeBranch
+                  key={card.id}
+                  card={card}
+                  depth={0}
+                  forest={forest}
+                  collapsed={collapsed}
+                  childCountByParent={childCountByParent}
+                  boardCardIds={boardCardIds}
+                  canDrag={canDrag}
+                  replaying={replaying}
+                  isContemplate={isContemplate}
+                  allCards={cards}
                 />
-                {forest.roots.map((card) => (
-                  <StreamTreeBranch
-                    key={card.id}
-                    card={card}
-                    depth={0}
-                    forest={forest}
-                    collapsed={collapsed}
-                    childCountByParent={childCountByParent}
-                    boardCardIds={boardCardIds}
-                    canDrag={canDrag}
-                    replaying={replaying}
-                    isContemplate={isContemplate}
-                    allCards={cards}
-                  />
-                ))}
-              </>
-            )}
+              ))}
+            </>
+          )}
         </div>
       </div>
     </section>

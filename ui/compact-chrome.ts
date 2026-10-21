@@ -4,8 +4,8 @@ import { useEffect, useState } from "preact/hooks";
 export const COMPACT_CHROME_QUERY = "(pointer: coarse), (max-width: 800px)";
 
 export function useCompactChromeHints(): boolean {
-  const [compact, setCompact] = useState(() =>
-    globalThis.matchMedia?.(COMPACT_CHROME_QUERY)?.matches ?? false
+  const [compact, setCompact] = useState(
+    () => globalThis.matchMedia?.(COMPACT_CHROME_QUERY)?.matches ?? false,
   );
 
   useEffect(() => {

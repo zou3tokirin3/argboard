@@ -14,57 +14,57 @@ export type ProjectEvent =
   | { type: "project_opened"; at: number }
   | { type: "card_added"; at: number; card: Card }
   | {
-    type: "card_updated";
-    at: number;
-    cardId: string;
-    title: string;
-    body?: string;
-    url?: string;
-    /** Local media id (IndexedDB Blob). Present when image changed. */
-    image?: string;
-    /** Present only when tags changed (omit keeps previous tags on replay). */
-    tags?: string[];
-    /**
-     * Present only when board size changed (omit keeps previous on replay).
-     * `""` clears to default medium.
-     */
-    size?: "m" | "l" | "";
-    /**
-     * Present only when role changed (omit keeps previous on replay).
-     * `""` clears to default finding.
-     */
-    role?: "finding" | "thought" | "";
-    /**
-     * Present only when thought outcome changed (omit keeps previous on replay).
-     * `""` clears outcome. Meaningful only on `role: "thought"` cards.
-     */
-    outcome?: ThoughtOutcome | "";
-    /**
-     * Present only when in-story time changed (omit keeps previous on replay).
-     * `""` clears. Free text (e.g. `23:17` / `夜` / `Day3`).
-     */
-    storyWhen?: string;
-    /**
-     * Present only when in-story span end changed (omit keeps previous on replay).
-     * `""` clears. Free text end time or duration (e.g. `13:00` / `20min`).
-     */
-    storyUntil?: string;
-  }
+      type: "card_updated";
+      at: number;
+      cardId: string;
+      title: string;
+      body?: string;
+      url?: string;
+      /** Local media id (IndexedDB Blob). Present when image changed. */
+      image?: string;
+      /** Present only when tags changed (omit keeps previous tags on replay). */
+      tags?: string[];
+      /**
+       * Present only when board size changed (omit keeps previous on replay).
+       * `""` clears to default medium.
+       */
+      size?: "m" | "l" | "";
+      /**
+       * Present only when role changed (omit keeps previous on replay).
+       * `""` clears to default finding.
+       */
+      role?: "finding" | "thought" | "";
+      /**
+       * Present only when thought outcome changed (omit keeps previous on replay).
+       * `""` clears outcome. Meaningful only on `role: "thought"` cards.
+       */
+      outcome?: ThoughtOutcome | "";
+      /**
+       * Present only when in-story time changed (omit keeps previous on replay).
+       * `""` clears. Free text (e.g. `23:17` / `夜` / `Day3`).
+       */
+      storyWhen?: string;
+      /**
+       * Present only when in-story span end changed (omit keeps previous on replay).
+       * `""` clears. Free text end time or duration (e.g. `13:00` / `20min`).
+       */
+      storyUntil?: string;
+    }
   | {
-    type: "card_removed";
-    at: number;
-    card: Card;
-    links: Link[];
-    position?: { x: number; y: number };
-  }
+      type: "card_removed";
+      at: number;
+      card: Card;
+      links: Link[];
+      position?: { x: number; y: number };
+    }
   | { type: "link_added"; at: number; link: Link }
   | {
-    type: "link_updated";
-    at: number;
-    linkId: string;
-    label?: string;
-    kind: Link["kind"];
-  }
+      type: "link_updated";
+      at: number;
+      linkId: string;
+      label?: string;
+      kind: Link["kind"];
+    }
   | { type: "link_removed"; at: number; link: Link }
   | { type: "card_placed"; at: number; cardId: string; x: number; y: number }
   | { type: "found_via_cleared"; at: number; cardId: string };

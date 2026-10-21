@@ -1,12 +1,12 @@
 import { IconTip, type IconTipAlign } from "./icon-tip.tsx";
 import { updateCardOutcome } from "./state.ts";
-import { ThoughtOutcomeIcon } from "./thought-outcome-icon.tsx";
 import {
   THOUGHT_OUTCOMES,
   type ThoughtOutcome,
   thoughtOutcomeLabel,
   thoughtOutcomeShort,
 } from "./thought-outcome.ts";
+import { ThoughtOutcomeIcon } from "./thought-outcome-icon.tsx";
 
 type ThoughtOutcomeFieldProps = {
   cardId: string;
@@ -49,13 +49,7 @@ export function ThoughtOutcomeField({
         compact ? " inspector__outcome--compact" : ""
       }`}
     >
-      {!compact
-        ? (
-          <span>
-            仮説の成否（任意・未設定＝解釈メモ）
-          </span>
-        )
-        : null}
+      {!compact ? <span>仮説の成否（任意・未設定＝解釈メモ）</span> : null}
       <div
         class="inspector__outcome-toggle"
         role="group"

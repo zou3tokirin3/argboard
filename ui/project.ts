@@ -7,10 +7,7 @@ export type FocusOrigin =
   | { kind: "card"; cardId: string }
   | { kind: "tag"; tag: string };
 
-export function appendEvent(
-  project: Project,
-  event: ProjectEvent,
-): Project {
+export function appendEvent(project: Project, event: ProjectEvent): Project {
   return { ...project, events: [...(project.events ?? []), event] };
 }
 
@@ -162,16 +159,18 @@ export function withBirthEvents(project: Project): Project {
       seq: births.length + index,
     })),
   ];
-  tagged.sort((left, right) =>
-    left.event.at - right.event.at || left.seq - right.seq
+  tagged.sort(
+    (left, right) => left.event.at - right.event.at || left.seq - right.seq,
   );
   const ordered = tagged.map((item) => item.event);
-  const unchanged = births.length === 0 &&
+  const unchanged =
+    births.length === 0 &&
     ordered.length === raw.length &&
     ordered.every((event, index) => {
       const prev = raw[index];
-      return prev !== undefined &&
-        JSON.stringify(event) === JSON.stringify(prev);
+      return (
+        prev !== undefined && JSON.stringify(event) === JSON.stringify(prev)
+      );
     });
   if (unchanged) return project;
   return {
@@ -220,7 +219,8 @@ function applyEvent(
       }
       if ("outcome" in event) {
         if (
-          event.outcome === "open" || event.outcome === "held" ||
+          event.outcome === "open" ||
+          event.outcome === "held" ||
           event.outcome === "failed"
         ) {
           next.outcome = event.outcome;
@@ -285,10 +285,7 @@ function applyEvent(
 /**
  * Replay by inclusive event index (not timestamp). Same-ms steps stay ordered.
  */
-export function viewThrough(
-  project: Project,
-  through: number,
-): ProjectSlice {
+export function viewThrough(project: Project, through: number): ProjectSlice {
   const sourced = withBirthEvents(project);
   const events = sourced.events ?? [];
   const cards = new Map<string, Card>();
@@ -405,10 +402,7 @@ export function replaySteps(project: Project): ReplayStep[] {
   return steps;
 }
 
-export function createEmptyProject(
-  name: string,
-  now = Date.now(),
-): Project {
+export function createEmptyProject(name: string, now = Date.now()): Project {
   return {
     version: 1,
     id: crypto.randomUUID(),
@@ -416,12 +410,14 @@ export function createEmptyProject(
     createdAt: now,
     cards: [],
     links: [],
-    boards: [{
-      id: "main-board",
-      name: "メインボード",
-      cardIds: [],
-      positions: {},
-    }],
+    boards: [
+      {
+        id: "main-board",
+        name: "メインボード",
+        cardIds: [],
+        positions: {},
+      },
+    ],
     ui: { panelPhase: "wide" },
   };
 }
@@ -538,15 +534,15 @@ export function sortCardsByFoundViaTree(cards: readonly Card[]): Card[] {
   const out: Card[] = [];
   const visit = (card: Card): void => {
     out.push(card);
-    const siblings = (children.get(card.id) ?? []).toSorted((left, right) =>
-      left.foundAt - right.foundAt
+    const siblings = (children.get(card.id) ?? []).toSorted(
+      (left, right) => left.foundAt - right.foundAt,
     );
     for (const child of siblings) visit(child);
   };
 
-  for (
-    const root of roots.toSorted((left, right) => right.foundAt - left.foundAt)
-  ) {
+  for (const root of roots.toSorted(
+    (left, right) => right.foundAt - left.foundAt,
+  )) {
     visit(root);
   }
   return out;
@@ -558,9 +554,7 @@ export type FoundViaForest = {
 };
 
 /** Build foundVia parent→children forest for stream tree view (T051). */
-export function buildFoundViaForest(
-  cards: readonly Card[],
-): FoundViaForest {
+export function buildFoundViaForest(cards: readonly Card[]): FoundViaForest {
   const byId = new Map(cards.map((item) => [item.id, item]));
   const childrenByParent = new Map<string, Card[]>();
   const roots: Card[] = [];
@@ -653,11 +647,17 @@ export function parseProjectJson(text: string): Project {
   }
   const p = data as Partial<Project>;
   if (
-    typeof data !== "object" || !data || p.version !== 1 ||
-    typeof p.id !== "string" || typeof p.name !== "string" ||
-    typeof p.createdAt !== "number" || !Array.isArray(p.cards) ||
-    !Array.isArray(p.links) || !Array.isArray(p.boards)
-  ) throw new Error("未対応の形式か version です");
+    typeof data !== "object" ||
+    !data ||
+    p.version !== 1 ||
+    typeof p.id !== "string" ||
+    typeof p.name !== "string" ||
+    typeof p.createdAt !== "number" ||
+    !Array.isArray(p.cards) ||
+    !Array.isArray(p.links) ||
+    !Array.isArray(p.boards)
+  )
+    throw new Error("未対応の形式か version です");
   return data as Project;
 }
 
@@ -747,9 +747,7 @@ export function applyConnectCards(
   if (!board?.cardIds.includes(fromId) || !board.cardIds.includes(toId)) {
     return null;
   }
-  if (
-    project.links.some((link) => link.from === fromId && link.to === toId)
-  ) {
+  if (project.links.some((link) => link.from === fromId && link.to === toId)) {
     return null;
   }
   const link: Link = {
@@ -772,9 +770,10 @@ export function applyUpdateLink(
     ...project,
     links: project.links.map((link) => {
       if (link.id !== linkId) return link;
-      const label = patch.label !== undefined
-        ? (patch.label.trim() || undefined)
-        : link.label;
+      const label =
+        patch.label !== undefined
+          ? patch.label.trim() || undefined
+          : link.label;
       return {
         ...link,
         label,
@@ -904,18 +903,20 @@ export function createDemoProject(now = Date.now()): Project {
         createdAt: now,
       },
     ],
-    boards: [{
-      id: "main-board",
-      name: "メインボード",
-      cardIds: cards.map((card) => card.id),
-      positions: {
-        "radio-signal": { x: 90, y: 90 },
-        "station-locker": { x: 480, y: 70 },
-        "missing-poster": { x: 95, y: 345 },
-        "seventeen-theory": { x: 470, y: 330 },
-        "late-train": { x: 280, y: 200 },
+    boards: [
+      {
+        id: "main-board",
+        name: "メインボード",
+        cardIds: cards.map((card) => card.id),
+        positions: {
+          "radio-signal": { x: 90, y: 90 },
+          "station-locker": { x: 480, y: 70 },
+          "missing-poster": { x: 95, y: 345 },
+          "seventeen-theory": { x: 470, y: 330 },
+          "late-train": { x: 280, y: 200 },
+        },
       },
-    }],
+    ],
     ui: { panelPhase: "rail" },
   };
 }

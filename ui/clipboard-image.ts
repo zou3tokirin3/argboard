@@ -13,9 +13,7 @@ export function imageBlobFromClipboard(
   return undefined;
 }
 
-export function imageBlobFromDataTransfer(
-  event: DragEvent,
-): Blob | undefined {
+export function imageBlobFromDataTransfer(event: DragEvent): Blob | undefined {
   const files = event.dataTransfer?.files;
   if (!files?.length) return undefined;
   return [...files].find((file) => file.type.startsWith("image/"));

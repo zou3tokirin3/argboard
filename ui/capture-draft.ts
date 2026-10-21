@@ -1,4 +1,4 @@
-import { parseCaptureLine, type ParsedCapture } from "./capture-notation.ts";
+import { type ParsedCapture, parseCaptureLine } from "./capture-notation.ts";
 
 function readCaptureStoryWhen(): string | undefined {
   const el = document.querySelector<HTMLInputElement>(

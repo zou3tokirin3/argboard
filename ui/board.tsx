@@ -1,4 +1,15 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { parseCaptureLine } from "./capture-notation.ts";
+import { isLocalMediaRef } from "./media.ts";
+import { MediaThumb } from "./media-thumb.tsx";
+import {
+  ADHESIVE_HEIGHT,
+  dimsForCardId,
+  NODE_DIMS,
+  type NodeDims,
+  nodeDims,
+} from "./node-size.ts";
+import { focusReachableIds } from "./project.ts";
 import {
   addCard,
   clearCardSelection,
@@ -33,18 +44,7 @@ import {
   toggleCardInSelection,
   viewProject,
 } from "./state.ts";
-import { parseCaptureLine } from "./capture-notation.ts";
-import { MediaThumb } from "./media-thumb.tsx";
-import { isLocalMediaRef } from "./media.ts";
-import { focusReachableIds } from "./project.ts";
 import { collectTagUsage, fitTagsOneLine, normalizeTag } from "./tags.ts";
-import {
-  ADHESIVE_HEIGHT,
-  dimsForCardId,
-  NODE_DIMS,
-  type NodeDims,
-  nodeDims,
-} from "./node-size.ts";
 import type { Board, Card, Link } from "./types.ts";
 import { CARD_MIME } from "./types.ts";
 
@@ -75,21 +75,21 @@ type Marquee = { x1: number; y1: number; x2: number; y2: number };
 type Drag =
   | { type: "pan"; startX: number; startY: number; origin: Viewport }
   | {
-    type: "node";
-    cardId: string;
-    cardIds: string[];
-    offsetX: number;
-    offsetY: number;
-    originPositions: Record<string, { x: number; y: number }>;
-  }
+      type: "node";
+      cardId: string;
+      cardIds: string[];
+      offsetX: number;
+      offsetY: number;
+      originPositions: Record<string, { x: number; y: number }>;
+    }
   | { type: "link"; fromId: string; targetId: string | null }
   | {
-    type: "marquee";
-    startX: number;
-    startY: number;
-    currentX: number;
-    currentY: number;
-  };
+      type: "marquee";
+      startX: number;
+      startY: number;
+      currentX: number;
+      currentY: number;
+    };
 type LinkGeometry = {
   x1: number;
   y1: number;
@@ -107,8 +107,10 @@ function defaultViewport(boardViewport?: Viewport): Viewport {
 }
 
 function prefersReducedMotion(): boolean {
-  return globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")
-    ?.matches === true;
+  return (
+    globalThis.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ===
+    true
+  );
 }
 
 /** Ease-out pan from current viewport toward a target (stream reveal). */
@@ -212,21 +214,20 @@ function rectEdge(from: Point, toward: Point, dims: NodeDims): Point {
   if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) return from;
   const halfW = dims.w / 2;
   const halfH = dims.h / 2;
-  const sx = Math.abs(dx) < 0.001
-    ? Number.POSITIVE_INFINITY
-    : halfW / Math.abs(dx);
-  const sy = Math.abs(dy) < 0.001
-    ? Number.POSITIVE_INFINITY
-    : halfH / Math.abs(dy);
+  const sx =
+    Math.abs(dx) < 0.001 ? Number.POSITIVE_INFINITY : halfW / Math.abs(dx);
+  const sy =
+    Math.abs(dy) < 0.001 ? Number.POSITIVE_INFINITY : halfH / Math.abs(dy);
   const t = Math.min(sx, sy);
   return { x: from.x + dx * t, y: from.y + dy * t };
 }
 
 function pairSiblings(link: Link, links: Link[]): Link[] {
   return links
-    .filter((item) =>
-      (item.from === link.from && item.to === link.to) ||
-      (item.from === link.to && item.to === link.from)
+    .filter(
+      (item) =>
+        (item.from === link.from && item.to === link.to) ||
+        (item.from === link.to && item.to === link.from),
     )
     .toSorted((left, right) => left.id.localeCompare(right.id));
 }
@@ -297,9 +298,8 @@ function linkGeometry(
   const siblings = pairSiblings(link, links);
   const directed = siblings.length >= 2;
   const lane = linkLane(link, siblings);
-  const [axisFromId, axisToId] = link.from < link.to
-    ? [link.from, link.to]
-    : [link.to, link.from];
+  const [axisFromId, axisToId] =
+    link.from < link.to ? [link.from, link.to] : [link.to, link.from];
   const segment = offsetSegment(
     start,
     end,
@@ -309,10 +309,13 @@ function linkGeometry(
   );
   const along = directed ? 0.78 : 0.5;
   const side = lane === 0 ? 1 : Math.sign(lane);
-  const labelX = segment.x1 + (segment.x2 - segment.x1) * along +
-    segment.px * side * 12;
-  const labelY = segment.y1 + (segment.y2 - segment.y1) * along +
-    segment.py * side * 12 - (directed ? 0 : 14);
+  const labelX =
+    segment.x1 + (segment.x2 - segment.x1) * along + segment.px * side * 12;
+  const labelY =
+    segment.y1 +
+    (segment.y2 - segment.y1) * along +
+    segment.py * side * 12 -
+    (directed ? 0 : 14);
   return {
     x1: segment.x1,
     y1: segment.y1,
@@ -356,17 +359,18 @@ function mapLinkVisuals(
   ));
 }
 
-function LinkVisual(
-  { link, geometry }: {
-    link: Link;
-    geometry: LinkGeometry;
-  },
-) {
+function LinkVisual({
+  link,
+  geometry,
+}: {
+  link: Link;
+  geometry: LinkGeometry;
+}) {
   const selected = selectedLinkId.value === link.id;
   const marker = geometry.directed
-    ? (link.kind === "contradicts"
+    ? link.kind === "contradicts"
       ? "url(#arrow-contradicts)"
-      : "url(#arrow-connects)")
+      : "url(#arrow-connects)"
     : undefined;
   return (
     <g
@@ -384,27 +388,22 @@ function LinkVisual(
         y2={geometry.y2}
         marker-end={marker}
       />
-      {link.label
-        ? (
-          <g
-            class="link__label"
-            transform={`translate(${geometry.labelX} ${geometry.labelY})`}
-          >
-            <rect x="-40" y="-11" width="80" height="22" rx="4" />
-            <text text-anchor="middle" y="4">{link.label}</text>
-          </g>
-        )
-        : null}
+      {link.label ? (
+        <g
+          class="link__label"
+          transform={`translate(${geometry.labelX} ${geometry.labelY})`}
+        >
+          <rect x="-40" y="-11" width="80" height="22" rx="4" />
+          <text text-anchor="middle" y="4">
+            {link.label}
+          </text>
+        </g>
+      ) : null}
     </g>
   );
 }
 
-function LinkHit(
-  { link, geometry }: {
-    link: Link;
-    geometry: LinkGeometry;
-  },
-) {
+function LinkHit({ link, geometry }: { link: Link; geometry: LinkGeometry }) {
   const selected = selectedLinkId.value === link.id;
   return (
     <g
@@ -419,9 +418,9 @@ function LinkHit(
       }}
       role="button"
       tabIndex={0}
-      aria-label={link.label
-        ? `糸: ${link.label}`
-        : `糸 ${link.from} → ${link.to}`}
+      aria-label={
+        link.label ? `糸: ${link.label}` : `糸 ${link.from} → ${link.to}`
+      }
     >
       <line
         class="link__hit"
@@ -464,8 +463,8 @@ function BoardNode({
   onPaperPointerDown: (event: PointerEvent, cardId: string) => void;
   onThreadPointerDown: (event: PointerEvent, cardId: string) => void;
 }) {
-  const selected = selectedCardIds.value.includes(card.id) ||
-    selectedCardId.value === card.id;
+  const selected =
+    selectedCardIds.value.includes(card.id) || selectedCardId.value === card.id;
   const dims = nodeDims(card);
   const threadY = dims.h / 2;
   const thought = card.role === "thought";
@@ -528,61 +527,55 @@ function BoardNode({
       >
         <div class="board-node__adhesive-meta">
           <span class="board-node__index">{thought ? "考察" : "発見"}</span>
-          {hasTags
-            ? (
-              <div class="board-node__tags" aria-hidden="true">
-                {visibleTags.map((tag) => {
-                  const unsettled = (tagCounts.get(tag) ?? 1) === 1;
-                  return (
-                    <span
-                      key={tag}
-                      class={`board-node__tag${
-                        unsettled ? " is-unsettled" : ""
-                      }`}
-                    >
-                      #{tag}
-                    </span>
-                  );
-                })}
-                {hiddenTagCount > 0
-                  ? <span class="board-node__tag-more">+{hiddenTagCount}</span>
-                  : null}
-              </div>
-            )
-            : null}
+          {hasTags ? (
+            <div class="board-node__tags" aria-hidden="true">
+              {visibleTags.map((tag) => {
+                const unsettled = (tagCounts.get(tag) ?? 1) === 1;
+                return (
+                  <span
+                    key={tag}
+                    class={`board-node__tag${unsettled ? " is-unsettled" : ""}`}
+                  >
+                    #{tag}
+                  </span>
+                );
+              })}
+              {hiddenTagCount > 0 ? (
+                <span class="board-node__tag-more">+{hiddenTagCount}</span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </foreignObject>
-      {card.url
-        ? (
-          <a
-            class="board-node__source"
-            href={card.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="board-node-source"
-            aria-label="出典を開く"
-            onPointerDown={(event) => event.stopPropagation()}
+      {card.url ? (
+        <a
+          class="board-node__source"
+          href={card.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="board-node-source"
+          aria-label="出典を開く"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <title>{sourceHost(card.url)}</title>
+          <rect
+            class="board-node__source-hit"
+            x={dims.w - 34}
+            y="8"
+            width="26"
+            height="22"
+            rx="4"
+          />
+          <text
+            class="board-node__source-mark"
+            x={dims.w - 21}
+            y="24"
+            text-anchor="middle"
           >
-            <title>{sourceHost(card.url)}</title>
-            <rect
-              class="board-node__source-hit"
-              x={dims.w - 34}
-              y="8"
-              width="26"
-              height="22"
-              rx="4"
-            />
-            <text
-              class="board-node__source-mark"
-              x={dims.w - 21}
-              y="24"
-              text-anchor="middle"
-            >
-              ↗
-            </text>
-          </a>
-        )
-        : null}
+            ↗
+          </text>
+        </a>
+      ) : null}
       <foreignObject
         x="18"
         y="40"
@@ -592,39 +585,33 @@ function BoardNode({
       >
         <div class={`board-node__content${hasImage ? " has-image" : ""}`}>
           <div class="board-node__title">{card.title}</div>
-          {hasImage || card.body?.trim()
-            ? (
-              <div
-                class={`board-node__below${
-                  hasImage && card.body?.trim() ? " has-both" : ""
-                }`}
-              >
-                {hasImage
-                  ? (
-                    <MediaThumb
-                      image={card.image}
-                      className="board-node__thumb"
-                      preferContain={card.size === "l"}
-                      width={88}
-                      height={56}
-                    />
-                  )
-                  : null}
-                {card.body?.trim()
-                  ? (
-                    <div class="board-node__preview-wrap">
-                      <div
-                        class="board-node__preview"
-                        data-testid="board-node-preview"
-                      >
-                        {card.body.trim()}
-                      </div>
-                    </div>
-                  )
-                  : null}
-              </div>
-            )
-            : null}
+          {hasImage || card.body?.trim() ? (
+            <div
+              class={`board-node__below${
+                hasImage && card.body?.trim() ? " has-both" : ""
+              }`}
+            >
+              {hasImage ? (
+                <MediaThumb
+                  image={card.image}
+                  className="board-node__thumb"
+                  preferContain={card.size === "l"}
+                  width={88}
+                  height={56}
+                />
+              ) : null}
+              {card.body?.trim() ? (
+                <div class="board-node__preview-wrap">
+                  <div
+                    class="board-node__preview"
+                    data-testid="board-node-preview"
+                  >
+                    {card.body.trim()}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </foreignObject>
       <g
@@ -725,76 +712,76 @@ function FocusFloat(props: {
     <div
       class="board__focus-float"
       data-testid="board-focus"
-      title={cardFocusActive
-        ? "視点中：糸で届くカードだけを表示"
-        : "このカードを起点に視点を絞る"}
+      title={
+        cardFocusActive
+          ? "視点中：糸で届くカードだけを表示"
+          : "このカードを起点に視点を絞る"
+      }
       style={style}
       onPointerDown={(event) => event.stopPropagation()}
     >
-      {cardFocusActive
-        ? (
-          <>
-            <span class="board__focus-meta" aria-live="polite">
-              視点 · {hops}
-            </span>
-            <IconButton
-              class="board__focus-icon"
-              testId="focus-shrink"
-              disabled={hops <= 1}
-              label="一周戻す"
-              onClick={() => shrinkFocusHops()}
-              path="M3 8h10"
-            />
-            <IconButton
-              class="board__focus-icon"
-              testId="focus-expand"
-              label="もう一周広げる"
-              onClick={() => expandFocusHops()}
-              path="M8 3v10M3 8h10"
-            />
-            <IconButton
-              class="board__focus-icon"
-              testId="focus-clear"
-              label="視点をやめる"
-              onClick={() => clearFocusView()}
-              path="M4 4l8 8M12 4l-8 8"
-            />
-            <button
-              type="button"
-              class="board__focus-enter"
-              data-testid="story-chrono-set"
-              aria-label="作中で並べる"
-              title="糸で届く作中時間つきカードを時間順に並べる"
-              onClick={() => void openStoryChrono(barAnchorId)}
-            >
-              作中で並べる
-            </button>
-          </>
-        )
-        : (
-          <>
-            <button
-              type="button"
-              class="board__focus-enter"
-              data-testid="focus-set"
-              aria-label="この視点で見る"
-              title="つながるカードだけを浮かべ、ほかは沈める"
-              onClick={() => setFocusView(barAnchorId)}
-            >
-              この視点で見る
-            </button>
-            <button
-              type="button"
-              class="board__focus-enter"
-              data-testid="story-chrono-set"
-              aria-label="作中で並べる"
-              title="糸で届く作中時間つきカードを時間順に並べる"
-              onClick={() => void openStoryChrono(barAnchorId)}
-            >
-              作中で並べる
-            </button>
-          </>
-        )}
+      {cardFocusActive ? (
+        <>
+          <span class="board__focus-meta" aria-live="polite">
+            視点 · {hops}
+          </span>
+          <IconButton
+            class="board__focus-icon"
+            testId="focus-shrink"
+            disabled={hops <= 1}
+            label="一周戻す"
+            onClick={() => shrinkFocusHops()}
+            path="M3 8h10"
+          />
+          <IconButton
+            class="board__focus-icon"
+            testId="focus-expand"
+            label="もう一周広げる"
+            onClick={() => expandFocusHops()}
+            path="M8 3v10M3 8h10"
+          />
+          <IconButton
+            class="board__focus-icon"
+            testId="focus-clear"
+            label="視点をやめる"
+            onClick={() => clearFocusView()}
+            path="M4 4l8 8M12 4l-8 8"
+          />
+          <button
+            type="button"
+            class="board__focus-enter"
+            data-testid="story-chrono-set"
+            aria-label="作中で並べる"
+            title="糸で届く作中時間つきカードを時間順に並べる"
+            onClick={() => void openStoryChrono(barAnchorId)}
+          >
+            作中で並べる
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            class="board__focus-enter"
+            data-testid="focus-set"
+            aria-label="この視点で見る"
+            title="つながるカードだけを浮かべ、ほかは沈める"
+            onClick={() => setFocusView(barAnchorId)}
+          >
+            この視点で見る
+          </button>
+          <button
+            type="button"
+            class="board__focus-enter"
+            data-testid="story-chrono-set"
+            aria-label="作中で並べる"
+            title="糸で届く作中時間つきカードを時間順に並べる"
+            onClick={() => void openStoryChrono(barAnchorId)}
+          >
+            作中で並べる
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -826,14 +813,10 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     const pad = 12;
     const origin = focusOrigin.value;
     const view = viewProject.value;
-    const focused = origin && view
-      ? focusReachableIds(
-        view.links,
-        view.cards,
-        origin,
-        focusHops.value,
-      )
-      : null;
+    const focused =
+      origin && view
+        ? focusReachableIds(view.links, view.cards, origin, focusHops.value)
+        : null;
     for (let index = ids.length - 1; index >= 0; index -= 1) {
       const cardId = ids[index]!;
       if (cardId === exceptId) continue;
@@ -864,14 +847,10 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
     const maxY = Math.max(box.y1, box.y2);
     const origin = focusOrigin.value;
     const view = viewProject.value;
-    const focused = origin && view
-      ? focusReachableIds(
-        view.links,
-        view.cards,
-        origin,
-        focusHops.value,
-      )
-      : null;
+    const focused =
+      origin && view
+        ? focusReachableIds(view.links, view.cards, origin, focusHops.value)
+        : null;
     const hit: string[] = [];
     for (const cardId of ids) {
       if (focused && !focused.has(cardId)) continue;
@@ -879,8 +858,10 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
       if (!position) continue;
       const dims = dimsForCardId(cardId, cards);
       if (
-        position.x < maxX && position.x + dims.w > minX &&
-        position.y < maxY && position.y + dims.h > minY
+        position.x < maxX &&
+        position.x + dims.w > minX &&
+        position.y < maxY &&
+        position.y + dims.h > minY
       ) {
         hit.push(cardId);
       }
@@ -1070,20 +1051,21 @@ function useBoardDrag(canvasRef: { current: HTMLDivElement | null }) {
       const moved = drag.cardIds.filter((id) => {
         const pos = positions[id];
         const origin = drag.originPositions[id];
-        return pos && origin &&
-          (pos.x !== origin.x || pos.y !== origin.y);
+        return pos && origin && (pos.x !== origin.x || pos.y !== origin.y);
       });
       if (moved.length > 0) await commitCardPlacements(moved);
       else await flushSave();
       return;
     }
     if (drag.type === "marquee") {
-      setSelectedCards(cardsInMarquee({
-        x1: drag.startX,
-        y1: drag.startY,
-        x2: drag.currentX,
-        y2: drag.currentY,
-      }));
+      setSelectedCards(
+        cardsInMarquee({
+          x1: drag.startX,
+          y1: drag.startY,
+          x2: drag.currentX,
+          y2: drag.currentY,
+        }),
+      );
       return;
     }
     if (isReplaying.value) return;
@@ -1224,7 +1206,7 @@ export function BoardView() {
 
   if (!live || !current || !board) return null;
 
-  const currentStep = stepIndex == null ? null : steps[stepIndex] ?? null;
+  const currentStep = stepIndex == null ? null : (steps[stepIndex] ?? null);
   const viewport = defaultViewport(board.viewport);
   const cardMap = new Map(current.cards.map((card) => [card.id, card]));
   const tagCounts = new Map(
@@ -1233,13 +1215,13 @@ export function BoardView() {
   const focusSet = origin
     ? focusReachableIds(current.links, current.cards, origin, hops)
     : null;
-  const placedLinks = current.links.filter((link) =>
-    board.positions[link.from] && board.positions[link.to]
+  const placedLinks = current.links.filter(
+    (link) => board.positions[link.from] && board.positions[link.to],
   );
   const visibleLinks = focusSet
-    ? placedLinks.filter((link) =>
-      focusSet.has(link.from) && focusSet.has(link.to)
-    )
+    ? placedLinks.filter(
+        (link) => focusSet.has(link.from) && focusSet.has(link.to),
+      )
     : placedLinks;
   const front = sel
     ? visibleLinks.filter((link) => link.from === sel || link.to === sel)
@@ -1251,8 +1233,9 @@ export function BoardView() {
   async function submitThought(event: SubmitEvent) {
     event.preventDefault();
     if (isReplaying.value) return;
-    const input = (event.currentTarget as HTMLFormElement)
-      .elements.namedItem("thought") as HTMLInputElement;
+    const input = (event.currentTarget as HTMLFormElement).elements.namedItem(
+      "thought",
+    ) as HTMLInputElement;
     const parsed = parseCaptureLine(input.value);
     if (!parsed) return;
     input.value = "";
@@ -1269,20 +1252,25 @@ export function BoardView() {
     });
   }
 
-  const barAnchorId = cardFocusActive && origin?.kind === "card"
-    ? (sel && focusSet?.has(sel) ? sel : origin.cardId)
-    : (sel && board.positions[sel] ? sel : null);
+  const barAnchorId =
+    cardFocusActive && origin?.kind === "card"
+      ? sel && focusSet?.has(sel)
+        ? sel
+        : origin.cardId
+      : sel && board.positions[sel]
+        ? sel
+        : null;
   const barAnchorPos = barAnchorId ? board.positions[barAnchorId] : undefined;
   const barDims = barAnchorId
     ? dimsForCardId(barAnchorId, current.cards)
     : DEFAULT_DIMS;
   const focusBarStyle = barAnchorPos
     ? {
-      left: `${
-        viewport.x + (barAnchorPos.x + barDims.w / 2) * viewport.zoom
-      }px`,
-      top: `${viewport.y + barAnchorPos.y * viewport.zoom - 10}px`,
-    }
+        left: `${
+          viewport.x + (barAnchorPos.x + barDims.w / 2) * viewport.zoom
+        }px`,
+        top: `${viewport.y + barAnchorPos.y * viewport.zoom - 10}px`,
+      }
     : undefined;
 
   return (
@@ -1296,39 +1284,35 @@ export function BoardView() {
           <strong>{board.name}</strong>
           <small>{board.cardIds.length}件の手がかり</small>
         </div>
-        {replaying
-          ? (
-            <span class="board__replay-badge" data-testid="replay-badge">
-              タイムライン（読み取り専用）
-            </span>
-          )
-          : (
-            <form class="capture board__thought" onSubmit={submitThought}>
-              <input
-                name="thought"
-                data-testid="thought-input"
-                aria-label="考察カードを追加"
-                autocomplete="off"
-                placeholder="考察を1行で…（// 可）"
-              />
-              <kbd>↵</kbd>
-            </form>
-          )}
+        {replaying ? (
+          <span class="board__replay-badge" data-testid="replay-badge">
+            タイムライン（読み取り専用）
+          </span>
+        ) : (
+          <form class="capture board__thought" onSubmit={submitThought}>
+            <input
+              name="thought"
+              data-testid="thought-input"
+              aria-label="考察カードを追加"
+              autocomplete="off"
+              placeholder="考察を1行で…（// 可）"
+            />
+            <kbd>↵</kbd>
+          </form>
+        )}
         <span class="board__hint">
           {replaying
             ? "下のバーでステップ移動"
             : "糊付け帯をドラッグで移動（複数選択中はまとめて） / 糸端で接続 / Shift＋空白で囲む"}
         </span>
       </div>
-      {replaying && currentStep && stepIndex != null
-        ? (
-          <ReplayBar
-            stepIndex={stepIndex}
-            stepsLength={steps.length}
-            label={currentStep.label}
-          />
-        )
-        : null}
+      {replaying && currentStep && stepIndex != null ? (
+        <ReplayBar
+          stepIndex={stepIndex}
+          stepsLength={steps.length}
+          label={currentStep.label}
+        />
+      ) : null}
       <div
         class={`board__canvas ${rubber ? "is-linking" : ""}`}
         ref={canvasRef}
@@ -1341,22 +1325,22 @@ export function BoardView() {
         onDragOver={onDragOver}
         onDrop={onDrop}
       >
-        {focusBarStyle && barAnchorId
-          ? (
-            <FocusFloat
-              style={focusBarStyle}
-              cardFocusActive={cardFocusActive}
-              hops={hops}
-              barAnchorId={barAnchorId}
-            />
-          )
-          : null}
+        {focusBarStyle && barAnchorId ? (
+          <FocusFloat
+            style={focusBarStyle}
+            cardFocusActive={cardFocusActive}
+            hops={hops}
+            barAnchorId={barAnchorId}
+          />
+        ) : null}
         <svg aria-label="手がかりの関係図">
           <defs>
-            {([["arrow-connects", "var(--link)"], [
-              "arrow-contradicts",
-              "var(--danger)",
-            ]] as const).map(([id, fill]) => (
+            {(
+              [
+                ["arrow-connects", "var(--link)"],
+                ["arrow-contradicts", "var(--danger)"],
+              ] as const
+            ).map(([id, fill]) => (
               <marker
                 id={id}
                 viewBox="0 0 10 10"
@@ -1373,7 +1357,7 @@ export function BoardView() {
           <g
             transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
           >
-            <g class="links links--visual" aria-hidden="true">
+            <g class="links links--visual">
               {mapLinkVisuals(
                 visibleLinks,
                 visibleLinks,
@@ -1401,49 +1385,43 @@ export function BoardView() {
                 const card = cardMap.get(cardId);
                 const position = board.positions[cardId];
                 const dimmed = focusSet ? !focusSet.has(cardId) : false;
-                return card && position
-                  ? (
-                    <BoardNode
-                      key={card.id}
-                      card={card}
-                      x={position.x}
-                      y={position.y}
-                      isDropTarget={!dimmed && rubber?.targetId === card.id}
-                      isRelated={!dimmed && relatedIds.has(card.id)}
-                      isDimmed={dimmed}
-                      tagCounts={tagCounts}
-                      onAdhesivePointerDown={onAdhesivePointerDown}
-                      onPaperPointerDown={onPaperPointerDown}
-                      onThreadPointerDown={onThreadPointerDown}
-                    />
-                  )
-                  : null;
+                return card && position ? (
+                  <BoardNode
+                    key={card.id}
+                    card={card}
+                    x={position.x}
+                    y={position.y}
+                    isDropTarget={!dimmed && rubber?.targetId === card.id}
+                    isRelated={!dimmed && relatedIds.has(card.id)}
+                    isDimmed={dimmed}
+                    tagCounts={tagCounts}
+                    onAdhesivePointerDown={onAdhesivePointerDown}
+                    onPaperPointerDown={onPaperPointerDown}
+                    onThreadPointerDown={onThreadPointerDown}
+                  />
+                ) : null;
               })}
             </g>
-            {rubber
-              ? (
-                <line
-                  class={`link__rubber ${rubber.targetId ? "is-snapped" : ""}`}
-                  data-testid="link-rubber"
-                  x1={rubber.x1}
-                  y1={rubber.y1}
-                  x2={rubber.x2}
-                  y2={rubber.y2}
-                />
-              )
-              : null}
-            {marquee
-              ? (
-                <rect
-                  class="board-marquee"
-                  data-testid="board-marquee"
-                  x={Math.min(marquee.x1, marquee.x2)}
-                  y={Math.min(marquee.y1, marquee.y2)}
-                  width={Math.abs(marquee.x2 - marquee.x1)}
-                  height={Math.abs(marquee.y2 - marquee.y1)}
-                />
-              )
-              : null}
+            {rubber ? (
+              <line
+                class={`link__rubber ${rubber.targetId ? "is-snapped" : ""}`}
+                data-testid="link-rubber"
+                x1={rubber.x1}
+                y1={rubber.y1}
+                x2={rubber.x2}
+                y2={rubber.y2}
+              />
+            ) : null}
+            {marquee ? (
+              <rect
+                class="board-marquee"
+                data-testid="board-marquee"
+                x={Math.min(marquee.x1, marquee.x2)}
+                y={Math.min(marquee.y1, marquee.y2)}
+                width={Math.abs(marquee.x2 - marquee.x1)}
+                height={Math.abs(marquee.y2 - marquee.y1)}
+              />
+            ) : null}
           </g>
         </svg>
         <svg

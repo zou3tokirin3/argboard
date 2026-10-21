@@ -80,28 +80,15 @@ export function CardImageField(props: {
           void applyBlob(imageBlobFromDataTransfer(event));
         }}
       >
-        {url && props.onEnlarge
-          ? (
-            <button
-              type="button"
-              class="card-image-field__enlarge"
-              data-testid="inspector-image-enlarge"
-              aria-label="画像を拡大して見る（1×）"
-              title="拡大して見る（1×）"
-              onClick={props.onEnlarge}
-            >
-              <img
-                class="card-image-field__preview"
-                src={url}
-                alt="添付スクショ"
-                width={1600}
-                height={1000}
-              />
-              <span class="image-enlarge-badge" aria-hidden="true">⤢</span>
-            </button>
-          )
-          : url
-          ? (
+        {url && props.onEnlarge ? (
+          <button
+            type="button"
+            class="card-image-field__enlarge"
+            data-testid="inspector-image-enlarge"
+            aria-label="画像を拡大して見る（1×）"
+            title="拡大して見る（1×）"
+            onClick={props.onEnlarge}
+          >
             <img
               class="card-image-field__preview"
               src={url}
@@ -109,72 +96,79 @@ export function CardImageField(props: {
               width={1600}
               height={1000}
             />
-          )
-          : hasImage
-          ? <span class="card-image-field__preview" aria-hidden="true" />
-          : (
-            <p class="card-image-field__hint">
-              {variant === "inline"
-                ? (compactHints ? "画像" : "⌘V")
-                : (compactHints
-                  ? "ファイルを選ぶ／貼り付け"
-                  : "ここに貼り付け（⌘V）またはドロップ")}
-            </p>
-          )}
+            <span class="image-enlarge-badge" aria-hidden="true">
+              ⤢
+            </span>
+          </button>
+        ) : url ? (
+          <img
+            class="card-image-field__preview"
+            src={url}
+            alt="添付スクショ"
+            width={1600}
+            height={1000}
+          />
+        ) : hasImage ? (
+          <span class="card-image-field__preview" aria-hidden="true" />
+        ) : (
+          <p class="card-image-field__hint">
+            {variant === "inline"
+              ? compactHints
+                ? "画像"
+                : "⌘V"
+              : compactHints
+                ? "ファイルを選ぶ／貼り付け"
+                : "ここに貼り付け（⌘V）またはドロップ"}
+          </p>
+        )}
       </div>
-      {variant === "inline"
-        ? (
-          hasImage
-            ? (
-              <div class="card-image-field__actions card-image-field__actions--mini">
-                <button
-                  type="button"
-                  data-testid={`${props.testId ?? "card-image-field"}-pick`}
-                  disabled={props.disabled || busy}
-                  onClick={onPick}
-                >
-                  差し替え
-                </button>
-                <button
-                  type="button"
-                  data-testid={`${props.testId ?? "card-image-field"}-clear`}
-                  disabled={props.disabled || busy}
-                  onClick={() => {
-                    void clearCardImage(props.cardId);
-                  }}
-                >
-                  削除
-                </button>
-              </div>
-            )
-            : null
-        )
-        : (
-          <div class="card-image-field__actions">
+      {variant === "inline" ? (
+        hasImage ? (
+          <div class="card-image-field__actions card-image-field__actions--mini">
             <button
               type="button"
               data-testid={`${props.testId ?? "card-image-field"}-pick`}
               disabled={props.disabled || busy}
               onClick={onPick}
             >
-              {hasImage ? "差し替え…" : "ファイルを選ぶ…"}
+              差し替え
             </button>
-            {hasImage
-              ? (
-                <button
-                  type="button"
-                  data-testid={`${props.testId ?? "card-image-field"}-clear`}
-                  disabled={props.disabled || busy}
-                  onClick={() => {
-                    void clearCardImage(props.cardId);
-                  }}
-                >
-                  削除
-                </button>
-              )
-              : null}
+            <button
+              type="button"
+              data-testid={`${props.testId ?? "card-image-field"}-clear`}
+              disabled={props.disabled || busy}
+              onClick={() => {
+                void clearCardImage(props.cardId);
+              }}
+            >
+              削除
+            </button>
           </div>
-        )}
+        ) : null
+      ) : (
+        <div class="card-image-field__actions">
+          <button
+            type="button"
+            data-testid={`${props.testId ?? "card-image-field"}-pick`}
+            disabled={props.disabled || busy}
+            onClick={onPick}
+          >
+            {hasImage ? "差し替え…" : "ファイルを選ぶ…"}
+          </button>
+          {hasImage ? (
+            <button
+              type="button"
+              data-testid={`${props.testId ?? "card-image-field"}-clear`}
+              disabled={props.disabled || busy}
+              onClick={() => {
+                void clearCardImage(props.cardId);
+              }}
+            >
+              削除
+            </button>
+          ) : null}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "preact/hooks";
 import type { RefObject } from "preact";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { DigShovelIcon } from "./digging-controls.tsx";
 import { cardFoundViaDepth, foundViaAncestorChain } from "./project.ts";
 import { selectCardFromStream } from "./state.ts";
@@ -37,8 +37,9 @@ function ancestorRowVisibleEnough(
 ): boolean {
   if (!row) return false;
   const rect = row.getBoundingClientRect();
-  return rect.top < listRect.top + TRAIL_HIDE_BELOW &&
-    rect.bottom > listRect.top + 8;
+  return (
+    rect.top < listRect.top + TRAIL_HIDE_BELOW && rect.bottom > listRect.top + 8
+  );
 }
 
 function recomputeTrail(
@@ -163,16 +164,17 @@ export function StreamStickyTrail(props: StreamStickyTrailProps) {
       </span>
       {trail.map((ancestor, index) => (
         <span class="stream__sticky-trail-item" key={ancestor.id}>
-          {index > 0
-            ? <span class="stream__sticky-trail-sep" aria-hidden="true">›</span>
-            : null}
+          {index > 0 ? (
+            <span class="stream__sticky-trail-sep" aria-hidden="true">
+              ›
+            </span>
+          ) : null}
           <button
             type="button"
             class="stream__sticky-trail-btn"
             data-testid="stream-sticky-trail-btn"
             title={ancestor.title}
-            onClick={() =>
-              jumpTo(ancestor.id)}
+            onClick={() => jumpTo(ancestor.id)}
           >
             {ancestor.title}
           </button>

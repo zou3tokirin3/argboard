@@ -10,7 +10,8 @@ export type ProjectUiWire = {
 
 export function normalizePanelPhase(ui?: ProjectUiWire | null): PanelPhase {
   if (
-    ui?.panelPhase === "wide" || ui?.panelPhase === "rail" ||
+    ui?.panelPhase === "wide" ||
+    ui?.panelPhase === "rail" ||
     ui?.panelPhase === "closed"
   ) {
     return ui.panelPhase;

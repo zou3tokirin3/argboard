@@ -1,5 +1,5 @@
-import { isReplaying, updateCardRole } from "./state.ts";
 import { IconTip, type IconTipAlign } from "./icon-tip.tsx";
+import { isReplaying, updateCardRole } from "./state.ts";
 import type { Card } from "./types.ts";
 
 type CardRoleToggleProps = {

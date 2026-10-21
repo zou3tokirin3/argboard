@@ -85,50 +85,46 @@ export const store: Store = {
     }));
   },
   async loadProject(id) {
-    return (await transact<Project | undefined>(
-      STORE_NAME,
-      "readonly",
-      (objectStore) => objectStore.get(id),
-    )) ?? null;
+    return (
+      (await transact<Project | undefined>(
+        STORE_NAME,
+        "readonly",
+        (objectStore) => objectStore.get(id),
+      )) ?? null
+    );
   },
   async saveProject(project) {
-    await transact<IDBValidKey>(
-      STORE_NAME,
-      "readwrite",
-      (objectStore) => objectStore.put(project),
+    await transact<IDBValidKey>(STORE_NAME, "readwrite", (objectStore) =>
+      objectStore.put(project),
     );
   },
   async deleteProject(id) {
     await store.deleteMediaForProject(id);
-    await transact<undefined>(
-      STORE_NAME,
-      "readwrite",
-      (objectStore) => objectStore.delete(id),
+    await transact<undefined>(STORE_NAME, "readwrite", (objectStore) =>
+      objectStore.delete(id),
     );
   },
   async requestPersistence() {
     persistenceRequestCount += 1;
-    return await navigator.storage?.persist?.() ?? false;
+    return (await navigator.storage?.persist?.()) ?? false;
   },
   async putMedia(record) {
-    await transact<IDBValidKey>(
-      MEDIA_STORE,
-      "readwrite",
-      (objectStore) => objectStore.put(record),
+    await transact<IDBValidKey>(MEDIA_STORE, "readwrite", (objectStore) =>
+      objectStore.put(record),
     );
   },
   async getMedia(id) {
-    return (await transact<MediaRecord | undefined>(
-      MEDIA_STORE,
-      "readonly",
-      (objectStore) => objectStore.get(id),
-    )) ?? null;
+    return (
+      (await transact<MediaRecord | undefined>(
+        MEDIA_STORE,
+        "readonly",
+        (objectStore) => objectStore.get(id),
+      )) ?? null
+    );
   },
   async deleteMedia(id) {
-    await transact<undefined>(
-      MEDIA_STORE,
-      "readwrite",
-      (objectStore) => objectStore.delete(id),
+    await transact<undefined>(MEDIA_STORE, "readwrite", (objectStore) =>
+      objectStore.delete(id),
     );
   },
   async listMediaIds(projectId) {

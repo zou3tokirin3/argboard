@@ -30,16 +30,14 @@ export function FixedScaleImage(props: { image: string | undefined }) {
   const url = useMediaUrl(props.image);
   return (
     <div class="image-overlay__scroll" tabIndex={0}>
-      {url
-        ? (
-          <img
-            class="image-overlay__img"
-            src={url}
-            alt="添付スクショ（1×）"
-            draggable={false}
-          />
-        )
-        : null}
+      {url ? (
+        <img
+          class="image-overlay__img"
+          src={url}
+          alt="添付スクショ（1×）"
+          draggable={false}
+        />
+      ) : null}
     </div>
   );
 }

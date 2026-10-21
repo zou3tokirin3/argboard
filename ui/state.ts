@@ -1,4 +1,5 @@
 import { computed, signal } from "@preact/signals";
+import type { ParsedCapture } from "./capture-notation.ts";
 import { store } from "./db.ts";
 import { compressImage } from "./image-compress.ts";
 import {
@@ -14,6 +15,13 @@ import {
   projectJsonFromZip,
   rememberMediaObjectUrl,
 } from "./media.ts";
+import type { CardSize } from "./node-size.ts";
+import { normalizeCardSize } from "./node-size.ts";
+import {
+  normalizePanelPhase,
+  type PanelPhase,
+  withPanelPhase,
+} from "./panel-phase.ts";
 import {
   appendEvent,
   applyConnectCards,
@@ -32,24 +40,25 @@ import {
   viewThrough,
   withBirthEvents,
 } from "./project.ts";
+import { hasStoryWhen } from "./story-when.ts";
 import { attachTag, detachTag, normalizeTag, replaceTag } from "./tags.ts";
 import type { ThoughtOutcome } from "./thought-outcome.ts";
-import type { ProjectEvent } from "./types.ts";
-import type { CardSize } from "./node-size.ts";
-import { normalizeCardSize } from "./node-size.ts";
-import type { ParsedCapture } from "./capture-notation.ts";
-import { hasStoryWhen } from "./story-when.ts";
-import {
-  normalizePanelPhase,
-  type PanelPhase,
-  withPanelPhase,
-} from "./panel-phase.ts";
-import type { AppMode, Board, Card, Link, Project } from "./types.ts";
+import type {
+  AppMode,
+  Board,
+  Card,
+  Link,
+  Project,
+  ProjectEvent,
+} from "./types.ts";
 
-export { createDemoProject, createEmptyProject } from "./project.ts";
-export { replaySteps } from "./project.ts";
 export type { PanelPhase } from "./panel-phase.ts";
 export { normalizePanelPhase } from "./panel-phase.ts";
+export {
+  createDemoProject,
+  createEmptyProject,
+  replaySteps,
+} from "./project.ts";
 
 const ACTIVE_PROJECT_KEY = "argboard.activeProjectId";
 let persistenceRequested = false;
@@ -82,10 +91,9 @@ function pickProjectId(summaries: ProjectSummary[]): string {
   if (preferred && summaries.some((item) => item.id === preferred)) {
     return preferred;
   }
-  return summaries.toSorted((left, right) =>
-    right.updatedAt - left.updatedAt
-  )[0]
-    .id;
+  return summaries.toSorted(
+    (left, right) => right.updatedAt - left.updatedAt,
+  )[0].id;
 }
 
 export const project = signal<Project | null>(null);
@@ -114,9 +122,8 @@ export const diggingCardId = signal<string | null>(null);
 
 /** While viewing a reference image: dig = finding, thought = 考察. Both keep foundVia. */
 export type ImageReferenceCaptureMode = "dig" | "thought";
-export const imageReferenceCaptureMode = signal<ImageReferenceCaptureMode>(
-  "dig",
-);
+export const imageReferenceCaptureMode =
+  signal<ImageReferenceCaptureMode>("dig");
 export const selectedCardId = signal<string | null>(null);
 /** Session-only multi-select (T032). Primary is selectedCardId (last id). */
 export const selectedCardIds = signal<string[]>([]);
@@ -226,11 +233,13 @@ export async function clearCardFoundVia(cardId: string): Promise<void> {
       return rest;
     }),
   };
-  await persist(appendEvent(next, {
-    type: "found_via_cleared",
-    at: Date.now(),
-    cardId,
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "found_via_cleared",
+      at: Date.now(),
+      cardId,
+    }),
+  );
 }
 
 export function openExploreCompose(
@@ -499,13 +508,13 @@ function clearTagFocusIfEmpty(cards: readonly Card[]): void {
   const origin = focusOrigin.value;
   if (origin?.kind !== "tag") return;
   const still = cards.some((card) =>
-    (card.tags ?? []).some((value) => normalizeTag(value) === origin.tag)
+    (card.tags ?? []).some((value) => normalizeTag(value) === origin.tag),
   );
   if (!still) clearFocusView();
 }
 
 export const panelPhase = computed<PanelPhase>(() =>
-  normalizePanelPhase(project.value?.ui)
+  normalizePanelPhase(project.value?.ui),
 );
 
 /** Drop wide → rail when the board/inspector becomes the focus (T078). */
@@ -527,11 +536,14 @@ export const viewProject = computed<Project | null>(() => {
     ...current,
     cards: slice.cards,
     links: slice.links,
-    boards: [{
-      ...board,
-      cardIds: slice.cardIds,
-      positions: slice.positions,
-    }, ...current.boards.slice(1)],
+    boards: [
+      {
+        ...board,
+        cardIds: slice.cardIds,
+        positions: slice.positions,
+      },
+      ...current.boards.slice(1),
+    ],
   };
 });
 
@@ -659,9 +671,8 @@ function migrateProjectUi(next: Project): Project {
     | { panelPhase?: PanelPhase; mode?: AppMode; sideOpen?: boolean }
     | undefined;
   const phase = normalizePanelPhase(wire);
-  const dirty = wire?.panelPhase !== phase ||
-    wire?.mode != null ||
-    wire?.sideOpen != null;
+  const dirty =
+    wire?.panelPhase !== phase || wire?.mode != null || wire?.sideOpen != null;
   if (!dirty) return next;
   return { ...next, ui: { panelPhase: phase } };
 }
@@ -697,18 +708,13 @@ async function activateProject(next: Project): Promise<void> {
 
 /** Select from the discovery stream; pan the board if the card is placed. */
 export function selectCardFromStream(cardId: string): void {
-  if (
-    selectedCardId.value === cardId &&
-    selectedCardIds.value.length === 1
-  ) {
+  if (selectedCardId.value === cardId && selectedCardIds.value.length === 1) {
     clearCardSelection();
     closeExploreCompose();
     revealCardId.value = null;
     return;
   }
-  if (
-    exploreComposeCardId.value && exploreComposeCardId.value !== cardId
-  ) {
+  if (exploreComposeCardId.value && exploreComposeCardId.value !== cardId) {
     closeExploreCompose();
   }
   selectSingleCard(cardId);
@@ -749,9 +755,7 @@ export async function initialize(): Promise<void> {
   projectSummaries.value = await store.listProjects();
 }
 
-export async function createProject(
-  name = "新しいケース",
-): Promise<Project> {
+export async function createProject(name = "新しいケース"): Promise<Project> {
   const next = createEmptyProject(name);
   await store.saveProject(next);
   await activateProject(next);
@@ -834,12 +838,13 @@ export async function addCard(
     { type: "card_added", at: card.foundAt, card },
   );
   if (options?.placeAt) {
-    next = applyPlaceCardOnBoard(
-      next,
-      card.id,
-      options.placeAt.x,
-      options.placeAt.y,
-    ) ?? next;
+    next =
+      applyPlaceCardOnBoard(
+        next,
+        card.id,
+        options.placeAt.x,
+        options.placeAt.y,
+      ) ?? next;
     next = appendEvent(next, {
       type: "card_placed",
       at: Date.now(),
@@ -959,9 +964,9 @@ export async function stageExploreImage(
 }
 
 /** Turn the staged screenshot into a card. */
-export async function commitExploreImageDraft(
-  options?: { tags?: string[] },
-): Promise<string | null> {
+export async function commitExploreImageDraft(options?: {
+  tags?: string[];
+}): Promise<string | null> {
   const draft = exploreImageDraft.value;
   if (!draft) return null;
   const tags = normalizeCardTags(options?.tags);
@@ -1090,15 +1095,17 @@ export async function updateCardTags(
     }),
   };
   clearTagFocusIfEmpty(next.cards);
-  await persist(appendEvent(next, {
-    type: "card_updated",
-    at: Date.now(),
-    cardId: id,
-    title: card.title,
-    body: card.body,
-    url: card.url,
-    tags: nextTags ?? [],
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "card_updated",
+      at: Date.now(),
+      cardId: id,
+      title: card.title,
+      body: card.body,
+      url: card.url,
+      tags: nextTags ?? [],
+    }),
+  );
 }
 
 function cardRoleLabel(role: Card["role"]): "finding" | "thought" {
@@ -1159,15 +1166,17 @@ export async function updateCardOutcome(
       return rest;
     }),
   };
-  await persist(appendEvent(next, {
-    type: "card_updated",
-    at: Date.now(),
-    cardId: id,
-    title: card.title,
-    body: card.body,
-    url: card.url,
-    outcome: outcome ?? "",
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "card_updated",
+      at: Date.now(),
+      cardId: id,
+      title: card.title,
+      body: card.body,
+      url: card.url,
+      outcome: outcome ?? "",
+    }),
+  );
 }
 
 /** Set board display size for a card (T022). `"m"` clears to default. */
@@ -1191,15 +1200,17 @@ export async function updateCardSize(
       return rest;
     }),
   };
-  await persist(appendEvent(next, {
-    type: "card_updated",
-    at: Date.now(),
-    cardId: id,
-    title: card.title,
-    body: card.body,
-    url: card.url,
-    size: nextSize === "l" ? "l" : "",
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "card_updated",
+      at: Date.now(),
+      cardId: id,
+      title: card.title,
+      body: card.body,
+      url: card.url,
+      size: nextSize === "l" ? "l" : "",
+    }),
+  );
 }
 
 /** Attach a tag to many cards in one persist (T032). Skips duplicates per card. */
@@ -1276,15 +1287,18 @@ function patchCardTags(
     const { tags: _drop, ...rest } = item;
     return rest;
   });
-  return appendEvent({ ...project, cards }, {
-    type: "card_updated",
-    at: Date.now(),
-    cardId: card.id,
-    title: card.title,
-    body: card.body,
-    url: card.url,
-    tags: nextTags ?? [],
-  });
+  return appendEvent(
+    { ...project, cards },
+    {
+      type: "card_updated",
+      at: Date.now(),
+      cardId: card.id,
+      title: card.title,
+      body: card.body,
+      url: card.url,
+      tags: nextTags ?? [],
+    },
+  );
 }
 
 async function replaceProjectTag(from: string, to: string): Promise<void> {
@@ -1312,8 +1326,8 @@ async function gcMediaIfOrphan(
 ): Promise<void> {
   if (!isLocalMediaRef(mediaId)) return;
   const id = mediaId!.trim();
-  const stillUsed = cards.some((card) =>
-    isLocalMediaRef(card.image) && card.image!.trim() === id
+  const stillUsed = cards.some(
+    (card) => isLocalMediaRef(card.image) && card.image!.trim() === id,
   );
   if (stillUsed) return;
   forgetMediaObjectUrl(id);
@@ -1343,18 +1357,20 @@ export async function setCardImage(
   const next = {
     ...current,
     cards: current.cards.map((item) =>
-      item.id === cardId ? { ...item, image: mediaId } : item
+      item.id === cardId ? { ...item, image: mediaId } : item,
     ),
   };
-  await persist(appendEvent(next, {
-    type: "card_updated",
-    at: Date.now(),
-    cardId,
-    title: card.title,
-    body: card.body,
-    url: card.url,
-    image: mediaId,
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "card_updated",
+      at: Date.now(),
+      cardId,
+      title: card.title,
+      body: card.body,
+      url: card.url,
+      image: mediaId,
+    }),
+  );
   await gcMediaIfOrphan(previous, next.cards);
 }
 
@@ -1363,7 +1379,7 @@ export async function clearCardImage(cardId: string): Promise<void> {
   const current = assertWritable();
   if (!current) return;
   const card = current.cards.find((item) => item.id === cardId);
-  if (!card || !card.image) return;
+  if (!card?.image) return;
   const previous = card.image;
   const next = {
     ...current,
@@ -1373,15 +1389,17 @@ export async function clearCardImage(cardId: string): Promise<void> {
       return rest;
     }),
   };
-  await persist(appendEvent(next, {
-    type: "card_updated",
-    at: Date.now(),
-    cardId,
-    title: card.title,
-    body: card.body,
-    url: card.url,
-    image: "",
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "card_updated",
+      at: Date.now(),
+      cardId,
+      title: card.title,
+      body: card.body,
+      url: card.url,
+      image: "",
+    }),
+  );
   await gcMediaIfOrphan(previous, next.cards);
   if (exploreComposeCardId.value === cardId) closeExploreCompose();
 }
@@ -1416,7 +1434,7 @@ export async function exportProject(): Promise<void> {
   const blob = new Blob([zipBytes.slice()], { type: "application/zip" });
   const anchor = document.createElement("a");
   anchor.href = URL.createObjectURL(blob);
-  anchor.download = `${current.name.replaceAll(/[\\/:*?\"<>|]/g, "-")}.zip`;
+  anchor.download = `${current.name.replaceAll(/[\\/:*?"<>|]/g, "-")}.zip`;
   anchor.click();
   URL.revokeObjectURL(anchor.href);
 }
@@ -1473,7 +1491,8 @@ async function importProjectFromZip(bytes: Uint8Array): Promise<Project> {
 export async function importProjectFromFile(file: File): Promise<Project> {
   const name = file.name.toLowerCase();
   if (
-    name.endsWith(".zip") || file.type === "application/zip" ||
+    name.endsWith(".zip") ||
+    file.type === "application/zip" ||
     file.type === "application/x-zip-compressed"
   ) {
     const bytes = new Uint8Array(await file.arrayBuffer());
@@ -1490,7 +1509,7 @@ export function pickAndImportProject(): void {
     const file = input.files?.[0];
     if (!file) return;
     void importProjectFromFile(file).catch((e) =>
-      alert(e instanceof Error ? e.message : "読み込めませんでした")
+      alert(e instanceof Error ? e.message : "読み込めませんでした"),
     );
   };
   input.click();
@@ -1511,13 +1530,15 @@ export async function placeCardOnBoard(
   const next = applyPlaceCardOnBoard(current, cardId, x, y);
   if (!next) return;
   selectSingleCard(cardId);
-  await persist(appendEvent(next, {
-    type: "card_placed",
-    at: Date.now(),
-    cardId,
-    x,
-    y,
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "card_placed",
+      at: Date.now(),
+      cardId,
+      x,
+      y,
+    }),
+  );
 }
 
 /** Persist a finished board drag (final position only). */
@@ -1559,18 +1580,11 @@ export async function spawnThoughtFromLink(
   if (!current) return null;
   const thoughtId = crypto.randomUUID();
   const at = Date.now();
-  const next = applySpawnThoughtFromLink(
-    current,
-    fromId,
-    thoughtId,
-    x,
-    y,
-    at,
-  );
+  const next = applySpawnThoughtFromLink(current, fromId, thoughtId, x, y, at);
   if (!next) return null;
   const card = next.cards.find((item) => item.id === thoughtId);
-  const link = next.links.find((item) =>
-    !current.links.some((known) => known.id === item.id)
+  const link = next.links.find(
+    (item) => !current.links.some((known) => known.id === item.id),
   );
   if (!card || !link) return null;
   let logged = appendEvent(next, { type: "card_added", at, card });
@@ -1599,8 +1613,8 @@ export async function connectCards(
   if (!current) return;
   const next = applyConnectCards(current, fromId, toId, kind);
   if (!next) return;
-  const link = next.links.find((item) =>
-    !current.links.some((known) => known.id === item.id)
+  const link = next.links.find(
+    (item) => !current.links.some((known) => known.id === item.id),
   );
   // Keep the board quiet after drawing — edit later via link click + inspector.
   selectedLinkId.value = null;
@@ -1627,13 +1641,15 @@ export async function updateLink(
     await persist(next);
     return;
   }
-  await persist(appendEvent(next, {
-    type: "link_updated",
-    at: Date.now(),
-    linkId,
-    label: link.label,
-    kind: link.kind,
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "link_updated",
+      at: Date.now(),
+      linkId,
+      label: link.label,
+      kind: link.kind,
+    }),
+  );
 }
 
 export async function removeLink(linkId: string): Promise<void> {
@@ -1643,11 +1659,13 @@ export async function removeLink(linkId: string): Promise<void> {
   const next = applyRemoveLink(current, linkId);
   if (!next || !link) return;
   if (selectedLinkId.value === linkId) selectedLinkId.value = null;
-  await persist(appendEvent(next, {
-    type: "link_removed",
-    at: Date.now(),
-    link,
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "link_removed",
+      at: Date.now(),
+      link,
+    }),
+  );
 }
 
 export async function removeCard(cardId: string): Promise<void> {
@@ -1655,14 +1673,15 @@ export async function removeCard(cardId: string): Promise<void> {
   if (!current) return;
   const card = current.cards.find((item) => item.id === cardId);
   if (!card) return;
-  const links = current.links.filter((l) =>
-    l.from === cardId || l.to === cardId
+  const links = current.links.filter(
+    (l) => l.from === cardId || l.to === cardId,
   );
   const position = current.boards[0]?.positions[cardId];
   const next = applyRemoveCard(current, cardId);
   if (!next) return;
   if (
-    selectedCardId.value === cardId || selectedCardIds.value.includes(cardId)
+    selectedCardId.value === cardId ||
+    selectedCardIds.value.includes(cardId)
   ) {
     setSelectedCards(selectedCardIds.value.filter((id) => id !== cardId));
   }
@@ -1675,13 +1694,15 @@ export async function removeCard(cardId: string): Promise<void> {
   if (!next.links.some((link) => link.id === selectedLinkId.value)) {
     selectedLinkId.value = null;
   }
-  await persist(appendEvent(next, {
-    type: "card_removed",
-    at: Date.now(),
-    card,
-    links,
-    ...(position ? { position } : {}),
-  }));
+  await persist(
+    appendEvent(next, {
+      type: "card_removed",
+      at: Date.now(),
+      card,
+      links,
+      ...(position ? { position } : {}),
+    }),
+  );
   await gcMediaIfOrphan(card.image, next.cards);
 }
 

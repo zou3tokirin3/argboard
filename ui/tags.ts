@@ -49,7 +49,10 @@ export function buildTagSuggestions(
     });
   }
   if (
-    q && !attachedSet.has(q) && !usage.some((e) => e.name === q) && !atLimit
+    q &&
+    !attachedSet.has(q) &&
+    !usage.some((e) => e.name === q) &&
+    !atLimit
   ) {
     items.push({ kind: "create", name: q });
   }
@@ -86,13 +89,9 @@ export function commonTagsAmong(
     .filter((card): card is { id: string; tags?: string[] } => card != null);
   if (selected.length !== ids.length) return [];
   const [first, ...rest] = selected;
-  const common = new Set(
-    (first!.tags ?? []).map(normalizeTag).filter(Boolean),
-  );
+  const common = new Set((first!.tags ?? []).map(normalizeTag).filter(Boolean));
   for (const card of rest) {
-    const names = new Set(
-      (card.tags ?? []).map(normalizeTag).filter(Boolean),
-    );
+    const names = new Set((card.tags ?? []).map(normalizeTag).filter(Boolean));
     for (const tag of common) {
       if (!names.has(tag)) common.delete(tag);
     }
