@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   buildZip,
   collectMediaIds,
@@ -7,7 +8,7 @@ import {
   projectJsonFromZip,
 } from "../../ui/media.ts";
 
-Deno.test("isLocalMediaRef rejects http(s) and empty", () => {
+test("isLocalMediaRef rejects http(s) and empty", () => {
   if (isLocalMediaRef(undefined)) throw new Error("undefined");
   if (isLocalMediaRef("")) throw new Error("empty");
   if (isLocalMediaRef("https://example.com/a.png")) throw new Error("https");
@@ -15,7 +16,7 @@ Deno.test("isLocalMediaRef rejects http(s) and empty", () => {
   if (!isLocalMediaRef("abc-123")) throw new Error("local id");
 });
 
-Deno.test("collectMediaIds unique local only", () => {
+test("collectMediaIds unique local only", () => {
   const ids = collectMediaIds([
     { image: "a" },
     { image: "https://x" },
@@ -28,7 +29,7 @@ Deno.test("collectMediaIds unique local only", () => {
   }
 });
 
-Deno.test("zip roundtrip keeps project.json and media bytes", () => {
+test("zip roundtrip keeps project.json and media bytes", () => {
   const encoder = new TextEncoder();
   const files = new Map<string, Uint8Array>();
   files.set("project.json", encoder.encode('{"version":1,"id":"p"}'));
@@ -48,7 +49,7 @@ Deno.test("zip roundtrip keeps project.json and media bytes", () => {
   if (!b || b.blob.type !== "image/jpeg") throw new Error("mid2 missing");
 });
 
-Deno.test("parseZip rejects missing local headers", () => {
+test("parseZip rejects missing local headers", () => {
   try {
     parseZip(new Uint8Array([0, 1, 2, 3]));
     throw new Error("expected failure");

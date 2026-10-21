@@ -1,0 +1,24 @@
+{
+  "name": "argboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "node scripts/build.js && node scripts/serve.js",
+    "check": "biome check ui/ scripts/ && tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/unit/*.test.ts",
+    "smoke": "node scripts/build.js && playwright test",
+    "budget": "node tools/budget.js"
+  },
+  "dependencies": {
+    "@preact/signals": "^1.3.2",
+    "preact": "^10.27.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@playwright/test": "^1.64.1",
+    "esbuild": "^0.25.0",
+    "typescript": "^7.0.2"
+  }
+}

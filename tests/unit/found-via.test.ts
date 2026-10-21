@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   appendEvent,
   buildFoundViaForest,
@@ -10,7 +11,7 @@ import {
 } from "../../ui/project.ts";
 import type { Card } from "../../ui/types.ts";
 
-Deno.test("foundVia roundtrips on card_added and clears via found_via_cleared", () => {
+test("foundVia roundtrips on card_added and clears via found_via_cleared", () => {
   const parentId = crypto.randomUUID();
   const childId = crypto.randomUUID();
   const parent: Card = {
@@ -60,7 +61,7 @@ Deno.test("foundVia roundtrips on card_added and clears via found_via_cleared", 
   }
 });
 
-Deno.test("sortCardsByFoundViaTree groups parent before children", () => {
+test("sortCardsByFoundViaTree groups parent before children", () => {
   const parent = { id: "p", title: "資料", foundAt: 100 };
   const childOld = { id: "c1", title: "古い枝", foundAt: 101, foundVia: "p" };
   const childNew = { id: "c2", title: "新しい枝", foundAt: 200, foundVia: "p" };
@@ -74,7 +75,7 @@ Deno.test("sortCardsByFoundViaTree groups parent before children", () => {
   }
 });
 
-Deno.test("cardFoundViaDepth counts foundVia hops", () => {
+test("cardFoundViaDepth counts foundVia hops", () => {
   const root = "root";
   const mid = "mid";
   const leaf = "leaf";
@@ -94,7 +95,7 @@ Deno.test("cardFoundViaDepth counts foundVia hops", () => {
   }
 });
 
-Deno.test("buildFoundViaForest nests under filtered parents only", () => {
+test("buildFoundViaForest nests under filtered parents only", () => {
   const parent = { id: "p", title: "資料", foundAt: 100 };
   const child = { id: "c", title: "枝", foundAt: 200, foundVia: "p" };
   const orphan = { id: "o", title: "親なし", foundAt: 150 };
@@ -112,7 +113,7 @@ Deno.test("buildFoundViaForest nests under filtered parents only", () => {
   }
 });
 
-Deno.test("flattenFoundViaForest skips collapsed subtrees", () => {
+test("flattenFoundViaForest skips collapsed subtrees", () => {
   const parent = { id: "p", title: "資料", foundAt: 100 };
   const child = { id: "c", title: "枝", foundAt: 200, foundVia: "p" };
   const forest = buildFoundViaForest([parent, child]);
@@ -122,7 +123,7 @@ Deno.test("flattenFoundViaForest skips collapsed subtrees", () => {
   }
 });
 
-Deno.test("foundViaAncestorChain lists parents a board reveal must expand", () => {
+test("foundViaAncestorChain lists parents a board reveal must expand", () => {
   const byId = new Map([
     ["root", { id: "root", title: "根" }],
     ["mid", { id: "mid", title: "中", foundVia: "root" }],
@@ -136,7 +137,7 @@ Deno.test("foundViaAncestorChain lists parents a board reveal must expand", () =
   }
 });
 
-Deno.test("thought card keeps foundVia through card_added replay", () => {
+test("thought card keeps foundVia through card_added replay", () => {
   const parentId = crypto.randomUUID();
   const childId = crypto.randomUUID();
   const parent: Card = { id: parentId, title: "資料", foundAt: 100 };
@@ -165,7 +166,7 @@ Deno.test("thought card keeps foundVia through card_added replay", () => {
   }
 });
 
-Deno.test("import JSON without foundVia stays valid", () => {
+test("import JSON without foundVia stays valid", () => {
   const card: Card = { id: "a", title: "旧", foundAt: 10 };
   const project = createEmptyProject("legacy", 1);
   const merged = { ...project, cards: [card] };

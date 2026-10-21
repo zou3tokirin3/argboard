@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   appendEvent,
   applyConnectCards,
@@ -6,7 +7,7 @@ import {
   parseProjectJson,
 } from "../../ui/project.ts";
 
-Deno.test("appendEvent keeps schema version 1 and preserves older projects", () => {
+test("appendEvent keeps schema version 1 and preserves older projects", () => {
   const base = createEmptyProject("ログ", 1);
   if (base.events !== undefined) {
     throw new Error("empty project should omit events");
@@ -21,7 +22,7 @@ Deno.test("appendEvent keeps schema version 1 and preserves older projects", () 
   }
 });
 
-Deno.test("export/import roundtrip keeps events", () => {
+test("export/import roundtrip keeps events", () => {
   const a = crypto.randomUUID();
   let project = createEmptyProject("往復", 1);
   project = {
@@ -42,7 +43,7 @@ Deno.test("export/import roundtrip keeps events", () => {
   }
 });
 
-Deno.test("card_removed snapshot can include cascaded links", () => {
+test("card_removed snapshot can include cascaded links", () => {
   const a = crypto.randomUUID();
   const b = crypto.randomUUID();
   let project = createEmptyProject("削除", 1);

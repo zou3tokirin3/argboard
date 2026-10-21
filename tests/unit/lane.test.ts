@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { laneMemberCards } from "../../ui/project.ts";
 import {
   sortLaneCards,
@@ -14,7 +15,7 @@ function card(
   return { id, title, foundAt: 1, ...patch };
 }
 
-Deno.test("laneMemberCards: n-hop timed cards only", () => {
+test("laneMemberCards: n-hop timed cards only", () => {
   const cards = [
     card("person", "山田"),
     card("a", "短波", { storyWhen: "23:17" }),
@@ -38,7 +39,7 @@ Deno.test("laneMemberCards: n-hop timed cards only", () => {
   }
 });
 
-Deno.test("laneMemberCards: excludes origin", () => {
+test("laneMemberCards: excludes origin", () => {
   const cards = [
     card("person", "山田", { storyWhen: "12:00" }),
     card("a", "短波", { storyWhen: "23:17" }),
@@ -52,7 +53,7 @@ Deno.test("laneMemberCards: excludes origin", () => {
   }
 });
 
-Deno.test("sortLaneCards: night-aware clock then buckets", () => {
+test("sortLaneCards: night-aware clock then buckets", () => {
   const sorted = sortLaneCards([
     card("night", "屋上", { storyWhen: "夜" }),
     card("early", "終電後", { storyWhen: "1:05" }),
@@ -64,7 +65,7 @@ Deno.test("sortLaneCards: night-aware clock then buckets", () => {
   }
 });
 
-Deno.test("storyOrderSuspicious marks early-morning clock-only", () => {
+test("storyOrderSuspicious marks early-morning clock-only", () => {
   const cards = [
     card("eve", "ロッカー", { storyWhen: "22:40" }),
     card("late", "短波", { storyWhen: "23:17" }),
@@ -79,7 +80,7 @@ Deno.test("storyOrderSuspicious marks early-morning clock-only", () => {
   if (!flags[nightIdx]) throw new Error("bucket after clock should be flagged");
 });
 
-Deno.test("story-chrono desc reverses sortLaneCards; flags follow display", () => {
+test("story-chrono desc reverses sortLaneCards; flags follow display", () => {
   const cards = [
     card("eve", "ロッカー", { storyWhen: "22:40" }),
     card("late", "短波", { storyWhen: "23:17" }),
@@ -101,7 +102,7 @@ Deno.test("story-chrono desc reverses sortLaneCards; flags follow display", () =
   }
 });
 
-Deno.test("storyWhenSortKey reads day and clock", () => {
+test("storyWhenSortKey reads day and clock", () => {
   const key = storyWhenSortKey({ storyWhen: "3/1 23:17" });
   if (key.kind !== "clock" || key.day == null || key.minute !== 23 * 60 + 17) {
     throw new Error(`unexpected key ${JSON.stringify(key)}`);

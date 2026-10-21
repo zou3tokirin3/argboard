@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   clampPreviewHeight,
   defaultPreviewHeight,
@@ -21,7 +22,7 @@ function memoryStore(seed: Record<string, string> = {}) {
   };
 }
 
-Deno.test("default wide height matches min(52vh, 520)", () => {
+test("default wide height matches min(52vh, 520)", () => {
   if (defaultPreviewHeight("wide", 1000) !== 520) {
     throw new Error("tall viewport must cap wide at 520");
   }
@@ -30,7 +31,7 @@ Deno.test("default wide height matches min(52vh, 520)", () => {
   }
 });
 
-Deno.test("default rail height matches min(36vh, 280)", () => {
+test("default rail height matches min(36vh, 280)", () => {
   if (defaultPreviewHeight("rail", 1000) !== 280) {
     throw new Error("tall viewport must cap rail at 280");
   }
@@ -39,7 +40,7 @@ Deno.test("default rail height matches min(36vh, 280)", () => {
   }
 });
 
-Deno.test("clamp keeps capture row space and a minimum pane", () => {
+test("clamp keeps capture row space and a minimum pane", () => {
   if (clampPreviewHeight(40, 900) !== PREVIEW_MIN_PX) {
     throw new Error("must not shrink below the minimum pane");
   }
@@ -48,7 +49,7 @@ Deno.test("clamp keeps capture row space and a minimum pane", () => {
   }
 });
 
-Deno.test("stored heights persist per surface and skip the project", () => {
+test("stored heights persist per surface and skip the project", () => {
   const store = memoryStore();
   writeStoredPreviewHeight("wide", 480, store);
   writeStoredPreviewHeight("rail", 320, store);
@@ -62,7 +63,7 @@ Deno.test("stored heights persist per surface and skip the project", () => {
   }
 });
 
-Deno.test("legacy explore/side keys migrate to wide/rail", () => {
+test("legacy explore/side keys migrate to wide/rail", () => {
   const store = memoryStore({
     [PREVIEW_HEIGHT_KEY]: JSON.stringify({ explore: 400, side: 200 }),
   });
@@ -72,7 +73,7 @@ Deno.test("legacy explore/side keys migrate to wide/rail", () => {
   }
 });
 
-Deno.test("resolve uses stored height when present, else the CSS default", () => {
+test("resolve uses stored height when present, else the CSS default", () => {
   const empty = memoryStore();
   if (resolvePreviewHeight("wide", 1000, empty) !== 520) {
     throw new Error("empty store must keep the current wide default");
@@ -86,7 +87,7 @@ Deno.test("resolve uses stored height when present, else the CSS default", () =>
   }
 });
 
-Deno.test("resolve clamps a stored height that no longer fits", () => {
+test("resolve clamps a stored height that no longer fits", () => {
   const store = memoryStore();
   writeStoredPreviewHeight("rail", 700, store);
   if (resolvePreviewHeight("rail", 500, store) !== 340) {

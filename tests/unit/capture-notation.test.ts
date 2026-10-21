@@ -1,6 +1,7 @@
+import { test } from "node:test";
 import { parseCaptureLine } from "../../ui/capture-notation.ts";
 
-Deno.test("plain title is unchanged", () => {
+test("plain title is unchanged", () => {
   const parsed = parseCaptureLine("  手がかりA  ");
   if (
     !parsed || parsed.title !== "手がかりA" || parsed.body || parsed.url
@@ -9,7 +10,7 @@ Deno.test("plain title is unchanged", () => {
   }
 });
 
-Deno.test("title // note splits into title and body", () => {
+test("title // note splits into title and body", () => {
   const parsed = parseCaptureLine("看板の色 // 夜だと読めない");
   if (
     !parsed || parsed.title !== "看板の色" ||
@@ -19,7 +20,7 @@ Deno.test("title // note splits into title and body", () => {
   }
 });
 
-Deno.test("inline URL moves to url and leaves the title", () => {
+test("inline URL moves to url and leaves the title", () => {
   const parsed = parseCaptureLine(
     "公式サイト https://example.com/path を見た",
   );
@@ -31,7 +32,7 @@ Deno.test("inline URL moves to url and leaves the title", () => {
   }
 });
 
-Deno.test("title // note with URL fills all three fields", () => {
+test("title // note with URL fills all three fields", () => {
   const parsed = parseCaptureLine(
     "題 // ひとこと https://example.com/a",
   );
@@ -43,7 +44,7 @@ Deno.test("title // note with URL fills all three fields", () => {
   }
 });
 
-Deno.test("URL-only uses hostname as temporary title", () => {
+test("URL-only uses hostname as temporary title", () => {
   const parsed = parseCaptureLine("https://www.example.com/foo");
   if (
     !parsed || parsed.title !== "example.com" ||
@@ -53,7 +54,7 @@ Deno.test("URL-only uses hostname as temporary title", () => {
   }
 });
 
-Deno.test("URL // note uses hostname title and body", () => {
+test("URL // note uses hostname title and body", () => {
   const parsed = parseCaptureLine("https://example.org // 初見");
   if (
     !parsed || parsed.title !== "example.org" ||
@@ -63,7 +64,7 @@ Deno.test("URL // note uses hostname title and body", () => {
   }
 });
 
-Deno.test("empty and note-only lines are rejected", () => {
+test("empty and note-only lines are rejected", () => {
   if (parseCaptureLine("   ") !== null) {
     throw new Error("blank should be null");
   }

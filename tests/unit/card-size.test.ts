@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import { NODE_DIMS, nodeDims, normalizeCardSize } from "../../ui/node-size.ts";
 import {
   appendEvent,
@@ -6,7 +7,7 @@ import {
   viewThrough,
 } from "../../ui/project.ts";
 
-Deno.test("nodeDims defaults omitted size to medium (pre-T022)", () => {
+test("nodeDims defaults omitted size to medium (pre-T022)", () => {
   const m = nodeDims(undefined);
   if (m.w !== 235 || m.h !== 128) {
     throw new Error(`expected medium 235x128, got ${m.w}x${m.h}`);
@@ -23,7 +24,7 @@ Deno.test("nodeDims defaults omitted size to medium (pre-T022)", () => {
   }
 });
 
-Deno.test("parseProjectJson roundtrips card.size", () => {
+test("parseProjectJson roundtrips card.size", () => {
   let project = createEmptyProject("サイズ", 1);
   const card = {
     id: "c1",
@@ -40,7 +41,7 @@ Deno.test("parseProjectJson roundtrips card.size", () => {
   }
 });
 
-Deno.test("viewThrough applies and rewinds card size on card_updated", () => {
+test("viewThrough applies and rewinds card size on card_updated", () => {
   const card = { id: "a", title: "A", foundAt: 10 };
   let project = createEmptyProject("サイズ再生", 1);
   project = { ...project, cards: [card] };

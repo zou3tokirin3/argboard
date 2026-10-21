@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   appendEvent,
   applyConnectCards,
@@ -12,7 +13,7 @@ import {
   withBirthEvents,
 } from "../../ui/project.ts";
 
-Deno.test("viewAt stage1 filters by foundAt/createdAt with current positions", () => {
+test("viewAt stage1 filters by foundAt/createdAt with current positions", () => {
   const a = "a";
   const b = "b";
   let project = createEmptyProject("再生", 1);
@@ -52,7 +53,7 @@ Deno.test("viewAt stage1 filters by foundAt/createdAt with current positions", (
   }
 });
 
-Deno.test("viewAt stage2 replays place, kind, and removal snapshots", () => {
+test("viewAt stage2 replays place, kind, and removal snapshots", () => {
   const a = "a";
   const b = "b";
   let project = createEmptyProject("忠実", 1);
@@ -145,7 +146,7 @@ Deno.test("viewAt stage2 replays place, kind, and removal snapshots", () => {
   }
 });
 
-Deno.test("replaySteps are discrete execution units, not a time continuum", () => {
+test("replaySteps are discrete execution units, not a time continuum", () => {
   const a = "a";
   const b = "b";
   let project = createEmptyProject("ステップ", 1);
@@ -185,7 +186,7 @@ Deno.test("replaySteps are discrete execution units, not a time continuum", () =
   }
 });
 
-Deno.test("replaySteps include link connect and label edits", () => {
+test("replaySteps include link connect and label edits", () => {
   const a = "a";
   const b = "b";
   let project = createEmptyProject("糸", 1);
@@ -221,7 +222,7 @@ Deno.test("replaySteps include link connect and label edits", () => {
   }
 });
 
-Deno.test("viewAt rewinds card body and link label via birth+update events", () => {
+test("viewAt rewinds card body and link label via birth+update events", () => {
   const a = "a";
   const b = "b";
   let project = createEmptyProject("本文", 1);
@@ -322,7 +323,7 @@ Deno.test("viewAt rewinds card body and link label via birth+update events", () 
   }
 });
 
-Deno.test("demo births separate connect from label, and keep card add+place", () => {
+test("demo births separate connect from label, and keep card add+place", () => {
   const demo = withBirthEvents(createDemoProject(1_000_000));
   const steps = replaySteps(demo);
   const labels = steps.map((step) => step.label);
@@ -361,7 +362,7 @@ Deno.test("demo births separate connect from label, and keep card add+place", ()
   }
 });
 
-Deno.test("same-ms connect steps appear one at a time via through index", () => {
+test("same-ms connect steps appear one at a time via through index", () => {
   const demo = withBirthEvents(createDemoProject(1_000_000));
   const steps = replaySteps(demo);
   const connectSteps = steps.filter((step) =>
@@ -380,7 +381,7 @@ Deno.test("same-ms connect steps appear one at a time via through index", () => 
   }
 });
 
-Deno.test("edited pre-log cards still get an add step", () => {
+test("edited pre-log cards still get an add step", () => {
   const a = "a";
   let project = createEmptyProject("欠落", 1);
   project = {
@@ -400,7 +401,7 @@ Deno.test("edited pre-log cards still get an add step", () => {
   }
 });
 
-Deno.test("viewAt applies and rewinds card tags when event carries them", () => {
+test("viewAt applies and rewinds card tags when event carries them", () => {
   const a = "a";
   let project = createEmptyProject("タグ", 1);
   project = {

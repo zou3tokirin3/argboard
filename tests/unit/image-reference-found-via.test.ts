@@ -1,3 +1,4 @@
+import { test } from "node:test";
 /// <reference lib="dom" />
 
 import { createEmptyProject } from "../../ui/project.ts";
@@ -25,8 +26,8 @@ function seedViewedCard(options?: { contemplate?: boolean }): string {
   return id;
 }
 
-Deno.test("image reference thought mode keeps digging the viewed card", async (t) => {
-  await t.step(
+test("image reference thought mode keeps digging the viewed card", async (t) => {
+  await t.test(
     "contemplate compose starts digging on the first thought",
     () => {
       const parentId = seedViewedCard({ contemplate: true });
@@ -44,7 +45,7 @@ Deno.test("image reference thought mode keeps digging the viewed card", async (t
     },
   );
 
-  await t.step("dig/thought switch does not drop the viewed parent", () => {
+  await t.test("dig/thought switch does not drop the viewed parent", () => {
     const parentId = seedViewedCard();
     openExploreCompose(parentId, { mode: "dig" });
     if (diggingCardId.value !== parentId) {

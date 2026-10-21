@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   attachTag,
   buildTagSuggestions,
@@ -10,13 +11,13 @@ import {
   TAG_KIND_LIMIT,
 } from "../../ui/tags.ts";
 
-Deno.test("normalizeTag trims and collapses spaces", () => {
+test("normalizeTag trims and collapses spaces", () => {
   if (normalizeTag("  十七  歳  ") !== "十七 歳") {
     throw new Error("spaces should collapse");
   }
 });
 
-Deno.test("collectTagUsage counts and keeps first-seen order", () => {
+test("collectTagUsage counts and keeps first-seen order", () => {
   const usage = collectTagUsage([
     { tags: ["十七", "音声"] },
     { tags: ["十七"] },
@@ -33,7 +34,7 @@ Deno.test("collectTagUsage counts and keeps first-seen order", () => {
   }
 });
 
-Deno.test("buildTagSuggestions filters attached and offers create", () => {
+test("buildTagSuggestions filters attached and offers create", () => {
   const usage = collectTagUsage([
     { tags: ["十七"] },
     { tags: ["音声"] },
@@ -52,7 +53,7 @@ Deno.test("buildTagSuggestions filters attached and offers create", () => {
   }
 });
 
-Deno.test("buildTagSuggestions blocks create at kind limit", () => {
+test("buildTagSuggestions blocks create at kind limit", () => {
   const tags = Array.from({ length: TAG_KIND_LIMIT }, (_, i) => `t${i}`);
   const usage = collectTagUsage(tags.map((name) => ({ tags: [name] })));
   const { items, atLimit } = buildTagSuggestions("新しい", usage, []);
@@ -62,7 +63,7 @@ Deno.test("buildTagSuggestions blocks create at kind limit", () => {
   }
 });
 
-Deno.test("attachTag and detachTag round-trip", () => {
+test("attachTag and detachTag round-trip", () => {
   const once = attachTag(undefined, "十七");
   if (once.length !== 1 || once[0] !== "十七") {
     throw new Error("attach empty failed");
@@ -73,7 +74,7 @@ Deno.test("attachTag and detachTag round-trip", () => {
   if (cleared !== undefined) throw new Error("detach last should clear");
 });
 
-Deno.test("replaceTag renames and merges with dedupe", () => {
+test("replaceTag renames and merges with dedupe", () => {
   const renamed = replaceTag(["十七", "音声"], "十七", "17歳");
   if (
     !renamed.changed || !renamed.tags || renamed.tags.join(",") !== "17歳,音声"
@@ -90,7 +91,7 @@ Deno.test("replaceTag renames and merges with dedupe", () => {
   if (missing.changed) throw new Error("missing source should no-op");
 });
 
-Deno.test("commonTagsAmong returns tags shared by every selected card", () => {
+test("commonTagsAmong returns tags shared by every selected card", () => {
   const a = "a";
   const b = "b";
   const c = "c";
@@ -109,7 +110,7 @@ Deno.test("commonTagsAmong returns tags shared by every selected card", () => {
   if (ac.length !== 0) throw new Error("ac should have no common tag");
 });
 
-Deno.test("fitTagsOneLine keeps all when width is enough", () => {
+test("fitTagsOneLine keeps all when width is enough", () => {
   const { shown, hidden } = fitTagsOneLine(["十七", "音声"], 200);
   if (shown.length !== 2 || hidden !== 0) {
     throw new Error(
@@ -118,7 +119,7 @@ Deno.test("fitTagsOneLine keeps all when width is enough", () => {
   }
 });
 
-Deno.test("fitTagsOneLine collapses overflow to +N", () => {
+test("fitTagsOneLine collapses overflow to +N", () => {
   const tags = ["十七", "音声", "拠点", "メモ", "追加"];
   const { shown, hidden } = fitTagsOneLine(tags, 80);
   if (shown.length === 0) throw new Error("first tag should remain");

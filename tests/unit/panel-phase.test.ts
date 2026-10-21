@@ -1,12 +1,13 @@
+import { test } from "node:test";
 import { normalizePanelPhase } from "../../ui/panel-phase.ts";
 
-Deno.test("normalize prefers panelPhase when present", () => {
+test("normalize prefers panelPhase when present", () => {
   if (normalizePanelPhase({ panelPhase: "rail", mode: "explore" }) !== "rail") {
     throw new Error("panelPhase must win over legacy mode");
   }
 });
 
-Deno.test("legacy explore maps to wide", () => {
+test("legacy explore maps to wide", () => {
   if (normalizePanelPhase({ mode: "explore", sideOpen: false }) !== "wide") {
     throw new Error("explore must become wide");
   }
@@ -15,7 +16,7 @@ Deno.test("legacy explore maps to wide", () => {
   }
 });
 
-Deno.test("legacy contemplate maps with sideOpen", () => {
+test("legacy contemplate maps with sideOpen", () => {
   if (
     normalizePanelPhase({ mode: "contemplate", sideOpen: true }) !== "rail"
   ) {

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   applyConnectCards,
   applyMoveCardsOnBoard,
@@ -10,7 +11,7 @@ import {
   EMPTY_THOUGHT_TITLE,
 } from "../../ui/project.ts";
 
-Deno.test("applyPlaceCardOnBoard adds a card and position", () => {
+test("applyPlaceCardOnBoard adds a card and position", () => {
   let project = createEmptyProject("ボード", 1);
   const cardId = crypto.randomUUID();
   project = {
@@ -27,13 +28,13 @@ Deno.test("applyPlaceCardOnBoard adds a card and position", () => {
   }
 });
 
-Deno.test("applyPlaceCardOnBoard rejects unknown cards", () => {
+test("applyPlaceCardOnBoard rejects unknown cards", () => {
   const project = createEmptyProject("ボード", 1);
   const next = applyPlaceCardOnBoard(project, "missing", 0, 0);
   if (next !== null) throw new Error("unknown card must be rejected");
 });
 
-Deno.test("applyMoveCardsOnBoard moves several cards preserving layout", () => {
+test("applyMoveCardsOnBoard moves several cards preserving layout", () => {
   const a = crypto.randomUUID();
   const b = crypto.randomUUID();
   let project = createEmptyProject("ボード", 1);
@@ -59,7 +60,7 @@ Deno.test("applyMoveCardsOnBoard moves several cards preserving layout", () => {
   }
 });
 
-Deno.test("applyConnectCards creates connects link once", () => {
+test("applyConnectCards creates connects link once", () => {
   const a = crypto.randomUUID();
   const b = crypto.randomUUID();
   let project = createEmptyProject("ボード", 1);
@@ -83,7 +84,7 @@ Deno.test("applyConnectCards creates connects link once", () => {
   if (dup !== null) throw new Error("duplicate link must be rejected");
 });
 
-Deno.test("applyUpdateLink sets label and kind", () => {
+test("applyUpdateLink sets label and kind", () => {
   const a = crypto.randomUUID();
   const b = crypto.randomUUID();
   let project = createEmptyProject("ボード", 1);
@@ -119,7 +120,7 @@ Deno.test("applyUpdateLink sets label and kind", () => {
   }
 });
 
-Deno.test("applySetBoardViewport stores pan/zoom", () => {
+test("applySetBoardViewport stores pan/zoom", () => {
   const project = createEmptyProject("ボード", 1);
   const next = applySetBoardViewport(project, { x: 12, y: -4, zoom: 1.25 });
   const viewport = next.boards[0]?.viewport;
@@ -128,7 +129,7 @@ Deno.test("applySetBoardViewport stores pan/zoom", () => {
   }
 });
 
-Deno.test("thought cards share board placement", () => {
+test("thought cards share board placement", () => {
   const cardId = crypto.randomUUID();
   let project = createEmptyProject("ボード", 1);
   project = {
@@ -143,7 +144,7 @@ Deno.test("thought cards share board placement", () => {
   }
 });
 
-Deno.test("applySpawnThoughtFromLink creates thought and connects", () => {
+test("applySpawnThoughtFromLink creates thought and connects", () => {
   const fromId = crypto.randomUUID();
   const thoughtId = crypto.randomUUID();
   let project = createEmptyProject("ボード", 1);
@@ -180,7 +181,7 @@ Deno.test("applySpawnThoughtFromLink creates thought and connects", () => {
   }
 });
 
-Deno.test("applySpawnThoughtFromLink rejects unknown origin", () => {
+test("applySpawnThoughtFromLink rejects unknown origin", () => {
   const thoughtId = crypto.randomUUID();
   const project = createEmptyProject("ボード", 1);
   const next = applySpawnThoughtFromLink(
@@ -194,7 +195,7 @@ Deno.test("applySpawnThoughtFromLink rejects unknown origin", () => {
   if (next !== null) throw new Error("unknown origin must be rejected");
 });
 
-Deno.test("applySpawnThoughtFromLink rejects existing thought id", () => {
+test("applySpawnThoughtFromLink rejects existing thought id", () => {
   const fromId = crypto.randomUUID();
   let project = createEmptyProject("ボード", 1);
   project = {
@@ -206,7 +207,7 @@ Deno.test("applySpawnThoughtFromLink rejects existing thought id", () => {
   if (next !== null) throw new Error("self spawn must be rejected");
 });
 
-Deno.test("applyRemoveCard cascades card links and placement", () => {
+test("applyRemoveCard cascades card links and placement", () => {
   const a = crypto.randomUUID();
   const b = crypto.randomUUID();
   let project = createEmptyProject("ボード", 1);

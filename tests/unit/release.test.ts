@@ -1,6 +1,7 @@
+import { test } from "node:test";
 import { APP_PREVIEW, APP_RELEASE, appTitle } from "../../ui/release.ts";
 
-Deno.test("appTitle shows release with optional preview ticket", () => {
+test("appTitle shows release with optional preview ticket", () => {
   const title = appTitle();
   if (!title.startsWith(`ARGBoard · ${APP_RELEASE}`)) {
     throw new Error(`unexpected title: ${title}`);
@@ -14,14 +15,14 @@ Deno.test("appTitle shows release with optional preview ticket", () => {
   }
 });
 
-Deno.test("appTitle appends non-main branch", () => {
+test("appTitle appends non-main branch", () => {
   const title = appTitle("task/T058");
   if (!title.endsWith(" · task/T058")) {
     throw new Error(`expected branch suffix: ${title}`);
   }
 });
 
-Deno.test("appTitle skips main branch suffix", () => {
+test("appTitle skips main branch suffix", () => {
   const title = appTitle("main");
   if (title.includes(" · main")) {
     throw new Error(`main should not appear as suffix: ${title}`);

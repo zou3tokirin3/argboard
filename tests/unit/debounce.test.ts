@@ -1,6 +1,7 @@
+import { test } from "node:test";
 import { debounce } from "../../ui/debounce.ts";
 
-Deno.test("debounce delays invocation", async () => {
+test("debounce delays invocation", async () => {
   let count: number = 0;
   const fn = debounce(() => {
     count++;
@@ -14,7 +15,7 @@ Deno.test("debounce delays invocation", async () => {
   if (count < 1) throw new Error("should run once after delay");
 });
 
-Deno.test("debounce cancel prevents pending run", async () => {
+test("debounce cancel prevents pending run", async () => {
   let count: number = 0;
   const fn = debounce(() => {
     count++;

@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   appendEvent,
   createEmptyProject,
@@ -6,7 +7,7 @@ import {
 } from "../../ui/project.ts";
 import { formatStoryWhenLabel, hasStoryWhen } from "../../ui/story-when.ts";
 
-Deno.test("parseProjectJson roundtrips card.storyWhen and storyUntil", () => {
+test("parseProjectJson roundtrips card.storyWhen and storyUntil", () => {
   const card = {
     id: "a",
     title: "目撃",
@@ -29,7 +30,7 @@ Deno.test("parseProjectJson roundtrips card.storyWhen and storyUntil", () => {
   }
 });
 
-Deno.test("card_added with storyWhen and storyUntil keeps them on replay", () => {
+test("card_added with storyWhen and storyUntil keeps them on replay", () => {
   const card = {
     id: "cap",
     title: "倉庫",
@@ -52,7 +53,7 @@ Deno.test("card_added with storyWhen and storyUntil keeps them on replay", () =>
   }
 });
 
-Deno.test("viewThrough applies and clears storyUntil on card_updated", () => {
+test("viewThrough applies and clears storyUntil on card_updated", () => {
   const card = {
     id: "a",
     title: "A",
@@ -127,7 +128,7 @@ Deno.test("viewThrough applies and clears storyUntil on card_updated", () => {
   }
 });
 
-Deno.test("hasStoryWhen and formatStoryWhenLabel cover point and span", () => {
+test("hasStoryWhen and formatStoryWhenLabel cover point and span", () => {
   if (hasStoryWhen({})) {
     throw new Error("empty must be without");
   }

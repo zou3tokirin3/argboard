@@ -1,7 +1,7 @@
 ---
 id: T085
 title: Deno の代わりに使うツールを調べて選ぶ
-status: backlog
+status: done
 owner: none
 gate: human
 branch: ""
@@ -52,5 +52,12 @@ Cloudflare（wrangler）との相性。
 
 - 2026-10-20 human: 移行プランを採択（「移行プランも良いわ」）
 - 2026-10-20 planner: フェーズAとして起票（backlog）
+- 2026-10-21 claude: 調査・試作を実施。評価パケット `.dev-os/kanban/packets/T081-a.md` を作成。
+  - Deno 公式タイムライン確認（2026-10-09 買収発表。Deploy +6ヶ月≒2027-04、ランタイム終了 +1年≒2027-10）
+  - esbuild 試作: `ui/main.tsx` のビルド成功（13ms、gzip 64.7KB）。.ts 拡張子 import も問題なし
+  - budget.ts の Deno API を棚卸し。全項目 Node 組み込みで置き換え可能
+  - 追加 devDependencies 3本（esbuild・biome・typescript）
+  - Node vs Bun を比較検討。pnpm ルール競合・wrangler 公式サポートの観点から Node に決定（human 確認済み）
+  - 人間の採択待ち（T081-a.md の採択欄）
 
 ## 差し戻し履歴（追記のみ）

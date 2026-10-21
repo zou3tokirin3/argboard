@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   appendEvent,
   createEmptyProject,
@@ -5,7 +6,7 @@ import {
   viewThrough,
 } from "../../ui/project.ts";
 
-Deno.test("parseProjectJson roundtrips card.outcome on thought cards", () => {
+test("parseProjectJson roundtrips card.outcome on thought cards", () => {
   const thought = {
     id: "t1",
     title: "仮説",
@@ -23,7 +24,7 @@ Deno.test("parseProjectJson roundtrips card.outcome on thought cards", () => {
   }
 });
 
-Deno.test("viewThrough applies and rewinds card outcome on card_updated", () => {
+test("viewThrough applies and rewinds card outcome on card_updated", () => {
   const card = {
     id: "a",
     title: "A",
@@ -90,7 +91,7 @@ Deno.test("viewThrough applies and rewinds card outcome on card_updated", () => 
   }
 });
 
-Deno.test("viewThrough clears outcome when role reverts to finding", () => {
+test("viewThrough clears outcome when role reverts to finding", () => {
   const card = {
     id: "a",
     title: "A",

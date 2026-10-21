@@ -1,3 +1,4 @@
+import { test } from "node:test";
 import {
   createDemoProject,
   createEmptyProject,
@@ -6,7 +7,7 @@ import {
   reachableFromCardIds,
 } from "../../ui/project.ts";
 
-Deno.test("createEmptyProject starts with no cards and one board", () => {
+test("createEmptyProject starts with no cards and one board", () => {
   const project = createEmptyProject("テストケース", 1_700_000_000_000);
   if (project.name !== "テストケース") {
     throw new Error(`Unexpected name: ${project.name}`);
@@ -22,14 +23,14 @@ Deno.test("createEmptyProject starts with no cards and one board", () => {
   }
 });
 
-Deno.test("createEmptyProject falls back when name is blank", () => {
+test("createEmptyProject falls back when name is blank", () => {
   const project = createEmptyProject("   ");
   if (project.name !== "新しいケース") {
     throw new Error(`Unexpected fallback name: ${project.name}`);
   }
 });
 
-Deno.test("createDemoProject keeps sample cards sorted by discovery", () => {
+test("createDemoProject keeps sample cards sorted by discovery", () => {
   const project = createDemoProject(1_700_000_000_000);
   if (project.cards.length < 2) {
     throw new Error("Demo project should include sample cards");
@@ -42,14 +43,14 @@ Deno.test("createDemoProject keeps sample cards sorted by discovery", () => {
   }
 });
 
-Deno.test("reachableCardIds includes start at 0 hops", () => {
+test("reachableCardIds includes start at 0 hops", () => {
   const set = reachableCardIds([{ from: "a", to: "b" }], "a", 0);
   if (set.size !== 1 || !set.has("a")) {
     throw new Error("0 hops must be start only");
   }
 });
 
-Deno.test("reachableCardIds walks undirected hops", () => {
+test("reachableCardIds walks undirected hops", () => {
   const links = [
     { from: "a", to: "b" },
     { from: "b", to: "c" },
@@ -63,7 +64,7 @@ Deno.test("reachableCardIds walks undirected hops", () => {
   }
 });
 
-Deno.test("reachableCardIds includes thought neighbors the same way", () => {
+test("reachableCardIds includes thought neighbors the same way", () => {
   const links = [
     { from: "finding", to: "thought" },
     { from: "thought", to: "other" },
@@ -74,7 +75,7 @@ Deno.test("reachableCardIds includes thought neighbors the same way", () => {
   }
 });
 
-Deno.test("reachableFromCardIds expands from multiple seeds", () => {
+test("reachableFromCardIds expands from multiple seeds", () => {
   const links = [
     { from: "a", to: "x" },
     { from: "b", to: "y" },
@@ -89,7 +90,7 @@ Deno.test("reachableFromCardIds expands from multiple seeds", () => {
   }
 });
 
-Deno.test("focusReachableIds tag origin: 1 hop = tagged cards only", () => {
+test("focusReachableIds tag origin: 1 hop = tagged cards only", () => {
   const cards = [
     { id: "a", tags: ["17"] },
     { id: "b", tags: ["17"] },
@@ -116,7 +117,7 @@ Deno.test("focusReachableIds tag origin: 1 hop = tagged cards only", () => {
   }
 });
 
-Deno.test("focusReachableIds card origin matches reachableCardIds", () => {
+test("focusReachableIds card origin matches reachableCardIds", () => {
   const links = [
     { from: "a", to: "b" },
     { from: "b", to: "c" },

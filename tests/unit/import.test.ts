@@ -1,6 +1,7 @@
+import { test } from "node:test";
 import { createDemoProject, parseProjectJson } from "../../ui/project.ts";
 
-Deno.test("parseProjectJson restores a version-1 demo project", () => {
+test("parseProjectJson restores a version-1 demo project", () => {
   const source = createDemoProject(1_700_000_000_000);
   const parsed = parseProjectJson(JSON.stringify(source));
   if (JSON.stringify(parsed) !== JSON.stringify(source)) {
@@ -8,7 +9,7 @@ Deno.test("parseProjectJson restores a version-1 demo project", () => {
   }
 });
 
-Deno.test("parseProjectJson rejects invalid JSON without throwing SyntaxError", () => {
+test("parseProjectJson rejects invalid JSON without throwing SyntaxError", () => {
   try {
     parseProjectJson("{");
     throw new Error("Expected parseProjectJson to fail");
@@ -19,7 +20,7 @@ Deno.test("parseProjectJson rejects invalid JSON without throwing SyntaxError", 
   }
 });
 
-Deno.test("parseProjectJson rejects unsupported version", () => {
+test("parseProjectJson rejects unsupported version", () => {
   const source = createDemoProject(1_700_000_000_000);
   try {
     parseProjectJson(JSON.stringify({ ...source, version: 2 }));
