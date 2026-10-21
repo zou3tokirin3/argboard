@@ -313,9 +313,29 @@ export function Inspector() {
 
   const singleCardEditId = !link && multiIds.length <= 1 ? card?.id : undefined;
 
+  // Tracks which fields the inspector itself has modified since the last card load.
+  // Only dirty fields are written back, so external edits (e.g. from the log) are never overwritten.
+  const dirtyFieldsRef = useRef(
+    new Set<
+      "title" | "body" | "url" | "storyWhen" | "storyUntil"
+    >(),
+  );
+
   const saveCardFields = useCallback(async (id: string) => {
     if (isReplaying.value) return;
-    const patch = fieldsRef.current;
+    const fields = fieldsRef.current;
+    const dirty = dirtyFieldsRef.current;
+    if (dirty.size === 0) return;
+    // For non-dirty fields, fall back to the current stored card value so we
+    // never overwrite external edits (e.g. a title changed via the log).
+    const currentCard = viewProject.value?.cards.find((c) => c.id === id);
+    const patch: Parameters<typeof updateCard>[1] = {
+      title: dirty.has("title") ? fields.title : (currentCard?.title ?? ""),
+      body: dirty.has("body") ? fields.body : (currentCard?.body ?? ""),
+      url: dirty.has("url") ? fields.url : (currentCard?.url ?? ""),
+    };
+    if (dirty.has("storyWhen")) patch.storyWhen = fields.storyWhen;
+    if (dirty.has("storyUntil")) patch.storyUntil = fields.storyUntil;
     await updateCard(id, patch);
   }, []);
 
@@ -339,11 +359,20 @@ export function Inspector() {
     const idChanged = id !== prevCardIdRef.current;
     prevCardIdRef.current = id;
     if (replaying || idChanged) {
+      dirtyFieldsRef.current.clear();
       setTitle(card?.title ?? "");
       setBody(card?.body ?? "");
       setUrl(card?.url ?? "");
       setStoryWhen(card?.storyWhen ?? "");
       setStoryUntil(card?.storyUntil ?? "");
+    } else {
+      // Card data changed externally (e.g. from the log) — sync only non-dirty fields.
+      const dirty = dirtyFieldsRef.current;
+      if (!dirty.has("title")) setTitle(card?.title ?? "");
+      if (!dirty.has("body")) setBody(card?.body ?? "");
+      if (!dirty.has("url")) setUrl(card?.url ?? "");
+      if (!dirty.has("storyWhen")) setStoryWhen(card?.storyWhen ?? "");
+      if (!dirty.has("storyUntil")) setStoryUntil(card?.storyUntil ?? "");
     }
   }, [
     card?.id,
@@ -589,6 +618,7 @@ export function Inspector() {
           value={title}
           disabled={replaying}
           onInput={(event) => {
+            dirtyFieldsRef.current.add("title");
             setTitle(event.currentTarget.value);
             if (singleCardEditId) debouncedSaveCard(singleCardEditId);
           }}
@@ -618,6 +648,7 @@ export function Inspector() {
           placeholder="https://"
           disabled={replaying}
           onInput={(event) => {
+            dirtyFieldsRef.current.add("url");
             setUrl(event.currentTarget.value);
             if (singleCardEditId) debouncedSaveCard(singleCardEditId);
           }}
@@ -635,6 +666,7 @@ export function Inspector() {
             disabled={replaying}
             aria-label="作中時間の起点"
             onInput={(event) => {
+              dirtyFieldsRef.current.add("storyWhen");
               setStoryWhen(event.currentTarget.value);
               if (singleCardEditId) debouncedSaveCard(singleCardEditId);
             }}
@@ -652,6 +684,7 @@ export function Inspector() {
             disabled={replaying}
             aria-label="作中時間の帯の端"
             onInput={(event) => {
+              dirtyFieldsRef.current.add("storyUntil");
               setStoryUntil(event.currentTarget.value);
               if (singleCardEditId) debouncedSaveCard(singleCardEditId);
             }}
@@ -673,6 +706,7 @@ export function Inspector() {
           value={body}
           disabled={replaying}
           onInput={(event) => {
+            dirtyFieldsRef.current.add("body");
             setBody(event.currentTarget.value);
             if (singleCardEditId) debouncedSaveCard(singleCardEditId);
           }}
