@@ -1,4 +1,5 @@
 import { render } from "preact";
+import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
@@ -54,6 +55,8 @@ import {
   updateLink,
 } from "./state.ts";
 import { Stream } from "./stream.tsx";
+
+const captureFloatOpen = signal(false);
 
 const INSTALL_TIP_KEY = "argboard.installTipDismissed";
 
@@ -343,7 +346,7 @@ function Workspace() {
 
   useEffect(() => {
     function onPaste(event: ClipboardEvent) {
-      if (panelPhase.value !== "wide") return;
+      if (!captureFloatOpen.value && panelPhase.value !== "wide") return;
       if (isReplaying.value) return;
       const blob = imageBlobFromClipboard(event);
       if (!blob) return;
@@ -357,7 +360,10 @@ function Workspace() {
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (panelPhase.value === "wide" && exploreImageDraft.value) {
+      if (
+        (captureFloatOpen.value || panelPhase.value === "wide") &&
+        exploreImageDraft.value
+      ) {
         event.preventDefault();
         clearExploreImageDraft();
         return;
@@ -368,7 +374,10 @@ function Workspace() {
     }
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Element | null;
-      if (panelPhase.value === "wide" && exploreImageDraft.value) {
+      if (
+        (captureFloatOpen.value || panelPhase.value === "wide") &&
+        exploreImageDraft.value
+      ) {
         if (target?.closest(".capture-image-staging")) return;
         if (target?.closest('[data-testid="capture-image-slot"]')) return;
         if (target?.closest('[data-testid="capture-image-pick"]')) return;
@@ -404,7 +413,6 @@ function Workspace() {
         inert={!open || undefined}
       >
         <div class="side-panel__inner">
-          <Capture wide={wide} />
           <Stream />
         </div>
       </aside>
@@ -443,6 +451,40 @@ function Workspace() {
         <BoardView />
         <Inspector />
       </div>
+      <CaptureFloat />
+    </div>
+  );
+}
+
+function CaptureFloat() {
+  const open = captureFloatOpen.value;
+  return (
+    <div class={`capture-float${open ? " capture-float--open" : ""}`}>
+      <button
+        type="button"
+        class="capture-float__toggle"
+        data-testid="capture-float-toggle"
+        aria-label={open ? "入力フォームを閉じる" : "カードを追加する"}
+        aria-expanded={open}
+        onClick={() => {
+          captureFloatOpen.value = !open;
+          if (!open) {
+            requestAnimationFrame(() => {
+              const el = document.querySelector<HTMLElement>(
+                ".capture-float [data-testid=\"capture-input\"]",
+              );
+              el?.focus();
+            });
+          }
+        }}
+      >
+        <span aria-hidden="true">{open ? "×" : "＋"}</span>
+      </button>
+      {open ? (
+        <div class="capture-float__body">
+          <Capture wide={true} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -477,10 +519,10 @@ function isUsableControl(el: HTMLElement | null): el is HTMLElement {
   return true;
 }
 
-/** Capture → search. Mac Tab otherwise leaves the page. */
+/** Capture-float → search. Mac Tab otherwise leaves the page. */
 function chromeTabCycle(): HTMLElement[] {
   const capture = document.querySelector<HTMLElement>(
-    '[data-testid="capture-input"]',
+    '.capture-float [data-testid="capture-input"]',
   );
   const search = document.querySelector<HTMLElement>(
     '.search input[type="search"]',
@@ -494,14 +536,15 @@ function moveChromeTab(event: KeyboardEvent): boolean {
   if (!(target instanceof HTMLElement)) return false;
 
   if (target.closest(".skip-link") && !event.shiftKey) {
-    const capture = document.querySelector<HTMLElement>(
-      '[data-testid="capture-input"]',
-    );
-    if (isUsableControl(capture)) {
-      event.preventDefault();
-      capture.focus();
-      return true;
-    }
+    event.preventDefault();
+    captureFloatOpen.value = true;
+    requestAnimationFrame(() => {
+      const el = document.querySelector<HTMLElement>(
+        ".capture-float [data-testid=\"capture-input\"]",
+      );
+      el?.focus();
+    });
+    return true;
   }
 
   const items = chromeTabCycle();

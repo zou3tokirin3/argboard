@@ -1,13 +1,13 @@
 ---
 id: T084
 title: 左パネルの追加UIを一覧から切り離す
-status: backlog
+status: review
 owner: none
 gate: human
 branch: ""
 template_ver: generic-0.2
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 ## 目的
@@ -45,5 +45,7 @@ updated: 2026-10-20
 - [ ] モバイル幅でも操作できる
 
 ## 作業ログ（追記のみ）
+
+- 2026-10-21 claude: `CaptureFloat` コンポーネントを `ui/main.tsx` に追加。`captureFloatOpen` signal で制御。`side-panel__inner` から `<Capture>` を除去し `<Stream>` のみに。キーボードショートカット（Tab from skip-link）をフロートを開いてフォーカスするよう更新。paste ハンドラーはフロートが開いている場合も受け付けるよう修正。CSS を `ui/styles.css` に追加（fixed top-left, z-index 50）。Playwright で動作確認：ボタン表示・展開・カード追加・左パネルに Capture なし、すべて OK。
 
 ## 差し戻し履歴（追記のみ）
