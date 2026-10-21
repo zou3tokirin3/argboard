@@ -1,7 +1,7 @@
 ---
 id: T064
 title: 倍率固定の拡大表示で左も右も画像を見ながらメモできるようにする
-status: review
+status: done
 owner: impl
 gate: human
 branch: task/T064
@@ -82,5 +82,7 @@ updated: 2026-10-21
 
 - 2026-10-21 human: 「OK」（GO：本体行 +242 を承認＋動きOK）
 - 2026-10-21 impl: d7ad9c5 を main へ fast-forward。check/unit/smoke 緑。doing→review
+
+- 2026-10-21 impl: review→done（人間承認は上記「OK」）。release 0.75
 
 ## 差し戻し履歴（追記のみ）
