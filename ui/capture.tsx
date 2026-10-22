@@ -31,6 +31,7 @@ import {
   patchExploreImageDraft,
   project,
   setImageReferenceCaptureMode,
+  startDigging,
   stopDigging,
 } from "./state.ts";
 import { collectTagUsage, normalizeTag } from "./tags.ts";
@@ -76,23 +77,46 @@ function pushHistory(lines: string[], line: string): string[] {
 function CaptureDiggingBar() {
   const diggingId = diggingCardId.value;
   if (!diggingId) return null;
-  const card = project.value?.cards.find((item) => item.id === diggingId);
-  if (!card) return null;
+  const cards = project.value?.cards ?? [];
+
+  // foundVia チェーンを辿って祖先リストを構築（ループ防止つき）
+  const chain: typeof cards = [];
+  let cur = cards.find((c) => c.id === diggingId);
+  const seen = new Set<string>();
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    chain.unshift(cur);
+    cur = cur.foundVia ? cards.find((c) => c.id === cur!.foundVia) : undefined;
+  }
+  if (chain.length === 0) return null;
+
   return (
     <div
       class="capture__digging"
       data-testid="capture-digging-bar"
-      aria-label={`掘り中: ${card.title}`}
+      aria-label={`掘り中: ${chain.at(-1)?.title ?? ""}`}
       aria-live="polite"
     >
       <span class="capture__digging-source">
-        <span
-          class="dig-act is-active capture__digging-badge"
-          aria-hidden="true"
-        >
+        <span class="dig-act is-active capture__digging-badge" aria-hidden="true">
           <DigShovelIcon />
         </span>
-        <strong class="capture__digging-title">{card.title}</strong>
+        {chain.map((card, i) => (
+          <span key={card.id} class="capture__digging-crumb">
+            {i > 0 && <span class="capture__digging-sep" aria-hidden="true">›</span>}
+            {i < chain.length - 1 ? (
+              <button
+                type="button"
+                class="capture__digging-back"
+                onClick={() => startDigging(card.id)}
+              >
+                {card.title}
+              </button>
+            ) : (
+              <strong class="capture__digging-title">{card.title}</strong>
+            )}
+          </span>
+        ))}
       </span>
       <DigStopButton onClick={() => stopDigging()} />
     </div>

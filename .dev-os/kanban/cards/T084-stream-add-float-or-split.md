@@ -1,7 +1,7 @@
 ---
 id: T084
 title: 左パネルの追加UIを一覧から切り離す
-status: review
+status: done
 owner: none
 gate: human
 branch: ""
@@ -49,5 +49,7 @@ updated: 2026-10-21
 - 2026-10-21 claude: `CaptureFloat` コンポーネントを `ui/main.tsx` に追加。`captureFloatOpen` signal で制御。`side-panel__inner` から `<Capture>` を除去し `<Stream>` のみに。キーボードショートカット（Tab from skip-link）をフロートを開いてフォーカスするよう更新。paste ハンドラーはフロートが開いている場合も受け付けるよう修正。CSS を `ui/styles.css` に追加（fixed top-left, z-index 50）。Playwright で動作確認：ボタン表示・展開・カード追加・左パネルに Capture なし、すべて OK。
 - 2026-10-22 claude: パターン比較（?ui=a/b/c/d）を経てパターンB（右エリア出し分け）を採用。`RightPanelB` 実装：カード未選択→Capture、選択中→Inspector。grid 幅を JS クラス `has-right-panel-b` で 520px に拡張。image-overlay もパターンB 幅に合わせて inset 調整（521px）。paste ハンドラーをパターンB 対応に修正。起点・帯の端ボタンの点線枠を solid に変更。
 - 2026-10-22 human: `board__thought`（考察インライン入力）を廃止。`submitThought` 関数・form・CSS・import を削除。ボードツールバーの T093 問題も自然解消。
+- 2026-10-23 claude: Capture フォームを右パネル内で2行レイアウトに変更（起点・帯の端を常に2行目）。capture pill の角丸を 999px pill → 8px box に変更。board__canvas の height を 100% に修正（旧 toolbar 48px 分の空白を解消）。掘る階層表示・選択解除は T094 として分離。
+- 2026-10-23 human: done 確認。
 
 ## 差し戻し履歴（追記のみ）

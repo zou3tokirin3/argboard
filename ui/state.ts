@@ -207,10 +207,11 @@ function expandFoundViaAncestors(parentId: string | undefined): void {
   expandStreamBranches(toExpand);
 }
 
-/** Start or switch digging source (T050). Session-only. */
+/** Start or switch digging source (T050). Session-only. Clears card selection so the right panel shows Capture. */
 export function startDigging(cardId: string): void {
   if (!project.value?.cards.some((item) => item.id === cardId)) return;
   diggingCardId.value = cardId;
+  clearCardSelection();
 }
 
 function resolveDiggingFoundVia(): string | undefined {
