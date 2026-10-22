@@ -57,6 +57,10 @@ import {
 import { Stream } from "./stream.tsx";
 
 const captureFloatOpen = signal(false);
+const captureRightOpen = signal(true);
+
+// ?ui=a/b/c/d で切り替え（比較検討用）
+const UI_VARIANT = new URLSearchParams(location.search).get("ui") ?? "a";
 
 const INSTALL_TIP_KEY = "argboard.installTipDismissed";
 
@@ -346,7 +350,8 @@ function Workspace() {
 
   useEffect(() => {
     function onPaste(event: ClipboardEvent) {
-      if (!captureFloatOpen.value && panelPhase.value !== "wide") return;
+      const captureBVisible = UI_VARIANT === "b" && !selectedCardId.value;
+      if (!captureFloatOpen.value && panelPhase.value !== "wide" && !captureBVisible) return;
       if (isReplaying.value) return;
       const blob = imageBlobFromClipboard(event);
       if (!blob) return;
@@ -360,10 +365,8 @@ function Workspace() {
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (
-        (captureFloatOpen.value || panelPhase.value === "wide") &&
-        exploreImageDraft.value
-      ) {
+      const captureActive = captureFloatOpen.value || panelPhase.value === "wide" || (UI_VARIANT === "b" && !selectedCardId.value);
+      if (captureActive && exploreImageDraft.value) {
         event.preventDefault();
         clearExploreImageDraft();
         return;
@@ -374,10 +377,8 @@ function Workspace() {
     }
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Element | null;
-      if (
-        (captureFloatOpen.value || panelPhase.value === "wide") &&
-        exploreImageDraft.value
-      ) {
+      const captureActive = captureFloatOpen.value || panelPhase.value === "wide" || (UI_VARIANT === "b" && !selectedCardId.value);
+      if (captureActive && exploreImageDraft.value) {
         if (target?.closest(".capture-image-staging")) return;
         if (target?.closest('[data-testid="capture-image-slot"]')) return;
         if (target?.closest('[data-testid="capture-image-pick"]')) return;
@@ -441,21 +442,208 @@ function Workspace() {
         >
           <span aria-hidden="true">{open ? "<" : ">"}</span>
         </button>
+        {UI_VARIANT === "a" ? (
+          <CaptureChromeTrigger />
+        ) : null}
       </div>
       <div
         class={`contemplate-main${
           laneView.value.open ? " is-chrono-open" : ""
-        }`}
+        }${UI_VARIANT === "b" ? (captureRightOpen.value ? " has-right-panel-b" : " has-right-panel-b--closed") : ""}`}
       >
         {laneView.value.open ? <LaneWorkspace /> : null}
         <BoardView />
-        <Inspector />
+        {UI_VARIANT === "b" ? <RightPanelB /> : UI_VARIANT === "c" ? <RightPanelC /> : <Inspector />}
       </div>
-      <CaptureFloat />
+      {UI_VARIANT === "a" ? <CaptureChrome /> : null}
+      {UI_VARIANT === "d" ? <CaptureModal /> : null}
+      <UiVariantBadge />
     </div>
   );
 }
 
+// ── パターンA: side-chrome に + ボタン ───────────────────
+function CaptureChromeTrigger() {
+  const open = captureFloatOpen.value;
+  return (
+    <button
+      type="button"
+      class={`side-capture-btn${open ? " is-open" : ""}`}
+      data-testid="capture-chrome-toggle"
+      aria-label={open ? "入力フォームを閉じる" : "カードを追加する"}
+      aria-expanded={open}
+      onClick={() => {
+        captureFloatOpen.value = !open;
+        if (!open) {
+          requestAnimationFrame(() => {
+            const el = document.querySelector<HTMLElement>(
+              ".capture-chrome [data-testid=\"capture-input\"]",
+            );
+            el?.focus();
+          });
+        }
+      }}
+    >
+      <span aria-hidden="true">{open ? "×" : "＋"}</span>
+    </button>
+  );
+}
+
+function CaptureChrome() {
+  const open = captureFloatOpen.value;
+  if (!open) return null;
+  return (
+    <div class="capture-chrome">
+      <Capture wide={true} />
+    </div>
+  );
+}
+
+// ── パターンB: 右エリア出し分け ──────────────────────────
+function RightPanelB() {
+  const isOpen = captureRightOpen.value;
+  const hasCard = !!selectedCardId.value;
+
+  return (
+    <div class={`right-panel-b${isOpen ? "" : " right-panel-b--closed"}`}>
+      <button
+        type="button"
+        class="right-panel-b__toggle"
+        aria-label={isOpen ? "右パネルを閉じる" : "右パネルを開く"}
+        onClick={() => { captureRightOpen.value = !captureRightOpen.value; }}
+      >
+        {isOpen ? "»" : "«"}
+      </button>
+      {isOpen && (
+        <div class="right-panel-b__content">
+          {hasCard ? (
+            <>
+              <button
+                type="button"
+                class="right-panel-b__new-btn"
+                onClick={() => selectSingleCard(undefined)}
+              >
+                ＋ 新規
+              </button>
+              <Inspector />
+            </>
+          ) : (
+            <div class="right-panel-b__capture">
+              <Capture wide={true} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── パターンC: 右エリアにタブ ────────────────────────────
+const rightPanelTab = signal<"new" | "detail">("new");
+
+function RightPanelC() {
+  const tab = rightPanelTab.value;
+  const hasCard = !!selectedCardId.value;
+  // カードが選択されたら自動的に詳細タブへ
+  if (hasCard && tab === "new") rightPanelTab.value = "detail";
+
+  return (
+    <div class="right-panel-c">
+      <div class="right-panel-c__tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "new"}
+          class={`right-panel-c__tab${tab === "new" ? " is-active" : ""}`}
+          onClick={() => { rightPanelTab.value = "new"; }}
+        >
+          ＋ 新規
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "detail"}
+          class={`right-panel-c__tab${tab === "detail" ? " is-active" : ""}`}
+          onClick={() => { rightPanelTab.value = "detail"; }}
+        >
+          詳細
+        </button>
+      </div>
+      <div class="right-panel-c__body">
+        {tab === "new" ? (
+          <div class="right-panel-c__capture">
+            <Capture wide={true} />
+          </div>
+        ) : (
+          <Inspector />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── パターンD: モーダル ──────────────────────────────────
+const captureModalOpen = signal(false);
+
+function CaptureModal() {
+  const open = captureModalOpen.value;
+  return (
+    <>
+      <button
+        type="button"
+        class="capture-modal-fab"
+        data-testid="capture-modal-fab"
+        aria-label="カードを追加する"
+        onClick={() => {
+          captureModalOpen.value = true;
+          requestAnimationFrame(() => {
+            const el = document.querySelector<HTMLElement>(
+              ".capture-modal__body [data-testid=\"capture-input\"]",
+            );
+            el?.focus();
+          });
+        }}
+      >
+        ＋
+      </button>
+      {open ? (
+        <div
+          class="capture-modal__backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) captureModalOpen.value = false;
+          }}
+        >
+          <div class="capture-modal__body" role="dialog" aria-modal="true" aria-label="カードを追加">
+            <button
+              type="button"
+              class="capture-modal__close"
+              aria-label="閉じる"
+              onClick={() => { captureModalOpen.value = false; }}
+            >×</button>
+            <Capture wide={true} />
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+// ── バリアント表示バッジ ─────────────────────────────────
+function UiVariantBadge() {
+  const labels: Record<string, string> = {
+    a: "A: side-chrome＋",
+    b: "B: 右エリア出し分け",
+    c: "C: 右エリアタブ",
+    d: "D: モーダル",
+  };
+  return (
+    <div class="ui-variant-badge" title="?ui=a/b/c/d で切り替え">
+      {labels[UI_VARIANT] ?? UI_VARIANT}
+    </div>
+  );
+}
+
+// ── (旧) CaptureFloat ────────────────────────────────────
 function CaptureFloat() {
   const open = captureFloatOpen.value;
   return (

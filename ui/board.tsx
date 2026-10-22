@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "preact/hooks";
-import { parseCaptureLine } from "./capture-notation.ts";
 import { isLocalMediaRef } from "./media.ts";
 import { MediaThumb } from "./media-thumb.tsx";
 import {
@@ -1230,28 +1229,6 @@ export function BoardView() {
     front.flatMap((link) => [link.from, link.to].filter((id) => id !== sel)),
   );
 
-  async function submitThought(event: SubmitEvent) {
-    event.preventDefault();
-    if (isReplaying.value) return;
-    const input = (event.currentTarget as HTMLFormElement).elements.namedItem(
-      "thought",
-    ) as HTMLInputElement;
-    const parsed = parseCaptureLine(input.value);
-    if (!parsed) return;
-    input.value = "";
-    const rect = canvasRef.current?.getBoundingClientRect();
-    const vp = defaultViewport(primaryBoard(viewProject.value)?.viewport);
-    await addCard(parsed.title, {
-      role: "thought",
-      body: parsed.body,
-      url: parsed.url,
-      placeAt: {
-        x: ((rect?.width ?? 640) / 2 - vp.x) / vp.zoom - DEFAULT_DIMS.w / 2,
-        y: ((rect?.height ?? 480) / 2 - vp.y) / vp.zoom - DEFAULT_DIMS.h / 2,
-      },
-    });
-  }
-
   const barAnchorId =
     cardFocusActive && origin?.kind === "card"
       ? sel && focusSet?.has(sel)
@@ -1278,34 +1255,11 @@ export function BoardView() {
       class={`board ${replaying ? "is-replaying" : ""}`}
       aria-label="捜査ボード"
     >
-      <div class="board__toolbar">
-        <div>
-          <span class="status-dot"></span>
-          <strong>{board.name}</strong>
-          <small>{board.cardIds.length}件の手がかり</small>
+      {replaying && (
+        <div class="board__replay-overlay" data-testid="replay-badge">
+          タイムライン（読み取り専用）
         </div>
-        {replaying ? (
-          <span class="board__replay-badge" data-testid="replay-badge">
-            タイムライン（読み取り専用）
-          </span>
-        ) : (
-          <form class="capture board__thought" onSubmit={submitThought}>
-            <input
-              name="thought"
-              data-testid="thought-input"
-              aria-label="考察カードを追加"
-              autocomplete="off"
-              placeholder="考察を1行で…（// 可）"
-            />
-            <kbd>↵</kbd>
-          </form>
-        )}
-        <span class="board__hint">
-          {replaying
-            ? "下のバーでステップ移動"
-            : "糊付け帯をドラッグで移動（複数選択中はまとめて） / 糸端で接続 / Shift＋空白で囲む"}
-        </span>
-      </div>
+      )}
       {replaying && currentStep && stepIndex != null ? (
         <ReplayBar
           stepIndex={stepIndex}

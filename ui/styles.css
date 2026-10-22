@@ -200,8 +200,7 @@ body {
 
 .brand,
 .case-title,
-.topbar__actions,
-.board__toolbar > div {
+.topbar__actions {
   display: flex;
   align-items: center;
 }
@@ -966,13 +965,6 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
-.board__toolbar .capture.board__thought {
-  width: auto;
-  flex: 1;
-  max-width: 280px;
-  height: 34px;
-  margin: 0 12px;
-}
 .board-node.is-thought .board-node__paper {
   fill: var(--thought-soft);
   stroke: color-mix(in srgb, var(--thought) 65%, var(--ink));
@@ -1224,6 +1216,7 @@ kbd {
   grid-template-columns: minmax(0, 1fr) 300px;
   min-width: 0;
   min-height: 0;
+  transition: grid-template-columns 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 .contemplate-main.is-chrono-open {
   grid-template-columns: 260px minmax(0, 1fr) 300px;
@@ -2294,36 +2287,21 @@ span.card-image-field__preview {
   overflow: hidden;
   background: var(--bg-soft);
 }
-.board__toolbar {
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--line-strong);
+.board__replay-overlay {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
   background: var(--panel);
-}
-.board__toolbar > div {
-  gap: 8px;
-}
-.board__toolbar strong {
-  font-size: 14px;
-  font-weight: 600;
-}
-.board__toolbar small,
-.board__hint {
-  color: var(--muted);
-  font-size: 12px;
-}
-.board__hint {
-  margin-left: auto;
-}
-.board__replay-badge {
-  margin: 0 12px;
+  border: 1px solid var(--line-strong);
   color: var(--accent);
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+  pointer-events: none;
 }
 .board__replay-bar {
   display: flex;
@@ -2426,7 +2404,7 @@ span.card-image-field__preview {
 }
 .board__canvas {
   position: relative;
-  height: calc(100% - 48px);
+  height: 100%;
   overflow: hidden;
   cursor: grab;
   user-select: none;
@@ -3314,4 +3292,277 @@ span.card-image-field__preview {
     min-width: calc(100vw - 24px);
     max-width: calc(100vw - 24px);
   }
+}
+
+/* ── ui variant badge ───────────────────────────────────── */
+.ui-variant-badge {
+  position: fixed;
+  bottom: 8px;
+  right: 8px;
+  z-index: 200;
+  padding: 3px 8px;
+  background: var(--accent-soft);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font: 11px/1.4 "IBM Plex Mono", monospace;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+/* ── pattern A: side-chrome capture ───────────────────────── */
+.side-capture-btn {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  width: 28px;
+  margin: 0;
+  border: 0;
+  border-right: 1px solid var(--line-strong);
+  border-left: 1px solid var(--line-strong);
+  border-top: 1px solid var(--line-strong);
+  padding: 0;
+  background: var(--bg-soft);
+  color: var(--ink);
+  cursor: pointer;
+  font: 600 16px/1 "IBM Plex Mono", monospace;
+}
+.side-capture-btn:hover,
+.side-capture-btn.is-open {
+  background: var(--accent-soft);
+}
+.capture-chrome {
+  position: fixed;
+  top: 0;
+  left: 28px;
+  z-index: 50;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-top: none;
+  box-shadow: 2px 2px 10px rgba(0,0,0,.15);
+  padding: 8px;
+  min-width: 280px;
+  max-width: 360px;
+}
+.capture-chrome .capture-block {
+  width: 100%;
+  margin: 0;
+}
+
+/* ── pattern B: right panel swap ──────────────────────────── */
+.right-panel-b__new-btn {
+  margin: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--bg-soft);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* ── pattern C: right panel tabs ──────────────────────────── */
+.right-panel-c {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--line-strong);
+  background: var(--panel);
+}
+.right-panel-c__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line-strong);
+  flex-shrink: 0;
+}
+.right-panel-c__tab {
+  flex: 1;
+  padding: 7px 4px;
+  border: none;
+  border-right: 1px solid var(--line-strong);
+  background: var(--bg-soft);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+.right-panel-c__tab:last-child {
+  border-right: none;
+}
+.right-panel-c__tab.is-active {
+  background: var(--panel);
+  color: var(--ink);
+  font-weight: 600;
+}
+.right-panel-c__body {
+  flex: 1;
+  overflow: auto;
+}
+.right-panel-c__capture {
+  padding: 8px;
+}
+.right-panel-c .capture-block {
+  width: 100%;
+  margin: 0;
+}
+
+/* ── pattern D: modal ─────────────────────────────────────── */
+.capture-modal-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ink);
+  color: var(--bg);
+  font: 600 22px/1 "IBM Plex Mono", monospace;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  display: grid;
+  place-items: center;
+}
+.capture-modal-fab:hover {
+  opacity: 0.85;
+}
+.capture-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,.4);
+  display: grid;
+  place-items: center;
+}
+.capture-modal__body {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 16px;
+  min-width: 320px;
+  max-width: 480px;
+  width: 90vw;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+}
+.capture-modal__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: none;
+  font-size: 18px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+.capture-modal__close:hover {
+  color: var(--ink);
+}
+.capture-modal__body .capture-block {
+  width: 100%;
+  margin: 0;
+}
+
+/* ── pattern B: wider right panel ─────────────────────────── */
+.contemplate-main.has-right-panel-b {
+  grid-template-columns: minmax(0, 1fr) 520px;
+}
+.contemplate-main.has-right-panel-b.is-chrono-open {
+  grid-template-columns: 260px minmax(0, 1fr) 520px;
+}
+.right-panel-b .capture-block {
+  width: calc(100% - 24px);
+  margin: 12px auto 8px;
+}
+/* image-overlay はパターンB の右パネル幅分だけ右を空ける */
+.contemplate-main.has-right-panel-b .image-overlay {
+  inset: 0 521px 0 0;
+}
+
+/* ── pattern B: staging/compose もパネル幅に収める ─────────── */
+.right-panel-b .capture-block--staging,
+.right-panel-b .capture-block--compose {
+  width: calc(100% - 24px);
+  max-width: 100%;
+}
+
+/* ── pattern B: capture フォームを2行レイアウトに固定 ──────── */
+.right-panel-b .capture {
+  height: auto;
+  min-height: 40px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  align-content: center;
+  row-gap: 4px;
+  border-radius: var(--radius-box);  /* pill → box に変更 */
+}
+/* 1行目: ＋ と テキスト入力が行を占有 */
+.right-panel-b .capture input:not(.capture__story-when):not(.capture__story-until) {
+  flex: 1 1 100%;     /* 常に1行目全体を使う */
+  min-width: 0;
+}
+/* 2行目: story fields */
+.right-panel-b .capture input.capture__story-when,
+.right-panel-b .capture input.capture__story-until {
+  flex: 1 1 80px;
+  min-width: 56px;
+  max-width: 120px;
+  border-style: solid;
+  border-color: var(--line);
+  background: var(--bg-subtle, var(--bg));
+}
+
+/* ── pattern B: パネル本体 ────────────────────────────────── */
+.right-panel-b {
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+  background: var(--panel);
+}
+
+/* closed 状態 */
+.right-panel-b--closed {
+  width: 28px;
+}
+.contemplate-main.has-right-panel-b--closed {
+  grid-template-columns: minmax(0, 1fr) 28px;
+}
+
+/* トグルボタン: left panel の side-toggle と同スタイル */
+.right-panel-b__toggle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  align-self: stretch;
+  width: 28px;
+  margin: 0;
+  border: 0;
+  border-left: 1px solid var(--line-strong);
+  border-right: 1px solid var(--line-strong);
+  padding: 0;
+  background: var(--bg-soft);
+  color: var(--muted);
+  cursor: pointer;
+  font: 600 16px/1 "IBM Plex Mono", monospace;
+}
+.right-panel-b__toggle:hover {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* ── pattern B: コンテンツエリア ─────────────────────────── */
+.right-panel-b__content {
+  flex: 0 0 492px;       /* 520px - 28px toggle = 492px 固定幅 */
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-left: 1px solid var(--line-strong);
+}
+.right-panel-b--closed .right-panel-b__content {
+  flex-basis: 0;
+  overflow: hidden;
+}
+.right-panel-b__capture {
+  flex-shrink: 0;
 }
