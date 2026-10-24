@@ -3620,3 +3620,16 @@ span.card-image-field__preview {
 .right-panel-b__capture {
   flex-shrink: 0;
 }
+
+/* ── T016: 中幅画面（800〜1199px）で右パネルBを380pxに縮小 ── */
+@media (max-width: 1199px) and (min-width: 801px) {
+  .contemplate-main.has-right-panel-b {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+  .contemplate-main.has-right-panel-b.is-chrono-open {
+    grid-template-columns: 260px minmax(0, 1fr) 380px;
+  }
+  .contemplate-main.has-right-panel-b .image-overlay {
+    inset: 0 381px 0 0;
+  }
+}
