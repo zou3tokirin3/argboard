@@ -501,6 +501,11 @@ body {
   font-size: 12px;
   flex: 0 0 auto;
 }
+.capture__digging-ellipsis {
+  color: var(--muted);
+  font-size: 13px;
+  flex: 0 0 auto;
+}
 .capture__digging-back {
   border: 0;
   padding: 0;

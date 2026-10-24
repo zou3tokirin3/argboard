@@ -98,25 +98,65 @@ function CaptureDiggingBar() {
       aria-live="polite"
     >
       <span class="capture__digging-source">
-        <span class="dig-act is-active capture__digging-badge" aria-hidden="true">
+        <span
+          class="dig-act is-active capture__digging-badge"
+          aria-hidden="true"
+        >
           <DigShovelIcon />
         </span>
-        {chain.map((card, i) => (
-          <span key={card.id} class="capture__digging-crumb">
-            {i > 0 && <span class="capture__digging-sep" aria-hidden="true">›</span>}
-            {i < chain.length - 1 ? (
+        {chain.length > 2 ? (
+          <>
+            <span class="capture__digging-crumb">
               <button
                 type="button"
                 class="capture__digging-back"
-                onClick={() => startDigging(card.id)}
+                onClick={() => startDigging(chain[0].id)}
               >
-                {card.title}
+                {chain[0].title}
               </button>
-            ) : (
-              <strong class="capture__digging-title">{card.title}</strong>
-            )}
-          </span>
-        ))}
+            </span>
+            <span class="capture__digging-crumb">
+              <span class="capture__digging-sep" aria-hidden="true">
+                ›
+              </span>
+              <span
+                class="capture__digging-ellipsis"
+                aria-label={`${chain.length - 2}階層`}
+              >
+                …
+              </span>
+            </span>
+            <span class="capture__digging-crumb">
+              <span class="capture__digging-sep" aria-hidden="true">
+                ›
+              </span>
+              <strong class="capture__digging-title">
+                {chain.at(-1)!.title}
+              </strong>
+            </span>
+          </>
+        ) : (
+          chain.map((card, i) => (
+            <span key={card.id} class="capture__digging-crumb">
+              {i > 0 && (
+                <span class="capture__digging-sep" aria-hidden="true">
+                  ›
+                </span>
+              )}
+              {i < chain.length - 1 ? (
+                <button
+                  type="button"
+                  class="capture__digging-back"
+                  onClick={() => startDigging(card.id)}
+                >
+                  {card.title}
+                </button>
+              ) : (
+                <strong class="capture__digging-title">{card.title}</strong>
+              )}
+            </span>
+          ))
+        )}
       </span>
       <DigStopButton onClick={() => stopDigging()} />
     </div>
