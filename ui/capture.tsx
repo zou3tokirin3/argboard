@@ -784,6 +784,15 @@ export function Capture(props: { wide?: boolean }) {
   }
 
   function onHistoryKey(event: KeyboardEvent): void {
+    if (event.key === "Backspace" && captureSourceCard) {
+      const prefix = buildDigPrefix(captureSourceCard.title);
+      const current = (event.currentTarget as HTMLInputElement).value;
+      if (current === prefix) {
+        event.preventDefault();
+        showLine("");
+        return;
+      }
+    }
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     if (history.length === 0) return;
 
