@@ -74,6 +74,16 @@ function pushHistory(lines: string[], line: string): string[] {
   return [...lines, clean].slice(-HISTORY_MAX);
 }
 
+const DIG_PREFIX_MAX = 15;
+
+function buildDigPrefix(title: string): string {
+  const short =
+    title.length > DIG_PREFIX_MAX
+      ? title.slice(0, DIG_PREFIX_MAX) + "…"
+      : title;
+  return short + " › ";
+}
+
 function CaptureDiggingBar() {
   const diggingId = diggingCardId.value;
   if (!diggingId) return null;
@@ -696,6 +706,17 @@ export function Capture(props: { wide?: boolean }) {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const draftRef = useRef("");
 
+  // Pre-fill input with parent title prefix when digging starts or switches card.
+  useEffect(() => {
+    if (!captureSourceCard || !input.current) return;
+    // Only pre-fill when the field is empty or already has a prefix (not mid-typing).
+    const current = input.current.value;
+    const oldPrefix = buildDigPrefix(captureSourceCard.title);
+    if (current === "" || current === oldPrefix) {
+      showLine(buildDigPrefix(captureSourceCard.title));
+    }
+  }, [captureSourceCard?.id]);
+
   function getDraftLine(): string {
     return input.current?.value ?? "";
   }
@@ -737,10 +758,14 @@ export function Capture(props: { wide?: boolean }) {
     const storyWhen = getStoryWhen().trim();
     const storyUntil = getStoryUntil().trim();
     const tags = selectedTags;
-    if (input.current) input.current.value = "";
     if (storyWhenInput.current) storyWhenInput.current.value = "";
     if (storyUntilInput.current) storyUntilInput.current.value = "";
     draftRef.current = "";
+    if (captureSourceCard) {
+      showLine(buildDigPrefix(captureSourceCard.title));
+    } else if (input.current) {
+      input.current.value = "";
+    }
     setHistoryIndex(-1);
     clearSelectedTags();
     const next = pushHistory(history, line);
