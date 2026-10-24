@@ -18,6 +18,7 @@ import {
   closeImageOverlay,
   consumeInspectorTitleFocus,
   detachTagFromCards,
+  diggingCardId,
   enterReplay,
   imageOverlayCardId,
   isReplaying,
@@ -32,6 +33,7 @@ import {
   selectedCardIds,
   selectedLink,
   selectedLinkId,
+  startDigging,
   updateCard,
   updateCardSize,
   updateCardTags,
@@ -765,6 +767,23 @@ export function Inspector() {
         <p class="inspector__hint">タイムライン表示中は読めます</p>
       ) : (
         <>
+          {diggingCardId.value === card.id ? (
+            <span
+              class="inspector__dig is-active"
+              data-testid="inspector-dig-active"
+            >
+              掘り中（このカード起点）
+            </span>
+          ) : (
+            <button
+              type="button"
+              class="inspector__dig"
+              data-testid="inspector-dig-start"
+              onClick={() => startDigging(card.id)}
+            >
+              このカードから掘る
+            </button>
+          )}
           <button
             type="button"
             class="inspector__danger"
