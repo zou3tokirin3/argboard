@@ -2801,6 +2801,17 @@ span.card-image-field__preview {
   opacity: 0.5;
   cursor: default;
 }
+.inspector__ogp-preview {
+  margin: 6px 16px 0;
+}
+.inspector__ogp-preview img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: var(--radius-box);
+  border: 1px solid var(--line-strong);
+  display: block;
+}
 
 .inspector__dig {
   margin: 8px 16px 0;

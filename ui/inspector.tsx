@@ -293,6 +293,7 @@ export function Inspector() {
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
   const [ogpFetching, setOgpFetching] = useState(false);
+  const [ogpImage, setOgpImage] = useState<string | null>(null);
   const [storyWhen, setStoryWhen] = useState("");
   const [storyUntil, setStoryUntil] = useState("");
   const [label, setLabel] = useState("");
@@ -360,6 +361,7 @@ export function Inspector() {
       setTitle(card?.title ?? "");
       setBody(card?.body ?? "");
       setUrl(card?.url ?? "");
+      setOgpImage(null);
       setStoryWhen(card?.storyWhen ?? "");
       setStoryUntil(card?.storyUntil ?? "");
     } else {
@@ -658,12 +660,16 @@ export function Inspector() {
                   const res = await fetch(
                     `/api/ogp?url=${encodeURIComponent(url)}`,
                   );
-                  const json = (await res.json()) as { title: string | null };
+                  const json = (await res.json()) as {
+                    title: string | null;
+                    image: string | null;
+                  };
                   if (json.title && singleCardEditId) {
                     dirtyFieldsRef.current.add("title");
                     setTitle(json.title);
                     debouncedSaveCard(singleCardEditId);
                   }
+                  setOgpImage(json.image ?? null);
                 } catch {
                   // 失敗時は何もしない
                 } finally {
@@ -676,6 +682,11 @@ export function Inspector() {
           ) : null}
         </div>
       </label>
+      {ogpImage ? (
+        <div class="inspector__ogp-preview">
+          <img src={ogpImage} alt="OGP preview" loading="lazy" />
+        </div>
+      ) : null}
       <div class="inspector__field">
         <span>作中時間</span>
         <div class="inspector__story-when-row">

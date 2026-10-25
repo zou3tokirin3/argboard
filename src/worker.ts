@@ -18,7 +18,7 @@ export default {
 
 async function handleOgp(target: string | null): Promise<Response> {
   if (!target) {
-    return Response.json({ title: null }, { headers: CORS });
+    return Response.json({ title: null, image: null }, { headers: CORS });
   }
 
   try {
@@ -26,21 +26,25 @@ async function handleOgp(target: string | null): Promise<Response> {
       headers: { "User-Agent": "ARGBoard/1.0 (+https://argboard.zou3tokirin3.workers.dev)" },
       signal: AbortSignal.timeout(6000),
     });
-    if (!res.ok) return Response.json({ title: null }, { headers: CORS });
+    if (!res.ok) return Response.json({ title: null, image: null }, { headers: CORS });
 
     const html = await res.text();
-    const title = parseOgTitle(html);
-    return Response.json({ title }, { headers: CORS });
+    const title = parseMeta(html, "og:title") ?? parseTitle(html);
+    const image = parseMeta(html, "og:image");
+    return Response.json({ title, image }, { headers: CORS });
   } catch {
-    return Response.json({ title: null }, { headers: CORS });
+    return Response.json({ title: null, image: null }, { headers: CORS });
   }
 }
 
-function parseOgTitle(html: string): string | null {
-  // og:title (property before content, or content before property)
+function parseMeta(html: string, property: string): string | null {
   const m =
-    html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i) ??
-    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i) ??
-    html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    html.match(new RegExp(`<meta[^>]+property=["']${property}["'][^>]+content=["']([^"']+)["']`, "i")) ??
+    html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${property}["']`, "i"));
+  return m ? m[1].trim() : null;
+}
+
+function parseTitle(html: string): string | null {
+  const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
   return m ? m[1].trim() : null;
 }
