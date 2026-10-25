@@ -10,7 +10,6 @@ import {
 } from "./node-size.ts";
 import { focusReachableIds } from "./project.ts";
 import {
-  addCard,
   clearCardSelection,
   clearFocusView,
   clearReplay,

@@ -79,9 +79,9 @@ const DIG_PREFIX_MAX = 15;
 function buildDigPrefix(title: string): string {
   const short =
     title.length > DIG_PREFIX_MAX
-      ? title.slice(0, DIG_PREFIX_MAX) + "…"
+      ? `${title.slice(0, DIG_PREFIX_MAX)}…`
       : title;
-  return short + " › ";
+  return `${short} › `;
 }
 
 function CaptureDiggingBar() {

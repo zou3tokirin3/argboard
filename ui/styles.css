@@ -2773,6 +2773,35 @@ span.card-image-field__preview {
 .inspector__tag-organize-btn:hover:not(:disabled) {
   color: var(--ink);
 }
+.inspector__url-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.inspector__url-row input {
+  flex: 1;
+  min-width: 0;
+}
+.inspector__ogp-btn {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-box);
+  background: transparent;
+  color: var(--ink-muted);
+  font: 11px "IBM Plex Sans JP", sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.inspector__ogp-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+.inspector__ogp-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .inspector__dig {
   margin: 8px 16px 0;
   display: block;

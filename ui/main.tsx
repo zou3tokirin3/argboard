@@ -1,5 +1,5 @@
-import { render } from "preact";
 import { signal } from "@preact/signals";
+import { render } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
@@ -13,6 +13,7 @@ import {
   activeProjectId,
   addCard,
   clearCardFoundVia,
+  clearCardSelection,
   clearExploreImageDraft,
   closeExploreCompose,
   commitExploreImageDraft,
@@ -351,7 +352,12 @@ function Workspace() {
   useEffect(() => {
     function onPaste(event: ClipboardEvent) {
       const captureBVisible = UI_VARIANT === "b" && !selectedCardId.value;
-      if (!captureFloatOpen.value && panelPhase.value !== "wide" && !captureBVisible) return;
+      if (
+        !captureFloatOpen.value &&
+        panelPhase.value !== "wide" &&
+        !captureBVisible
+      )
+        return;
       if (isReplaying.value) return;
       const blob = imageBlobFromClipboard(event);
       if (!blob) return;
@@ -365,7 +371,10 @@ function Workspace() {
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      const captureActive = captureFloatOpen.value || panelPhase.value === "wide" || (UI_VARIANT === "b" && !selectedCardId.value);
+      const captureActive =
+        captureFloatOpen.value ||
+        panelPhase.value === "wide" ||
+        (UI_VARIANT === "b" && !selectedCardId.value);
       if (captureActive && exploreImageDraft.value) {
         event.preventDefault();
         clearExploreImageDraft();
@@ -377,7 +386,10 @@ function Workspace() {
     }
     function onPointerDown(event: PointerEvent) {
       const target = event.target as Element | null;
-      const captureActive = captureFloatOpen.value || panelPhase.value === "wide" || (UI_VARIANT === "b" && !selectedCardId.value);
+      const captureActive =
+        captureFloatOpen.value ||
+        panelPhase.value === "wide" ||
+        (UI_VARIANT === "b" && !selectedCardId.value);
       if (captureActive && exploreImageDraft.value) {
         if (target?.closest(".capture-image-staging")) return;
         if (target?.closest('[data-testid="capture-image-slot"]')) return;
@@ -442,9 +454,7 @@ function Workspace() {
         >
           <span aria-hidden="true">{open ? "<" : ">"}</span>
         </button>
-        {UI_VARIANT === "a" ? (
-          <CaptureChromeTrigger />
-        ) : null}
+        {UI_VARIANT === "a" ? <CaptureChromeTrigger /> : null}
       </div>
       <div
         class={`contemplate-main${
@@ -453,7 +463,13 @@ function Workspace() {
       >
         {laneView.value.open ? <LaneWorkspace /> : null}
         <BoardView />
-        {UI_VARIANT === "b" ? <RightPanelB /> : UI_VARIANT === "c" ? <RightPanelC /> : <Inspector />}
+        {UI_VARIANT === "b" ? (
+          <RightPanelB />
+        ) : UI_VARIANT === "c" ? (
+          <RightPanelC />
+        ) : (
+          <Inspector />
+        )}
       </div>
       {UI_VARIANT === "a" ? <CaptureChrome /> : null}
       {UI_VARIANT === "d" ? <CaptureModal /> : null}
@@ -477,7 +493,7 @@ function CaptureChromeTrigger() {
         if (!open) {
           requestAnimationFrame(() => {
             const el = document.querySelector<HTMLElement>(
-              ".capture-chrome [data-testid=\"capture-input\"]",
+              '.capture-chrome [data-testid="capture-input"]',
             );
             el?.focus();
           });
@@ -510,7 +526,9 @@ function RightPanelB() {
         type="button"
         class="right-panel-b__toggle"
         aria-label={isOpen ? "右パネルを閉じる" : "右パネルを開く"}
-        onClick={() => { captureRightOpen.value = !captureRightOpen.value; }}
+        onClick={() => {
+          captureRightOpen.value = !captureRightOpen.value;
+        }}
       >
         {isOpen ? "»" : "«"}
       </button>
@@ -521,7 +539,7 @@ function RightPanelB() {
               <button
                 type="button"
                 class="right-panel-b__new-btn"
-                onClick={() => selectSingleCard(undefined)}
+                onClick={() => clearCardSelection()}
               >
                 ＋ 新規
               </button>
@@ -555,7 +573,9 @@ function RightPanelC() {
           role="tab"
           aria-selected={tab === "new"}
           class={`right-panel-c__tab${tab === "new" ? " is-active" : ""}`}
-          onClick={() => { rightPanelTab.value = "new"; }}
+          onClick={() => {
+            rightPanelTab.value = "new";
+          }}
         >
           ＋ 新規
         </button>
@@ -564,7 +584,9 @@ function RightPanelC() {
           role="tab"
           aria-selected={tab === "detail"}
           class={`right-panel-c__tab${tab === "detail" ? " is-active" : ""}`}
-          onClick={() => { rightPanelTab.value = "detail"; }}
+          onClick={() => {
+            rightPanelTab.value = "detail";
+          }}
         >
           詳細
         </button>
@@ -598,7 +620,7 @@ function CaptureModal() {
           captureModalOpen.value = true;
           requestAnimationFrame(() => {
             const el = document.querySelector<HTMLElement>(
-              ".capture-modal__body [data-testid=\"capture-input\"]",
+              '.capture-modal__body [data-testid="capture-input"]',
             );
             el?.focus();
           });
@@ -613,13 +635,22 @@ function CaptureModal() {
             if (e.target === e.currentTarget) captureModalOpen.value = false;
           }}
         >
-          <div class="capture-modal__body" role="dialog" aria-modal="true" aria-label="カードを追加">
+          <div
+            class="capture-modal__body"
+            role="dialog"
+            aria-modal="true"
+            aria-label="カードを追加"
+          >
             <button
               type="button"
               class="capture-modal__close"
               aria-label="閉じる"
-              onClick={() => { captureModalOpen.value = false; }}
-            >×</button>
+              onClick={() => {
+                captureModalOpen.value = false;
+              }}
+            >
+              ×
+            </button>
             <Capture wide={true} />
           </div>
         </div>
@@ -644,7 +675,7 @@ function UiVariantBadge() {
 }
 
 // ── (旧) CaptureFloat ────────────────────────────────────
-function CaptureFloat() {
+function _CaptureFloat() {
   const open = captureFloatOpen.value;
   return (
     <div class={`capture-float${open ? " capture-float--open" : ""}`}>
@@ -659,7 +690,7 @@ function CaptureFloat() {
           if (!open) {
             requestAnimationFrame(() => {
               const el = document.querySelector<HTMLElement>(
-                ".capture-float [data-testid=\"capture-input\"]",
+                '.capture-float [data-testid="capture-input"]',
               );
               el?.focus();
             });
@@ -728,7 +759,7 @@ function moveChromeTab(event: KeyboardEvent): boolean {
     captureFloatOpen.value = true;
     requestAnimationFrame(() => {
       const el = document.querySelector<HTMLElement>(
-        ".capture-float [data-testid=\"capture-input\"]",
+        '.capture-float [data-testid="capture-input"]',
       );
       el?.focus();
     });

@@ -292,6 +292,7 @@ export function Inspector() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
+  const [ogpFetching, setOgpFetching] = useState(false);
   const [storyWhen, setStoryWhen] = useState("");
   const [storyUntil, setStoryUntil] = useState("");
   const [label, setLabel] = useState("");
@@ -630,19 +631,50 @@ export function Inspector() {
       <TagField cardId={card.id} tags={card.tags} disabled={replaying} />
       <label class="inspector__field">
         <span>出典URL</span>
-        <input
-          type="url"
-          data-testid="inspector-url"
-          value={url}
-          placeholder="https://"
-          disabled={replaying}
-          onInput={(event) => {
-            dirtyFieldsRef.current.add("url");
-            setUrl(event.currentTarget.value);
-            if (singleCardEditId) debouncedSaveCard(singleCardEditId);
-          }}
-          onBlur={flushCardFields}
-        />
+        <div class="inspector__url-row">
+          <input
+            type="url"
+            data-testid="inspector-url"
+            value={url}
+            placeholder="https://"
+            disabled={replaying}
+            onInput={(event) => {
+              dirtyFieldsRef.current.add("url");
+              setUrl(event.currentTarget.value);
+              if (singleCardEditId) debouncedSaveCard(singleCardEditId);
+            }}
+            onBlur={flushCardFields}
+          />
+          {url?.startsWith("http") ? (
+            <button
+              type="button"
+              class="inspector__ogp-btn"
+              data-testid="inspector-ogp-fetch"
+              disabled={ogpFetching || replaying}
+              title="OGPからタイトルを取得"
+              onClick={async () => {
+                setOgpFetching(true);
+                try {
+                  const res = await fetch(
+                    `/api/ogp?url=${encodeURIComponent(url)}`,
+                  );
+                  const json = (await res.json()) as { title: string | null };
+                  if (json.title && singleCardEditId) {
+                    dirtyFieldsRef.current.add("title");
+                    setTitle(json.title);
+                    debouncedSaveCard(singleCardEditId);
+                  }
+                } catch {
+                  // 失敗時は何もしない
+                } finally {
+                  setOgpFetching(false);
+                }
+              }}
+            >
+              {ogpFetching ? "…" : "タイトル取得"}
+            </button>
+          ) : null}
+        </div>
       </label>
       <div class="inspector__field">
         <span>作中時間</span>
