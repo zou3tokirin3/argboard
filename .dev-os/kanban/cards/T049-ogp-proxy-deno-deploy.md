@@ -1,7 +1,7 @@
 ---
 id: T049
 title: OGP取得と共有プレビューをDeno Deployで足す
-status: backlog
+status: done
 owner: none
 gate: human
 branch: ""
@@ -46,5 +46,6 @@ T027（既出出典サジェスト）より先でも後でも可 — 別スコ�
 ## 作業ログ（追記のみ）
 
 - 2026-07-30 planner: 起票。§12 Won't の「将来拡張」を backlog 化。Web ARG 向け OGP を人間が将来入れたい意向
+- 2026-10-25 agent: Deno Deploy→Cloudflare Workers に読み替えて実装。src/worker.ts に /api/ogp エンドポイント追加、og:title・og:image を取得。Inspector に「タイトル取得」ボタン追加、ogpImage をカードデータに保存、ボードカードにサムネ表示。
 
 ## 差し戻し履歴（追記のみ）
