@@ -1,13 +1,13 @@
 ---
 id: T093
 title: board__toolbar が右パネル幅拡張で狭くなる問題
-status: backlog
+status: done
 owner: none
 gate: human
 branch: ""
 template_ver: generic-0.2
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-24
 ---
 
 ## 目的
@@ -38,3 +38,4 @@ T084 でパターンB（右パネル 520px）を導入した結果、`contemplat
 ## 作業ログ（追記のみ）
 
 - 2026-10-22 human: T084 パターンB で board__toolbar が狭くて崩れると指摘。T084 スコープ外として別チケットに切り出し。
+- 2026-10-24 agent: T084 の最終実装（コミット bd4eba8）で `board__toolbar`・`board__thought`・ヒントテキスト・ボード名＋カード数表示をすべて削除済み。現行コードに問題の要素は存在しない。board__replay-label は text-overflow: ellipsis で narrow 対応済み。このカードで追加作業なし。done とする。

@@ -1,13 +1,13 @@
 ---
 id: T092
 title: 右パネルから掘る起点を指定しやすくする
-status: backlog
+status: done
 owner: none
 gate: human
 branch: ""
 template_ver: generic-0.2
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-24
 ---
 
 ## 目的
@@ -39,5 +39,6 @@ T084 の流れで Capture を右パネルに移したことで、「カードを
 ## 作業ログ（追記のみ）
 
 - 2026-10-22 human: T084 の右パネル案検討中に「掘る場合の指定をスムーズにしたい」というニーズが浮上。右側に Capture を移したことで顕在化したため別チケットに切り出し。
+- 2026-10-24 agent: Inspector の単一カード表示に `inspector__dig` ボタンを追加（コミット da5759e）。クリックで `startDigging(card.id)` → 選択クリア → 右パネルが Capture（掘りモード）に切り替わる 1アクションフローを実現。すでに掘り中の場合は「掘り中（このカード起点）」表示。
 
 ## 差し戻し履歴（追記のみ）
