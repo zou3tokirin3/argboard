@@ -60,7 +60,7 @@ const captureFloatOpen = signal(false);
 const captureRightOpen = signal(true);
 
 // ?ui=a/b/c/d で切り替え（比較検討用）
-const UI_VARIANT = new URLSearchParams(location.search).get("ui") ?? "a";
+const UI_VARIANT = new URLSearchParams(location.search).get("ui") ?? "b";
 
 const INSTALL_TIP_KEY = "argboard.installTipDismissed";
 
