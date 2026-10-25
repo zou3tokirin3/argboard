@@ -1502,6 +1502,9 @@ span.card-image-field__preview {
   max-height: 168px;
   background: color-mix(in srgb, var(--line) 55%, transparent);
 }
+.board-node__ogp-thumb {
+  background: var(--surface-2);
+}
 .board-node--l .board-node__thumb.is-fit-contain {
   object-fit: contain;
 }

@@ -469,6 +469,7 @@ function BoardNode({
   const tags = (card.tags ?? []).map(normalizeTag).filter(Boolean);
   const hasTags = tags.length > 0;
   const hasImage = isLocalMediaRef(card.image);
+  const hasOgpImage = !hasImage && !!card.ogpImage;
   const adhesiveTagWidth = dims.w - 88;
   const { shown: visibleTags, hidden: hiddenTagCount } = fitTagsOneLine(
     tags,
@@ -581,12 +582,16 @@ function BoardNode({
         height={dims.contentH}
         style={{ pointerEvents: "none" }}
       >
-        <div class={`board-node__content${hasImage ? " has-image" : ""}`}>
+        <div
+          class={`board-node__content${hasImage || hasOgpImage ? " has-image" : ""}`}
+        >
           <div class="board-node__title">{card.title}</div>
-          {hasImage || card.body?.trim() ? (
+          {hasImage || hasOgpImage || card.body?.trim() ? (
             <div
               class={`board-node__below${
-                hasImage && card.body?.trim() ? " has-both" : ""
+                (hasImage || hasOgpImage) && card.body?.trim()
+                  ? " has-both"
+                  : ""
               }`}
             >
               {hasImage ? (
@@ -594,6 +599,14 @@ function BoardNode({
                   image={card.image}
                   className="board-node__thumb"
                   preferContain={card.size === "l"}
+                  width={88}
+                  height={56}
+                />
+              ) : hasOgpImage ? (
+                <img
+                  src={card.ogpImage}
+                  class="board-node__thumb board-node__ogp-thumb"
+                  alt=""
                   width={88}
                   height={56}
                 />
