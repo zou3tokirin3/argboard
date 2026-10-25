@@ -294,6 +294,7 @@ export function Inspector() {
   const [url, setUrl] = useState("");
   const [ogpFetching, setOgpFetching] = useState(false);
   const [ogpImage, setOgpImage] = useState<string | null>(null);
+  const pendingOgpImageRef = useRef<string | null | undefined>(undefined);
   const [storyWhen, setStoryWhen] = useState("");
   const [storyUntil, setStoryUntil] = useState("");
   const [label, setLabel] = useState("");
@@ -334,6 +335,10 @@ export function Inspector() {
     };
     if (dirty.has("storyWhen")) patch.storyWhen = fields.storyWhen;
     if (dirty.has("storyUntil")) patch.storyUntil = fields.storyUntil;
+    if (pendingOgpImageRef.current !== undefined) {
+      patch.ogpImage = pendingOgpImageRef.current;
+      pendingOgpImageRef.current = undefined;
+    }
     await updateCard(id, patch);
   }, []);
 
@@ -358,10 +363,11 @@ export function Inspector() {
     prevCardIdRef.current = id;
     if (replaying || idChanged) {
       dirtyFieldsRef.current.clear();
+      pendingOgpImageRef.current = undefined;
       setTitle(card?.title ?? "");
       setBody(card?.body ?? "");
       setUrl(card?.url ?? "");
-      setOgpImage(null);
+      setOgpImage(card?.ogpImage ?? null);
       setStoryWhen(card?.storyWhen ?? "");
       setStoryUntil(card?.storyUntil ?? "");
     } else {
@@ -664,10 +670,14 @@ export function Inspector() {
                     title: string | null;
                     image: string | null;
                   };
-                  if (json.title && singleCardEditId) {
-                    dirtyFieldsRef.current.add("title");
-                    setTitle(json.title);
-                    debouncedSaveCard(singleCardEditId);
+                  if (singleCardEditId) {
+                    if (json.title) {
+                      dirtyFieldsRef.current.add("title");
+                      setTitle(json.title);
+                    }
+                    pendingOgpImageRef.current = json.image ?? null;
+                    debouncedSaveCard.cancel();
+                    void saveCardFields(singleCardEditId);
                   }
                   setOgpImage(json.image ?? null);
                 } catch {

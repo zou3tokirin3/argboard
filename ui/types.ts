@@ -92,6 +92,8 @@ export type Card = {
   url?: string;
   /** Local media id in IndexedDB (not an external URL). */
   image?: string;
+  /** OGP thumbnail URL fetched from the source URL (T049). External URL, not stored locally. */
+  ogpImage?: string;
   tags?: string[];
   /** Board display size (T022). Omit or `"m"` = default; `"l"` = large. */
   size?: "m" | "l";

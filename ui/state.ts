@@ -1031,6 +1031,7 @@ export async function updateCard(
   patch: Pick<Card, "title" | "body" | "url"> & {
     storyWhen?: string;
     storyUntil?: string;
+    ogpImage?: string | null;
   },
 ): Promise<void> {
   const current = assertWritable();
@@ -1041,6 +1042,7 @@ export async function updateCard(
   const url = patch.url?.trim() ? patch.url.trim() : undefined;
   const touchStoryWhen = "storyWhen" in patch;
   const touchStoryUntil = "storyUntil" in patch;
+  const touchOgpImage = "ogpImage" in patch;
   const storyWhen = patch.storyWhen?.trim()
     ? patch.storyWhen.trim()
     : undefined;
@@ -1059,6 +1061,10 @@ export async function updateCard(
       if (touchStoryUntil) {
         if (storyUntil) updated.storyUntil = storyUntil;
         else delete updated.storyUntil;
+      }
+      if (touchOgpImage) {
+        if (patch.ogpImage) updated.ogpImage = patch.ogpImage;
+        else delete updated.ogpImage;
       }
       return updated;
     }),
