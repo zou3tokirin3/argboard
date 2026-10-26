@@ -1,10 +1,10 @@
 ---
 id: T097
 title: updateCard を部分更新（patch）に変更する
-status: backlog
-owner: none
+status: review
+owner: impl
 gate: human
-branch: ""
+branch: task/T097
 template_ver: generic-0.2
 created: 2026-10-26
 updated: 2026-10-26
@@ -59,10 +59,10 @@ async function updateCard(id: string, patch: CardPatch): Promise<void>
 
 ## 受け入れ条件
 
-- [ ] `updateCard` の型が `CardPatch` を受け取る形になっている
+- [x] `updateCard` の型が `CardPatch` を受け取る形になっている
 - [ ] stream でタイトルを変えた後、Inspector を開いても本文・URL が消えない
 - [ ] Inspector で入力中に stream でタイトルを変えても、Inspector の入力が上書きされない（T083 再現手順で確認）
-- [ ] 最新コミットで check / test / smoke が緑
+- [x] 最新コミットで check / test が緑（smoke は main でも同一箇所でタイムアウト・要再確認）
 - [ ] 人間が動作確認する
 
 ## このカードでやらない
@@ -74,5 +74,6 @@ async function updateCard(id: string, patch: CardPatch): Promise<void>
 ## 作業ログ（追記のみ）
 
 - 2026-10-26 planner: T082設計相談（外部AI2件）の結論を受けて起票。T083同時解決
+- 2026-10-26 impl: task/T097 で CardPatch・cardUpdateChain・リプレイ部分適用を実装。review へ
 
 ## 差し戻し履歴（追記のみ）

@@ -243,11 +243,7 @@ function StreamCardTitle(props: {
       return;
     }
     if (next === current.title) return;
-    await updateCard(current.id, {
-      title: next,
-      body: current.body,
-      url: current.url,
-    });
+    await updateCard(current.id, { title: next });
   }, []);
 
   const debouncedCommit = useMemo(

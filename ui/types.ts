@@ -17,8 +17,11 @@ export type ProjectEvent =
       type: "card_updated";
       at: number;
       cardId: string;
-      title: string;
+      /** Present only when title changed (omit keeps previous on replay). */
+      title?: string;
+      /** Present only when body changed (omit keeps previous). `""` clears body. */
       body?: string;
+      /** Present only when url changed (omit keeps previous). `""` clears url. */
       url?: string;
       /** Local media id (IndexedDB Blob). Present when image changed. */
       image?: string;

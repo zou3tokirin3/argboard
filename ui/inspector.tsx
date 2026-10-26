@@ -324,21 +324,17 @@ export function Inspector() {
     if (isReplaying.value) return;
     const fields = fieldsRef.current;
     const dirty = dirtyFieldsRef.current;
-    if (dirty.size === 0) return;
-    // For non-dirty fields, fall back to the current stored card value so we
-    // never overwrite external edits (e.g. a title changed via the log).
-    const currentCard = viewProject.value?.cards.find((c) => c.id === id);
-    const patch: Parameters<typeof updateCard>[1] = {
-      title: dirty.has("title") ? fields.title : (currentCard?.title ?? ""),
-      body: dirty.has("body") ? fields.body : (currentCard?.body ?? ""),
-      url: dirty.has("url") ? fields.url : (currentCard?.url ?? ""),
-    };
+    const patch: Parameters<typeof updateCard>[1] = {};
+    if (dirty.has("title")) patch.title = fields.title;
+    if (dirty.has("body")) patch.body = fields.body;
+    if (dirty.has("url")) patch.url = fields.url;
     if (dirty.has("storyWhen")) patch.storyWhen = fields.storyWhen;
     if (dirty.has("storyUntil")) patch.storyUntil = fields.storyUntil;
     if (pendingOgpImageRef.current !== undefined) {
       patch.ogpImage = pendingOgpImageRef.current;
       pendingOgpImageRef.current = undefined;
     }
+    if (Object.keys(patch).length === 0) return;
     await updateCard(id, patch);
   }, []);
 
