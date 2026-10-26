@@ -1,7 +1,7 @@
 ---
 id: T082
 title: カード編集の保存の道を1本にする設計を検討する
-status: backlog
+status: done
 owner: none
 gate: human
 branch: ""
@@ -75,5 +75,6 @@ updated: 2026-10-20
 
 - 2026-10-20 human: リファクタリング検討のチケットを切ってよいと判断
 - 2026-10-20 planner: 起票（backlog）。T064 作り直しで見つけた「保存の道が複数ある」問題を軸にした
+- 2026-10-26 agent: 外部AI2件に設計相談。結論：①案C'（確定時のみ・変更項目だけ送る）②updateCard部分更新化 ③state.ts責務分割 ④Esc単一ハンドラー。実装カードをT097〜T100に切り出し。
 
 ## 差し戻し履歴（追記のみ）
