@@ -36,7 +36,7 @@ dropped → backlog（人間のみ・復活）
 3. **取得は1コミット** — ready のカードを取るときは owner と status を同時に書き換えて1コミットで宣言する
 4. **人間ゲート** — `gate: human` のカードを done にできるのは人間だけ
 5. **差し戻しは理由つき** — review→rework は「差し戻し履歴」への理由追記とセットでのみ有効
-6. **盤面の正は main** — カードの変更（status・owner・追記）は必ず main 上で行い、コミットする。task ブランチ／worktree の中でカードを触らない（盤面が分裂する）
+6. **カード更新は PR の中で** — カードの変更（status・owner・追記）は task ブランチ上でコミットし、PR と一緒に main へ merge する。main へ直接 push しない
 
 ## worktree 規約
 
