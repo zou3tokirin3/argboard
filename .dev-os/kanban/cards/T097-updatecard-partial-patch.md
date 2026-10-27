@@ -1,13 +1,13 @@
 ---
 id: T097
 title: updateCard を部分更新（patch）に変更する
-status: review
-owner: impl
+status: done
+owner: none
 gate: human
 branch: task/T097
 template_ver: generic-0.2
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-27
 ---
 
 ## 目的
@@ -75,5 +75,7 @@ async function updateCard(id: string, patch: CardPatch): Promise<void>
 
 - 2026-10-26 planner: T082設計相談（外部AI2件）の結論を受けて起票。T083同時解決
 - 2026-10-26 impl: task/T097 で CardPatch・cardUpdateChain・リプレイ部分適用を実装。review へ
+- 2026-10-27 human: PR #2 のマージを承認（人間ゲート）。履歴再生のずれ（旧ビルドで空にした body/url が JSON 書き出し→読み込み後に viewThrough で残る）は別カードに切り出す指示
+- 2026-10-27 agent: origin/main（smoke 修正 #3）を取り込み、check / test（102 pass）/ build / smoke（1 passed）すべて緑。smoke のタイムアウトは #3 で解消済み。APP_RELEASE 0.81→0.82。PR #2 を squash merge し task/T097 を削除して done
 
 ## 差し戻し履歴（追記のみ）
