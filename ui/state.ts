@@ -601,6 +601,9 @@ export async function refreshProjectSummaries(): Promise<void> {
   await refreshSummaries();
 }
 
+/** Serialize card field patches so each read sees the latest in-memory project. */
+let cardUpdateChain: Promise<void> = Promise.resolve();
+
 /** Serialize IndexedDB writes and always persist the latest in-memory project. */
 let saveChain: Promise<void> = Promise.resolve();
 let saveDirty = false;
@@ -1026,59 +1029,105 @@ export async function setSideOpen(open: boolean): Promise<void> {
   await setPanelPhase("closed");
 }
 
-export async function updateCard(
-  id: string,
-  patch: Pick<Card, "title" | "body" | "url"> & {
-    storyWhen?: string;
-    storyUntil?: string;
-    ogpImage?: string | null;
-  },
-): Promise<void> {
+export type CardPatch = Partial<{
+  title: string;
+  body: string;
+  url: string;
+  storyWhen: string;
+  storyUntil: string;
+  ogpImage: string | null;
+}>;
+
+export async function updateCard(id: string, patch: CardPatch): Promise<void> {
+  const task = cardUpdateChain.then(() => applyUpdateCard(id, patch));
+  cardUpdateChain = task.catch((error) => {
+    console.error(error);
+  });
+  await task;
+}
+
+async function applyUpdateCard(id: string, patch: CardPatch): Promise<void> {
   const current = assertWritable();
   if (!current) return;
-  const title = patch.title.trim();
-  if (!title) return;
-  const body = patch.body?.trim() ? patch.body.trim() : undefined;
-  const url = patch.url?.trim() ? patch.url.trim() : undefined;
-  const touchStoryWhen = "storyWhen" in patch;
-  const touchStoryUntil = "storyUntil" in patch;
-  const touchOgpImage = "ogpImage" in patch;
-  const storyWhen = patch.storyWhen?.trim()
-    ? patch.storyWhen.trim()
-    : undefined;
-  const storyUntil = patch.storyUntil?.trim()
-    ? patch.storyUntil.trim()
-    : undefined;
-  const next = {
-    ...current,
-    cards: current.cards.map((card) => {
-      if (card.id !== id) return card;
-      const updated: Card = { ...card, title, body, url };
-      if (touchStoryWhen) {
-        if (storyWhen) updated.storyWhen = storyWhen;
-        else delete updated.storyWhen;
-      }
-      if (touchStoryUntil) {
-        if (storyUntil) updated.storyUntil = storyUntil;
-        else delete updated.storyUntil;
-      }
-      if (touchOgpImage) {
-        if (patch.ogpImage) updated.ogpImage = patch.ogpImage;
-        else delete updated.ogpImage;
-      }
-      return updated;
-    }),
-  };
-  const event: ProjectEvent = {
+  const card = current.cards.find((item) => item.id === id);
+  if (!card) return;
+
+  const updated: Card = { ...card };
+  const event: Extract<ProjectEvent, { type: "card_updated" }> = {
     type: "card_updated",
     at: Date.now(),
     cardId: id,
-    title,
-    body,
-    url,
   };
-  if (touchStoryWhen) event.storyWhen = storyWhen ?? "";
-  if (touchStoryUntil) event.storyUntil = storyUntil ?? "";
+  let changed = false;
+
+  if ("title" in patch && patch.title != null) {
+    const title = patch.title.trim();
+    if (title && title !== card.title) {
+      updated.title = title;
+      event.title = title;
+      changed = true;
+    }
+  }
+
+  if ("body" in patch) {
+    const body = patch.body?.trim() ? patch.body.trim() : undefined;
+    if ((card.body ?? undefined) !== body) {
+      if (body) updated.body = body;
+      else delete updated.body;
+      event.body = body ?? "";
+      changed = true;
+    }
+  }
+
+  if ("url" in patch) {
+    const url = patch.url?.trim() ? patch.url.trim() : undefined;
+    if ((card.url ?? undefined) !== url) {
+      if (url) updated.url = url;
+      else delete updated.url;
+      event.url = url ?? "";
+      changed = true;
+    }
+  }
+
+  if ("storyWhen" in patch) {
+    const storyWhen = patch.storyWhen?.trim()
+      ? patch.storyWhen.trim()
+      : undefined;
+    if ((card.storyWhen ?? undefined) !== storyWhen) {
+      if (storyWhen) updated.storyWhen = storyWhen;
+      else delete updated.storyWhen;
+      event.storyWhen = storyWhen ?? "";
+      changed = true;
+    }
+  }
+
+  if ("storyUntil" in patch) {
+    const storyUntil = patch.storyUntil?.trim()
+      ? patch.storyUntil.trim()
+      : undefined;
+    if ((card.storyUntil ?? undefined) !== storyUntil) {
+      if (storyUntil) updated.storyUntil = storyUntil;
+      else delete updated.storyUntil;
+      event.storyUntil = storyUntil ?? "";
+      changed = true;
+    }
+  }
+
+  if ("ogpImage" in patch) {
+    const nextOgp = patch.ogpImage ?? undefined;
+    if ((card.ogpImage ?? undefined) !== nextOgp) {
+      if (nextOgp) updated.ogpImage = nextOgp;
+      else delete updated.ogpImage;
+      changed = true;
+    }
+  }
+
+  if (!changed) return;
+
+  const next = {
+    ...current,
+    cards: current.cards.map((item) => (item.id === id ? updated : item)),
+  };
   await persist(appendEvent(next, event));
 }
 

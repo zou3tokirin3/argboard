@@ -195,12 +195,20 @@ function applyEvent(
     case "card_updated": {
       const prev = cards.get(event.cardId);
       if (!prev) break;
-      const next: Card = {
-        ...prev,
-        title: event.title,
-        body: event.body,
-        url: event.url,
-      };
+      const next: Card = { ...prev };
+      if ("title" in event && event.title != null) {
+        next.title = event.title;
+      }
+      if ("body" in event) {
+        const body = event.body?.trim();
+        if (body) next.body = body;
+        else delete next.body;
+      }
+      if ("url" in event) {
+        const url = event.url?.trim();
+        if (url) next.url = url;
+        else delete next.url;
+      }
       if ("tags" in event) {
         if (event.tags?.length) next.tags = [...event.tags];
         else delete next.tags;
@@ -367,8 +375,13 @@ function labelForEvent(project: Project, event: ProjectEvent): string | null {
       return null;
     case "card_added":
       return `追加 · ${event.card.title}`;
-    case "card_updated":
-      return `編集 · ${event.title}`;
+    case "card_updated": {
+      const title =
+        "title" in event && event.title
+          ? event.title
+          : titleForCard(project, event.cardId);
+      return `編集 · ${title}`;
+    }
     case "card_removed":
       return `削除 · ${event.card.title}`;
     case "card_placed":
