@@ -6,7 +6,7 @@
 
 - 取得: owner と status(doing) を同時に書き換えて1コミット
 - `task/<id>` ブランチと worktree を作り、カードに branch を記入
-- カードの変更（取得・review移動・ログ追記）は**必ず main 上で**コミットする。実装は worktree、盤面は main（掟6）
+- カードの変更（取得・review移動・ログ追記）は task ブランチ上でコミットし、PR と一緒に merge する。main へ直接 push しない（掟6）
 - 実装し、受け入れ条件をセルフチェックしてから review へ
 - 作業ログに着手・中断・完了を1行ずつ追記
 
