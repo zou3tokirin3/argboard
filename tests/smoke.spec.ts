@@ -568,7 +568,16 @@ test("smoke", async ({ page }) => {
         throw new Error(`unexpected title: ${card.title}`);
       }
     }, imgStamp);
-    await page.waitForSelector('[data-testid="capture-input"]');
+    // variant B: 確定後は新規カードが選択され右パネルは Inspector（capture-input は出ない）
+    await page.waitForFunction(
+      (title: string) => {
+        const el = document.querySelector(
+          '[data-testid="inspector-title"]',
+        ) as HTMLInputElement | null;
+        return el?.value === title;
+      },
+      imgStamp,
+    );
 
     // 広い発見ログ: 選択中カードにインライン title input が出る
     const titleStamp = `inline-edit-${Date.now()}`;
