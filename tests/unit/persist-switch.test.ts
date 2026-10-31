@@ -27,7 +27,8 @@ for (const fail of [false, true]) test(`switch and imports preserve pending A (f
   });
   try {
     await state.switchProject(a.id);
-    const editing = state.renameProject("A latest");
+    await state.renameProject("A latest");
+    assert.equal(state.projectSummaries.value.find((item) => item.id === a.id).name, "A latest");
     await state.switchProject(b.id);
     assert.equal(state.project.value.id, b.id);
     await state.createProject("New");
@@ -40,7 +41,7 @@ for (const fail of [false, true]) test(`switch and imports preserve pending A (f
     assert.equal(state.project.value.name, "B（取り込み）");
     if (fail) {
       release();
-      await editing;
+      await state.flushSave();
       assert.equal(state.saveStatus.value, "error");
       assert.equal(state.saveStatusProject.value.id, a.id);
     }
@@ -52,12 +53,78 @@ for (const fail of [false, true]) test(`switch and imports preserve pending A (f
     await state.switchProject(a.id);
     assert.equal(state.project.value.name, "A latest");
     release();
-    await editing;
     await state.flushSave();
     assert.equal(listeners.size, 0);
     assert.equal(writes.filter((item) => item.id === a.id).at(-1).name, "A latest");
   } finally {
     state.installStoreForTests(store);
     delete globalThis.window;
+  }
+});
+
+test("editing B resolves while A's save is still held", { timeout: 2000 }, async () => {
+  const a = createEmptyProject("A");
+  const b = createEmptyProject("B");
+  const writes = [];
+  let release;
+  let released = false;
+  state.installStoreForTests({
+    ...store,
+    loadProject: async (id) => id === a.id ? a : b,
+    saveProject: async (snapshot) => {
+      if (snapshot.id === a.id && !released) {
+        await new Promise((resolve) => { release = () => { released = true; resolve(); }; });
+      }
+      writes.push(snapshot);
+    },
+  });
+  try {
+    await state.switchProject(a.id);
+    await state.renameProject("A latest");
+    await state.switchProject(b.id);
+    await state.renameProject("B latest");
+    assert.equal(released, false);
+    assert.equal(writes.length, 0);
+    assert.equal(state.project.value.name, "B latest");
+    release();
+    await state.flushSave();
+    assert.equal(writes.filter((item) => item.id === a.id).at(-1).name, "A latest");
+    assert.equal(writes.filter((item) => item.id === b.id).at(-1).name, "B latest");
+  } finally {
+    release?.();
+    await state.flushSave();
+    state.installStoreForTests(store);
+  }
+});
+
+test("retrySave retries every failed project", async () => {
+  const a = createEmptyProject("A");
+  const b = createEmptyProject("B");
+  const saved = new Map();
+  let fail = true;
+  state.installStoreForTests({
+    ...store,
+    loadProject: async (id) => id === a.id ? a : b,
+    saveProject: async (snapshot) => {
+      if (fail) throw new Error("disk full");
+      saved.set(snapshot.id, snapshot);
+    },
+  });
+  try {
+    await state.switchProject(a.id);
+    await state.renameProject("A latest");
+    await state.switchProject(b.id);
+    await state.renameProject("B latest");
+    await state.flushSave();
+    assert.equal(state.saveStatus.value, "error");
+    fail = false;
+    await state.retrySave();
+    assert.equal(saved.get(a.id).name, "A latest");
+    assert.equal(saved.get(b.id).name, "B latest");
+    assert.equal(state.saveStatus.value, "saved");
+  } finally {
+    fail = false;
+    await state.retrySave();
+    state.installStoreForTests(store);
   }
 });

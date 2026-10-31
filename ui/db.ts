@@ -28,21 +28,8 @@ const MEDIA_STORE = "media";
 
 /** Test/diagnostics: how many times `requestPersistence` was invoked. */
 let persistenceRequestCount = 0;
-/** Test-only: artificial save delay / failure (wired only via ?test=1 hooks). */
-let testSaveDelayMs = 0;
-let testSaveFail = false;
-
 export function getPersistenceRequestCount(): number {
   return persistenceRequestCount;
-}
-
-/** Test-only hooks for slowed or failing saves (not a user-facing debug flag). */
-export function configureSaveForTests(options: {
-  delayMs?: number;
-  fail?: boolean;
-}): void {
-  if (options.delayMs != null) testSaveDelayMs = options.delayMs;
-  if (options.fail != null) testSaveFail = options.fail;
 }
 
 function openDatabase(): Promise<IDBDatabase> {
@@ -106,10 +93,6 @@ export const store: Store = {
     );
   },
   async saveProject(project) {
-    if (testSaveDelayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, testSaveDelayMs));
-    }
-    if (testSaveFail) throw new Error("save failed (test)");
     await transact<IDBValidKey>(STORE_NAME, "readwrite", (objectStore) =>
       objectStore.put(project),
     );

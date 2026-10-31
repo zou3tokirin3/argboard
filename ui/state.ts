@@ -457,7 +457,7 @@ const persistQueue = createPersistQueue({
 });
 
 export function retrySave(): Promise<void> {
-  return persistQueue.retry(saveStatusProject.value?.id);
+  return persistQueue.retry();
 }
 
 export const isReplaying = computed(() => replayIndex.value != null);
@@ -648,9 +648,22 @@ export async function refreshProjectSummaries(): Promise<void> {
 /** Serialize card field patches so each read sees the latest in-memory project. */
 let cardUpdateChain: Promise<void> = Promise.resolve();
 
+function upsertSummary(next: Project): void {
+  projectSummaries.value = [
+    ...projectSummaries.value.filter((item) => item.id !== next.id),
+    {
+      id: next.id,
+      name: next.name,
+      cardCount: next.cards.length,
+      updatedAt: Date.now(),
+    },
+  ];
+}
+
 async function persist(next: Project): Promise<void> {
   project.value = next;
-  await persistQueue.enqueue(next);
+  upsertSummary(next);
+  void persistQueue.enqueue(next);
 }
 
 function withUi(
@@ -700,15 +713,7 @@ async function activateProject(next: Project): Promise<void> {
   });
   project.value = opened;
   void persistQueue.enqueue(opened);
-  projectSummaries.value = [
-    ...projectSummaries.value.filter((item) => item.id !== opened.id),
-    {
-      id: opened.id,
-      name: opened.name,
-      cardCount: opened.cards.length,
-      updatedAt: Date.now(),
-    },
-  ];
+  upsertSummary(opened);
 }
 
 /** Select from the discovery stream; pan the board if the card is placed. */

@@ -5,7 +5,7 @@ import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
 import { readCaptureDraft } from "./capture-draft.ts";
 import { imageBlobFromClipboard } from "./clipboard-image.ts";
-import { configureSaveForTests, getPersistenceRequestCount } from "./db.ts";
+import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import { LaneWorkspace } from "./lane-view.tsx";
 import { appTitle } from "./release.ts";
@@ -120,10 +120,6 @@ declare global {
       getState: () => unknown;
       flushSave: () => Promise<void>;
       getPersistenceRequestCount: () => number;
-      configureSaveForTests: (options: {
-        delayMs?: number;
-        fail?: boolean;
-      }) => void;
       renameProject: (name: string) => Promise<void>;
       addCard: (
         title: string,
@@ -185,7 +181,9 @@ function SaveStatusLabel() {
       ? `${prefix}保存中…`
       : status === "error"
         ? `${prefix}保存できませんでした`
-        : "このブラウザに保存済み";
+        : status === "loading"
+          ? "読み込み中…"
+          : "このブラウザに保存済み";
   return (
     <span
       class={`save-status is-${status}`}
@@ -848,7 +846,6 @@ if (isTest) {
     getState: () => structuredClone(project.value),
     flushSave,
     getPersistenceRequestCount,
-    configureSaveForTests,
     renameProject,
     addCard,
     updateCardRole,
