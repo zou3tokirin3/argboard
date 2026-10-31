@@ -28,7 +28,6 @@ const MEDIA_STORE = "media";
 
 /** Test/diagnostics: how many times `requestPersistence` was invoked. */
 let persistenceRequestCount = 0;
-
 export function getPersistenceRequestCount(): number {
   return persistenceRequestCount;
 }
