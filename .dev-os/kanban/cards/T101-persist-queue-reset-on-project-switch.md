@@ -1,67 +1,63 @@
 ---
 id: T101
-title: プロジェクト切り替え時に persist キューをリセットする
-status: backlog
-owner: none
+title: プロジェクト切り替え時に旧ボードをバックグラウンド保存する
+status: review
+owner: argboard開発
 gate: human
-branch: ""
+branch: fix/T101-background-save-on-switch
 template_ver: generic-0.2
 created: 2026-10-26
-updated: 2026-10-26
+updated: 2026-10-31
 ---
 
 ## 目的
 
-プロジェクト切り替え時に、前のプロジェクトの未保存分が失われる競合リスクを取り除く。
+前のプロジェクトの保存を待たずに次のボードを表示し、旧ボードの最新編集を確実に保存する。
 
 ## 背景・問題
 
-`persist()` のキューは `saveChain`（モジュールレベルの Promise）で直列化されているが、
-プロジェクト切り替え時にリセットされない。
+旧 `drainSaves()` は実行時の `project.value` を参照していたため、A の編集後に B へ切り替えると、A の代わりに B を保存して A の変更を失う可能性があった。
 
-**競合の再現シナリオ：**
-1. プロジェクトAを編集中 → `persist()` のキューが積まれている（drain待ち）
-2. ユーザーがBに切り替え → `activateProject(B)` が `project.value = B` にセット
-3. Aのキューが後から drain → `project.value`（今はB）を読んでBを保存
-4. **Aへの最新版保存が走らない** → Aの最後の数編集が消える
+## 決定
 
-通常操作では発生しにくい（切り替えまでに drain が完了することが多い）が、
-重い操作（画像添付・大量カード）の直後に切り替えると踏む可能性がある。
+- 隆さん（2026-10-31 22:51 JST、原文）: 「T101はすぐ次へ移って、保存中はセーブ表示で見せる方。関連するところも合わせて、他はおすすめ」
+- grill-me は開発マネージャー経由で 2026-10-28 と 2026-10-31 に実施。切り替え前の保存待機ではなく、プロジェクト別の最新スナップショット保持と直列のバックグラウンド保存を採用する。
+- 切替・新規作成・JSON/ZIP 取り込みは旧保存を待たずに進む。ZIP のメディア格納は維持する。
+- 表示は既存トップバーに集約し、450ms の遅延を維持する。旧ボードは名前を付け、現在のボードは「保存中…」とする。
+- 保存失敗時は移動先に留まり、旧データをメモリに保持して再試行できる。未保存中は標準の離脱確認を登録する。
 
 ## やること
 
-`activateProject()` の `project.value = next` を設定する前に：
-
-1. `saveDirty` フラグをリセットする
-2. `saveChain` を完了まで待つ（または強制フラッシュして旧プロジェクトを確実に保存する）
-
-```ts
-// activateProject 内での修正イメージ
-async function activateProject(next: Project): Promise<void> {
-  // 旧プロジェクトの pending 保存を flush してから切り替え
-  await saveChain;
-  saveDirty = false;
-
-  // ここから新プロジェクトの処理
-  project.value = next;
-  // ...
-  await store.saveProject(opened);
-}
-```
-
-ただし `saveChain` は現在モジュール内 `let` なので、参照方法を確認して調整する。
+- [x] `ui/persist-queue.ts` にプロジェクト別の pending / failed Map と直列 drain を実装する
+- [x] 編集時の id とスナップショットを保存し、保存実行時にアクティブなプロジェクトを参照しない
+- [x] `activateProject` を経由する全切替経路を非待機の保存へ統一し、一覧を楽観更新する
+- [x] 再表示時は未保存のメモリ上の最新版を優先する
+- [x] 保存対象の表示・失敗表示・再試行・離脱確認を接続する
+- [x] 保存キューと切替の回帰テストを追加する
+- [x] `APP_RELEASE` を維持し、`APP_PREVIEW = "T101"` にする
 
 ## 受け入れ条件
 
-- [ ] プロジェクトAで大量編集直後にBへ切り替えても、Aの変更が失われない
-- [ ] 切り替え後にBの保存キューが正常に動作する
-- [ ] 最新コミットで check / test / smoke が緑
-- [ ] 人間が確認する
+- [x] A の保存中でも切替・新規作成・JSON/ZIP 取り込みが進み、A と B の内容が入れ替わらない
+- [x] 同じプロジェクトの未保存編集を最新版へまとめ、直列で保存する
+- [x] 450ms 未満の保存は表示を点滅させず、旧ボードは「『A』を保存中…」、現在のボードは「保存中…」と表示する
+- [x] 旧ボードの保存失敗後も B に留まり、「『A』を保存できませんでした」と「もう一度保存」を表示する
+- [x] ラベルに `data-testid="save-status"`、再試行ボタンに `data-testid="save-retry"` がある
+- [x] 失敗スナップショットを保存成功まで保持し、再試行で保存する
+- [x] 保存途中または失敗後に A を開き直してもメモリ上の最新内容を使う
+- [x] 保存待ち・保存中・失敗未保存がある間だけ `beforeunload` を登録する
+- [x] Inspector の入力処理（T098）を変更しない
+- [x] `APP_RELEASE` は据え置き、`APP_PREVIEW` は T101
+- [x] Node 22.23.4 で `pnpm check` / `pnpm test` / `pnpm build` が成功する
+- [x] `pnpm smoke` が成功する
+- [x] 狭い幅でも保存中・失敗表示が見える（従来は ≤800px で非表示だった）
+- [ ] 人間が確認する（遅延保存中の切替、名前付き表示、保存失敗と再試行、標準の離脱確認）
 
 ## このカードでやらない
 
-- `persist()` の設計変更
-- マルチタブ対応（別問題）
+- Inspector の入力確定方式（T098）
+- マルチタブ対応
+- APP_RELEASE の更新、push、PR 作成、PLAN.md の変更
 
 ## 依存
 
@@ -70,5 +66,10 @@ async function activateProject(next: Project): Promise<void> {
 ## 作業ログ（追記のみ）
 
 - 2026-10-26 planner: state.ts の直接 saveProject 呼び出し調査中に発見。直接呼び出し自体は意図的だが、切り替え時の競合リスクがあることが判明。
+- 2026-10-31 argboard開発: backlog → ready。決定事項を反映し、旧保存を待たない方式と受け入れ条件を確定。
+- 2026-10-31 argboard開発: ready → doing。保存キューを抽出し、全 activateProject 経路・トップバー・離脱確認を接続。
+- 2026-10-31 argboard開発: doing → review。単体テストで遅延保存、最新編集への集約、失敗保持・再試行、切替・新規・JSON/ZIP 取り込み、保存中・失敗後の再表示、離脱確認を検証。check / test / build / smoke 成功。人間確認待ち。
+
+- 2026-10-31 argboard開発: 狭い幅(≤800px)でも保存中/失敗を見せるよう `.save-status.is-saving/.is-error` を表示。証跡は /workspace/argboard-t101/（スクショ・switch.mp4）。
 
 ## 差し戻し履歴（追記のみ）
