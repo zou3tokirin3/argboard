@@ -1,6 +1,6 @@
 import { computed, signal } from "@preact/signals";
 import type { ParsedCapture } from "./capture-notation.ts";
-import { store } from "./db.ts";
+import { store as defaultStore, type Store } from "./db.ts";
 import { compressImage } from "./image-compress.ts";
 import {
   buildZip,
@@ -22,6 +22,7 @@ import {
   type PanelPhase,
   withPanelPhase,
 } from "./panel-phase.ts";
+import { createPersistQueue } from "./persist-queue.ts";
 import {
   appendEvent,
   applyConnectCards,
@@ -62,6 +63,11 @@ export {
 
 const ACTIVE_PROJECT_KEY = "argboard.activeProjectId";
 let persistenceRequested = false;
+let store: Store = defaultStore;
+
+export function installStoreForTests(next: Store): void {
+  store = next;
+}
 
 export type ProjectSummary = {
   id: string;
@@ -427,6 +433,33 @@ export const saveStatus = signal<"loading" | "saved" | "saving" | "error">(
   "loading",
 );
 
+export const saveStatusProject = signal<{ id: string; name: string } | null>(
+  null,
+);
+function confirmUnsaved(event: BeforeUnloadEvent): void {
+  event.preventDefault();
+  event.returnValue = "";
+}
+const persistQueue = createPersistQueue({
+  saveProject: (snapshot) => store.saveProject(snapshot),
+  onStatus(status) {
+    saveStatus.value = status.kind === "idle" ? "saved" : status.kind;
+    saveStatusProject.value =
+      status.kind === "idle"
+        ? null
+        : { id: status.projectId, name: status.projectName };
+  },
+  onPendingChange(hasUnsaved) {
+    if (typeof window === "undefined") return;
+    if (hasUnsaved) window.addEventListener("beforeunload", confirmUnsaved);
+    else window.removeEventListener("beforeunload", confirmUnsaved);
+  },
+});
+
+export function retrySave(): Promise<void> {
+  return persistQueue.retry();
+}
+
 export const isReplaying = computed(() => replayIndex.value != null);
 
 export const replayStepList = computed(() => {
@@ -593,7 +626,18 @@ export const selectedLink = computed(() => {
 });
 
 async function refreshSummaries(): Promise<void> {
-  projectSummaries.value = await store.listProjects();
+  const summaries = await store.listProjects();
+  const merged = new Map(summaries.map((item) => [item.id, item]));
+  for (const item of projectSummaries.value) {
+    const latest = persistQueue.getLatest(item.id);
+    if (latest)
+      merged.set(item.id, {
+        ...item,
+        name: latest.name,
+        cardCount: latest.cards.length,
+      });
+  }
+  projectSummaries.value = [...merged.values()];
 }
 
 /** Refresh project list for the menu (not on every card edit). */
@@ -604,59 +648,22 @@ export async function refreshProjectSummaries(): Promise<void> {
 /** Serialize card field patches so each read sees the latest in-memory project. */
 let cardUpdateChain: Promise<void> = Promise.resolve();
 
-/** Serialize IndexedDB writes and always persist the latest in-memory project. */
-let saveChain: Promise<void> = Promise.resolve();
-let saveDirty = false;
-let saveGeneration = 0;
-const SAVE_INDICATOR_DELAY_MS = 450;
-let saveIndicatorTimer: ReturnType<typeof setTimeout> | undefined;
-
-function scheduleSavingIndicator(): void {
-  if (saveIndicatorTimer != null) clearTimeout(saveIndicatorTimer);
-  saveIndicatorTimer = setTimeout(() => {
-    saveIndicatorTimer = undefined;
-    saveStatus.value = "saving";
-  }, SAVE_INDICATOR_DELAY_MS);
-}
-
-function clearSavingIndicator(): void {
-  if (saveIndicatorTimer != null) {
-    clearTimeout(saveIndicatorTimer);
-    saveIndicatorTimer = undefined;
-  }
-}
-
-async function drainSaves(): Promise<void> {
-  while (saveDirty) {
-    saveDirty = false;
-    const latest = project.value;
-    if (!latest) continue;
-    await store.saveProject(latest);
-  }
+function upsertSummary(next: Project): void {
+  projectSummaries.value = [
+    ...projectSummaries.value.filter((item) => item.id !== next.id),
+    {
+      id: next.id,
+      name: next.name,
+      cardCount: next.cards.length,
+      updatedAt: Date.now(),
+    },
+  ];
 }
 
 async function persist(next: Project): Promise<void> {
   project.value = next;
-  saveDirty = true;
-  const myGeneration = ++saveGeneration;
-  scheduleSavingIndicator();
-
-  const task = saveChain.then(drainSaves);
-  saveChain = task.catch((error) => {
-    console.error(error);
-  });
-
-  try {
-    await task;
-    clearSavingIndicator();
-    if (myGeneration === saveGeneration && saveStatus.value !== "saved") {
-      saveStatus.value = "saved";
-    }
-  } catch (error) {
-    console.error(error);
-    clearSavingIndicator();
-    if (myGeneration === saveGeneration) saveStatus.value = "error";
-  }
+  upsertSummary(next);
+  void persistQueue.enqueue(next);
 }
 
 function withUi(
@@ -705,9 +712,8 @@ async function activateProject(next: Project): Promise<void> {
     at: Date.now(),
   });
   project.value = opened;
-  saveStatus.value = "saving";
-  await store.saveProject(opened);
-  saveStatus.value = "saved";
+  void persistQueue.enqueue(opened);
+  upsertSummary(opened);
 }
 
 /** Select from the discovery stream; pan the board if the card is placed. */
@@ -756,14 +762,12 @@ export async function initialize(): Promise<void> {
     await store.saveProject(initial);
   }
   await activateProject(initial);
-  projectSummaries.value = await store.listProjects();
+  await refreshSummaries();
 }
 
 export async function createProject(name = "新しいケース"): Promise<Project> {
   const next = createEmptyProject(name);
-  await store.saveProject(next);
   await activateProject(next);
-  await refreshSummaries();
   return project.value ?? next;
 }
 
@@ -777,7 +781,7 @@ export async function renameProject(name: string): Promise<void> {
 
 export async function switchProject(id: string): Promise<void> {
   if (project.value?.id === id) return;
-  const loaded = await store.loadProject(id);
+  const loaded = persistQueue.getLatest(id) ?? (await store.loadProject(id));
   if (!loaded) return;
   await activateProject(loaded);
 }
@@ -1508,9 +1512,7 @@ export async function importProjectFromText(text: string): Promise<Project> {
     const { image: _drop, ...rest } = card;
     return rest;
   });
-  await store.saveProject(next);
   await activateProject(next);
-  await refreshSummaries();
   return project.value ?? next;
 }
 
@@ -1538,9 +1540,7 @@ async function importProjectFromZip(bytes: Uint8Array): Promise<Project> {
     }
     return { ...card, image: mapped };
   });
-  await store.saveProject(next);
   await activateProject(next);
-  await refreshSummaries();
   return project.value ?? next;
 }
 
@@ -1572,8 +1572,9 @@ export function pickAndImportProject(): void {
 }
 
 export async function flushSave(): Promise<void> {
-  await saveChain;
-  if (project.value) await store.saveProject(project.value);
+  await persistQueue.flush();
+  if (project.value) await persistQueue.enqueue(project.value);
+  await persistQueue.flush();
 }
 
 export async function placeCardOnBoard(

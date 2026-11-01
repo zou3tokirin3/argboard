@@ -40,7 +40,9 @@ import {
   removeCard,
   removeLink,
   renameProject,
+  retrySave,
   saveStatus,
+  saveStatusProject,
   selectCardFromBoard,
   selectCardFromStream,
   selectedCardId,
@@ -118,6 +120,7 @@ declare global {
       getState: () => unknown;
       flushSave: () => Promise<void>;
       getPersistenceRequestCount: () => number;
+      renameProject: (name: string) => Promise<void>;
       addCard: (
         title: string,
         options?: {
@@ -168,15 +171,36 @@ declare global {
 
 function SaveStatusLabel() {
   const status = saveStatus.value;
+  const savingProject = saveStatusProject.value;
+  const prefix =
+    savingProject && savingProject.id !== activeProjectId.value
+      ? `『${savingProject.name}』を`
+      : "";
   const label =
     status === "saving"
-      ? "保存中…"
+      ? `${prefix}保存中…`
       : status === "error"
-        ? "保存できませんでした"
-        : "このブラウザに保存済み";
+        ? `${prefix}保存できませんでした`
+        : status === "loading"
+          ? "読み込み中…"
+          : "このブラウザに保存済み";
   return (
-    <span class={`save-status is-${status}`} aria-live="polite">
+    <span
+      class={`save-status is-${status}`}
+      aria-live="polite"
+      data-testid="save-status"
+    >
       {label}
+      {status === "error" && (
+        <button
+          type="button"
+          class="save-status__retry"
+          data-testid="save-retry"
+          onClick={() => void retrySave()}
+        >
+          もう一度保存
+        </button>
+      )}
     </span>
   );
 }
@@ -822,6 +846,7 @@ if (isTest) {
     getState: () => structuredClone(project.value),
     flushSave,
     getPersistenceRequestCount,
+    renameProject,
     addCard,
     updateCardRole,
     createProject: async (name?: string) =>

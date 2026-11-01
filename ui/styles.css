@@ -412,6 +412,12 @@ body {
   text-align: right;
   white-space: nowrap;
 }
+.save-status__retry {
+  margin-left: 8px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
 .save-status::before {
   content: "●";
   margin-right: 6px;
@@ -3175,6 +3181,15 @@ span.card-image-field__preview {
   }
   .save-status {
     display: none;
+  }
+  /* T101: keep background-save / failure visible on narrow chrome */
+  .save-status.is-saving,
+  .save-status.is-error {
+    display: inline-block;
+    width: 100%;
+    min-width: 0;
+    text-align: left;
+    white-space: normal;
   }
   .topbar__actions {
     flex-wrap: wrap;
