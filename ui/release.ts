@@ -7,8 +7,8 @@
  * Display: `ARGBoard · 0.71+T075` (preview) / `ARGBoard · 0.71` (stable)
  * Local serve on a feature branch may append ` · task/T075`.
  */
-export const APP_RELEASE = "0.82";
-export const APP_PREVIEW: string | null = "T101";
+export const APP_RELEASE = "0.83";
+export const APP_PREVIEW: string | null = null;
 
 export function appTitle(branch?: string): string {
   const label = APP_PREVIEW ? `${APP_RELEASE}+${APP_PREVIEW}` : APP_RELEASE;

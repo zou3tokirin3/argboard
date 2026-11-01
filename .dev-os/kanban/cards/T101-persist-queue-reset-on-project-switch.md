@@ -1,13 +1,13 @@
 ---
 id: T101
 title: プロジェクト切り替え時に旧ボードをバックグラウンド保存する
-status: review
+status: done
 owner: argboard開発
 gate: human
 branch: fix/T101-background-save-on-switch
 template_ver: generic-0.2
 created: 2026-10-26
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 ## 目的
@@ -51,7 +51,7 @@ updated: 2026-10-31
 - [x] Node 22.23.4 で `pnpm check` / `pnpm test` / `pnpm build` が成功する
 - [x] `pnpm smoke` が成功する
 - [x] 狭い幅でも保存中・失敗表示が見える（従来は ≤800px で非表示だった）
-- [ ] 人間が確認する（遅延保存中の切替、名前付き表示、保存失敗と再試行、標準の離脱確認）
+- [x] 人間が確認する（遅延保存中の切替、名前付き表示、保存失敗と再試行、標準の離脱確認）— 隆さん OK（2026-11-01 11:48 JST、開発マネージャー経由・原文「argboard #7 は2回目のレビューで問題なければマージしていい」）
 
 ## このカードでやらない
 
@@ -71,5 +71,7 @@ updated: 2026-10-31
 - 2026-10-31 argboard開発: doing → review。単体テストで遅延保存、最新編集への集約、失敗保持・再試行、切替・新規・JSON/ZIP 取り込み、保存中・失敗後の再表示、離脱確認を検証。check / test / build / smoke 成功。人間確認待ち。
 
 - 2026-10-31 argboard開発: 狭い幅(≤800px)でも保存中/失敗を見せるよう `.save-status.is-saving/.is-error` を表示。証跡は /workspace/argboard-t101/（スクショ・switch.mp4）。
+
+- 2026-11-01 argboard開発: レビュー1回目（issuecomment-6544499408）→ 修正 ab8a257。レビュー2回目 MERGE-READY（issuecomment-6552527335）。隆さん OK（2026-11-01 11:48 JST、開発マネージャー経由）。APP_RELEASE 0.82→0.83・APP_PREVIEW クリア。follow-up: kick() chain に .catch なし / `await persist()` はディスク flush を意味しない / 複数失敗時ラベルは先頭ボード名のみ。review → done（PR #7 squash merge）。
 
 ## 差し戻し履歴（追記のみ）
