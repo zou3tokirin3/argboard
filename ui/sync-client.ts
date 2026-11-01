@@ -1,4 +1,4 @@
-import { type OrderedOp, receiveOps } from "./sync.ts";
+import { type OrderedOp, receiveOps, type SyncOp } from "./sync.ts";
 import type { Project } from "./types.ts";
 
 /** One active project; switching closes the socket and cancels reconnects. */
@@ -18,11 +18,25 @@ export function connectRoom(
     sent = new Set<string>();
   const flush = () => {
     if (!ready || socket?.readyState !== WebSocket.OPEN) return;
-    for (const o of read().share!.pending)
-      if (!sent.has(o.oid)) {
-        socket.send(JSON.stringify({ t: "push", ops: [o] }));
-        sent.add(o.oid);
-      }
+    const pending = read().share!.pending.filter((o) => !sent.has(o.oid));
+    let ops: SyncOp[] = [];
+    // Keep the existing server input byte limit as well as the operation limit.
+    const overhead = JSON.stringify({ t: "push", ops: [] }).length;
+    let bytes = overhead;
+    const send = () => {
+      socket!.send(JSON.stringify({ t: "push", ops }));
+      for (const o of ops) sent.add(o.oid);
+      ops = [];
+      bytes = overhead;
+    };
+    for (const o of pending) {
+      const size = new TextEncoder().encode(JSON.stringify(o)).length;
+      if (ops.length && (ops.length === 500 || bytes + size + 1 > 256 * 1024))
+        send();
+      bytes += size + (ops.length ? 1 : 0);
+      ops.push(o);
+    }
+    if (ops.length) send();
   };
   const connect = () => {
     if (stopped) return;

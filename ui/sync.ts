@@ -14,6 +14,10 @@ export type Op =
 export type SyncOp = { oid: string; op: Op };
 export type OrderedOp = SyncOp & { seq: number };
 export const roomValid = (room: string) => /^[A-Za-z0-9_-]{22,64}$/.test(room);
+export function parseJoinHash(hash: string): string | null {
+  const room = hash.slice(6);
+  return hash.startsWith("#join=") && roomValid(room) ? room : null;
+}
 export const randomRoom = () =>
   btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(16))))
     .replaceAll("+", "-")

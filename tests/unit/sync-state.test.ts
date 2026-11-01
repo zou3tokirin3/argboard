@@ -84,11 +84,19 @@ test("join invitation reuses a local room, otherwise creates one, and removes ha
     await state.initialize(); await state.flushSave();
     assert.equal(state.project.value.id, local.id);
     assert.equal(saved.size, 1);
+    // The app is already open on a private board; hashchange uses joinFromHash.
+    await state.createProject("private board");
+    await state.flushSave();
+    const privateId = state.project.value.id;
+    globalThis.location.hash = "#join=invalid";
+    assert.equal(await state.joinFromHash(), false);
+    assert.equal(state.project.value.id, privateId);
     globalThis.location.hash = "#join=" + "k".repeat(22);
-    await state.initialize(); await state.flushSave();
+    assert.equal(await state.joinFromHash(), true);
+    await state.flushSave();
     assert.equal(state.project.value.share.room, "k".repeat(22));
     assert.equal(state.project.value.cards.length, 0);
-    assert.equal(saved.size, 2);
+    assert.equal(saved.size, 3);
     assert.equal(cleared, 2);
   } finally {
     await state.flushSave(); state.installStoreForTests(store);

@@ -671,7 +671,8 @@ export function parseProjectJson(text: string): Project {
     !Array.isArray(p.boards)
   )
     throw new Error("未対応の形式か version です");
-  return data as Project;
+  const { share: _, ...project } = data as Project;
+  return project;
 }
 
 function withMainBoard(

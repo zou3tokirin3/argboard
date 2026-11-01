@@ -27,6 +27,7 @@ import {
   importProjectFromText,
   initialize,
   isReplaying,
+  joinFromHash,
   laneView,
   panelPhase,
   pasteExploreImage,
@@ -828,7 +829,12 @@ function moveChromeTab(event: KeyboardEvent): boolean {
 function App() {
   useAppTitle();
   useEffect(() => {
-    initialize();
+    const onHashChange = () => {
+      void joinFromHash();
+    };
+    window.addEventListener("hashchange", onHashChange);
+    void initialize();
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   useEffect(() => {

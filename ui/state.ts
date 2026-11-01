@@ -42,7 +42,13 @@ import {
   withBirthEvents,
 } from "./project.ts";
 import { hasStoryWhen } from "./story-when.ts";
-import { diffOps, type Op, queueOps, randomRoom, roomValid } from "./sync.ts";
+import {
+  diffOps,
+  type Op,
+  parseJoinHash,
+  queueOps,
+  randomRoom,
+} from "./sync.ts";
 import { connectRoom } from "./sync-client.ts";
 import { attachTag, detachTag, normalizeTag, replaceTag } from "./tags.ts";
 import type { ThoughtOutcome } from "./thought-outcome.ts";
@@ -801,32 +807,34 @@ export function patchProjectLocal(next: Project): void {
   project.value = next;
 }
 
-export async function initialize(): Promise<void> {
-  const join = typeof location === "undefined" ? "" : location.hash.slice(6);
-  if (
-    typeof location !== "undefined" &&
-    location.hash.startsWith("#join=") &&
-    roomValid(join)
-  ) {
-    let joined: Project | undefined;
-    for (const summary of await store.listProjects()) {
-      const candidate =
-        persistQueue.getLatest(summary.id) ??
-        (await store.loadProject(summary.id));
-      if (candidate?.share?.room === join) {
-        joined = candidate;
-        break;
-      }
+/** Handle invitations both on startup and on same-document hash navigation. */
+export async function joinFromHash(): Promise<boolean> {
+  const join = parseJoinHash(
+    typeof location === "undefined" ? "" : location.hash,
+  );
+  if (!join) return false;
+  let joined: Project | undefined;
+  for (const summary of await store.listProjects()) {
+    const candidate =
+      persistQueue.getLatest(summary.id) ??
+      (await store.loadProject(summary.id));
+    if (candidate?.share?.room === join) {
+      joined = candidate;
+      break;
     }
-    joined ??= {
-      ...createEmptyProject("共有ボード"),
-      share: { room: join, seq: 0, pending: [] },
-    };
-    await activateProject(joined);
-    history.replaceState(null, "", location.pathname + location.search);
-    await refreshSummaries();
-    return;
   }
+  joined ??= {
+    ...createEmptyProject("共有ボード"),
+    share: { room: join, seq: 0, pending: [] },
+  };
+  await activateProject(joined);
+  history.replaceState(null, "", location.pathname + location.search);
+  await refreshSummaries();
+  return true;
+}
+
+export async function initialize(): Promise<void> {
+  if (await joinFromHash()) return;
   let summaries = await store.listProjects();
   if (summaries.length === 0) {
     const seeded = createDemoProject();
@@ -1585,7 +1593,6 @@ export async function importProjectFromText(text: string): Promise<Project> {
   const parsed = parseProjectJson(text);
   const next: Project = {
     ...parsed,
-    share: undefined,
     id: crypto.randomUUID(),
     name: `${parsed.name}（取り込み）`,
   };
@@ -1605,7 +1612,6 @@ async function importProjectFromZip(bytes: Uint8Array): Promise<Project> {
   const media = mediaFromZip(entries);
   const next: Project = {
     ...parsed,
-    share: undefined,
     id: crypto.randomUUID(),
     name: `${parsed.name}（取り込み）`,
   };
