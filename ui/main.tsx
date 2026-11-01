@@ -50,10 +50,12 @@ import {
   selectSingleCard,
   setAppMode,
   setPanelPhase,
+  shareProject,
   spawnThoughtFromLink,
   startDigging,
   stopDigging,
   switchProject,
+  syncStatus,
   updateCardRole,
   updateLink,
 } from "./state.ts";
@@ -347,6 +349,27 @@ function TopBar() {
       </div>
       <div class="topbar__actions">
         <SaveStatusLabel />
+        {project.value?.share && (
+          <small role="status">共有中・{syncStatus.value}</small>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            void shareProject().then((link) => {
+              if (link) {
+                void navigator.clipboard
+                  ?.writeText(link)
+                  .catch(() => undefined);
+                prompt(
+                  "招待リンク（リンクを知っている全員が編集できます・添付画像は共有されません）",
+                  link,
+                );
+              }
+            });
+          }}
+        >
+          共有
+        </button>
         <button
           type="button"
           data-testid="export-btn"

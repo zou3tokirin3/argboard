@@ -73,6 +73,7 @@ export type ProjectEvent =
   | { type: "found_via_cleared"; at: number; cardId: string };
 
 export type Project = {
+  share?: { room: string; seq: number; pending: import("./sync.ts").SyncOp[] };
   version: 1;
   id: string;
   name: string;

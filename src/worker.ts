@@ -1,5 +1,8 @@
+import { roomValid } from "./room-protocol.ts";
+export { BoardRoom } from "./room.ts";
 interface Env {
   ASSETS: Fetcher;
+  ROOMS: DurableObjectNamespace;
 }
 
 const CORS = { "Access-Control-Allow-Origin": "*" };
@@ -7,6 +10,18 @@ const CORS = { "Access-Control-Allow-Origin": "*" };
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    if (url.pathname.startsWith("/api/rooms/")) {
+      const room = url.pathname.slice("/api/rooms/".length);
+      if (!roomValid(room)) return new Response(null, { status: 400 });
+      const origin = request.headers.get("Origin");
+      if (origin !== null) {
+        try { if (new URL(origin).host !== url.host) return new Response(null, { status: 403 }); }
+        catch { return new Response(null, { status: 403 }); }
+      }
+      if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") return new Response(null, { status: 426 });
+      return env.ROOMS.get(env.ROOMS.idFromName(room)).fetch(request);
+    }
 
     if (url.pathname === "/api/ogp") {
       return handleOgp(url.searchParams.get("url"));

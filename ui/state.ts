@@ -42,6 +42,8 @@ import {
   withBirthEvents,
 } from "./project.ts";
 import { hasStoryWhen } from "./story-when.ts";
+import { diffOps, type Op, queueOps, randomRoom, roomValid } from "./sync.ts";
+import { connectRoom } from "./sync-client.ts";
 import { attachTag, detachTag, normalizeTag, replaceTag } from "./tags.ts";
 import type { ThoughtOutcome } from "./thought-outcome.ts";
 import type {
@@ -660,10 +662,62 @@ function upsertSummary(next: Project): void {
   ];
 }
 
-async function persist(next: Project): Promise<void> {
+let syncBaseline: Project | null = null;
+let connection: ReturnType<typeof connectRoom> | undefined;
+export const syncStatus = signal("オフライン");
+let clientId = "",
+  opCounter = 0;
+const identify = (op: Op) => {
+  clientId ||= randomRoom();
+  return { oid: `${clientId}:${++opCounter}`, op };
+};
+function saveSynced(next: Project): void {
   project.value = next;
+  syncBaseline = structuredClone(next);
   upsertSummary(next);
   void persistQueue.enqueue(next);
+}
+function startSync(): void {
+  connection?.close();
+  connection = undefined;
+  syncStatus.value = "オフライン";
+  syncBaseline = project.value ? structuredClone(project.value) : null;
+  if (
+    project.value?.share &&
+    typeof location !== "undefined" &&
+    typeof WebSocket !== "undefined"
+  ) {
+    connection = connectRoom(
+      () => project.value!,
+      saveSynced,
+      (s) => {
+        syncStatus.value = s;
+      },
+    );
+  }
+}
+export async function shareProject(): Promise<string> {
+  const current = project.value;
+  if (!current) return "";
+  if (!current.share) {
+    const empty = { ...current, name: "", cards: [], links: [], boards: [] };
+    saveSynced({
+      ...current,
+      share: {
+        room: randomRoom(),
+        seq: 0,
+        pending: diffOps(empty, current).map(identify),
+      },
+    });
+    startSync();
+  }
+  return `${location.origin}/#join=${project.value!.share!.room}`;
+}
+async function persist(next: Project): Promise<void> {
+  if (syncBaseline?.id === next.id)
+    next = queueOps(syncBaseline, next, identify);
+  saveSynced(next);
+  connection?.flush();
 }
 
 function withUi(
@@ -714,6 +768,7 @@ async function activateProject(next: Project): Promise<void> {
   project.value = opened;
   void persistQueue.enqueue(opened);
   upsertSummary(opened);
+  startSync();
 }
 
 /** Select from the discovery stream; pan the board if the card is placed. */
@@ -747,6 +802,31 @@ export function patchProjectLocal(next: Project): void {
 }
 
 export async function initialize(): Promise<void> {
+  const join = typeof location === "undefined" ? "" : location.hash.slice(6);
+  if (
+    typeof location !== "undefined" &&
+    location.hash.startsWith("#join=") &&
+    roomValid(join)
+  ) {
+    let joined: Project | undefined;
+    for (const summary of await store.listProjects()) {
+      const candidate =
+        persistQueue.getLatest(summary.id) ??
+        (await store.loadProject(summary.id));
+      if (candidate?.share?.room === join) {
+        joined = candidate;
+        break;
+      }
+    }
+    joined ??= {
+      ...createEmptyProject("共有ボード"),
+      share: { room: join, seq: 0, pending: [] },
+    };
+    await activateProject(joined);
+    history.replaceState(null, "", location.pathname + location.search);
+    await refreshSummaries();
+    return;
+  }
   let summaries = await store.listProjects();
   if (summaries.length === 0) {
     const seeded = createDemoProject();
@@ -1481,7 +1561,9 @@ export async function exportProject(): Promise<void> {
   const current = project.value;
   if (!current) return;
   const files = new Map<string, Uint8Array>();
-  const json = new TextEncoder().encode(JSON.stringify(current, null, 2));
+  const json = new TextEncoder().encode(
+    JSON.stringify({ ...current, share: undefined }, null, 2),
+  );
   files.set("project.json", json);
   for (const id of collectMediaIds(current.cards)) {
     const record = await store.getMedia(id);
@@ -1503,6 +1585,7 @@ export async function importProjectFromText(text: string): Promise<Project> {
   const parsed = parseProjectJson(text);
   const next: Project = {
     ...parsed,
+    share: undefined,
     id: crypto.randomUUID(),
     name: `${parsed.name}（取り込み）`,
   };
@@ -1522,6 +1605,7 @@ async function importProjectFromZip(bytes: Uint8Array): Promise<Project> {
   const media = mediaFromZip(entries);
   const next: Project = {
     ...parsed,
+    share: undefined,
     id: crypto.randomUUID(),
     name: `${parsed.name}（取り込み）`,
   };

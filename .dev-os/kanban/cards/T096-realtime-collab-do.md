@@ -1,13 +1,13 @@
 ---
 id: T096
 title: 同時オンライン編集（Cloudflare DO + WebSocket）
-status: ready
-owner: none
+status: doing
+owner: argboard開発
 gate: human
-branch: ""
+branch: task/T096-collab-slice1
 template_ver: generic-0.2
 created: 2026-10-23
-updated: 2026-10-31
+updated: 2026-11-01
 ---
 
 ## 背景
@@ -83,3 +83,9 @@ updated: 2026-10-31
 
 - 2026-10-23 human: 同時オンライン編集をやりたい。DO 使うことになるか、と検討。backlog として起票。
 - 2026-10-31 argboard開発: grill-me 9問を開発マネージャー経由で人間に提出。全問「おすすめ」で決定。受け入れ条件を記入し backlog→ready。§12 Won't 解除は PLAN §14 改訂31。
+- 2026-11-01 writer（task/T096-collab-slice1）: 最初の共同編集実装。依存追加なし、コミット・push・外部通信なし。CRDT は使わず、SQLite DO の採番済み set 操作と WebSocket Hibernation で中継。共有していない Project は通信しない。share.pending は既存 Store 経由で保存し、画像・events・ui・viewport は操作に含めない。zip の project.json から share を除外し、取り込みでも share を破棄。
+  - 確定状態と pending の重ね合わせを分離。hello の履歴末尾を空の ops フレームで通知。pending がある保存データを開き直す場合、最初の hello(since=share.seq) の後に hello(since=0) で確定状態を復元し、ack 済みを除いて再送する。ドラッグ確定は最後に保存した状態との差分から位置操作を作る。
+  - 招待は 128bit base64url room、トップバー「共有」とコピー可能な招待リンク、接続/オフライン/同期エラー表示。既存 room のローカル Project を再利用し、join hash を消す。Worker は room/Origin/Upgrade を検証。サーバ検証・採番は偽サーバと共通の純関数。256KiB/500操作/50,000操作上限、oid 重複排除、画像除去を実装。SQLite migration の new_sqlite_classes のみ使用。
+  - 検証: 指定 COREPACK_HOME を設定し、ローカルの Node 22.23.4 とキャッシュ済み pnpm 10.15.0 で pnpm check/test/build が成功。全 unit ファイルの直接実行も 121 件成功（新規12件）。pnpm smoke は既存1本を変更せず実行したが Chromium 起動で sandbox_host_linux.cc:41 / shutdown: Operation not permitted。起動オプションを変えた再試行も同じ失敗。アプリ操作には未到達であり smoke 通過・実ブラウザ2人確認・Cloudflare 実機確認は未完了。受け入れチェックは人間確認まで変更しない。
+  - 差分規模: docs を除き追加533行（テスト込み894行）、削除3行。400行の目安は超過。今回は指定の最小同期・永続化・必須入力検証を含め、画像共有・履歴圧縮・専用の共有管理UIは次PR以降。上限超過時は削除や圧縮を行わずエラーを表示して pending を保持する。
+- 2026-11-01 argboard開発: ready→doing（owner argboard開発、branch task/T096-collab-slice1）。最初の PR は「1ボード2人同時」の最小版。書き手 Codex、レビューは別モデル（Cursor クラウドエージェント）。取り次ぎ側で再検証: check/test(121)/build/smoke 緑（上の smoke 失敗は Codex サンドボックス内の Chromium 起動制限によるもので、サンドボックス外では通過）。`wrangler dev`（ローカル Worker+SQLite DO）＋ Playwright 2ブラウザで、追加・移動・つながり追加/ラベル・改名が数十 ms で反映、サーバ停止中に両側で編集→B のタブを閉じて開き直し→再起動で合流し両者一致を確認。非共有プロジェクトでは WebSocket が開かないことを確認。証跡 /workspace/argboard-t096/（box 内）。
