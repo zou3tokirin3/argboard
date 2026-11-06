@@ -9,6 +9,7 @@ import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import { LaneWorkspace } from "./lane-view.tsx";
 import { appTitle } from "./release.ts";
+import { shouldShowShareButton } from "./sharing-host.ts";
 import {
   activeProjectId,
   addCard,
@@ -353,24 +354,26 @@ function TopBar() {
         {project.value?.share && (
           <small role="status">共有中・{syncStatus.value}</small>
         )}
-        <button
-          type="button"
-          onClick={() => {
-            void shareProject().then((link) => {
-              if (link) {
-                void navigator.clipboard
-                  ?.writeText(link)
-                  .catch(() => undefined);
-                prompt(
-                  "招待リンク（リンクを知っている全員が編集できます・添付画像は共有されません）",
-                  link,
-                );
-              }
-            });
-          }}
-        >
-          共有
-        </button>
+        {shouldShowShareButton(location.hostname) && (
+          <button
+            type="button"
+            onClick={() => {
+              void shareProject().then((link) => {
+                if (link) {
+                  void navigator.clipboard
+                    ?.writeText(link)
+                    .catch(() => undefined);
+                  prompt(
+                    "招待リンク（リンクを知っている全員が編集できます・添付画像は共有されません）",
+                    link,
+                  );
+                }
+              });
+            }}
+          >
+            共有
+          </button>
+        )}
         <button
           type="button"
           data-testid="export-btn"

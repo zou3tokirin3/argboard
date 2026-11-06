@@ -81,6 +81,7 @@ test("join invitation reuses a local room, otherwise creates one, and removes ha
     loadProject: async id => saved.get(id), saveProject: async p => { saved.set(p.id, structuredClone(p)); },
   });
   try {
+    state.project.value = null; // A fresh page has no active in-memory project.
     await state.initialize(); await state.flushSave();
     assert.equal(state.project.value.id, local.id);
     assert.equal(saved.size, 1);
@@ -100,6 +101,68 @@ test("join invitation reuses a local room, otherwise creates one, and removes ha
     assert.equal(cleared, 2);
   } finally {
     await state.flushSave(); state.installStoreForTests(store);
+    for (const [key, value] of Object.entries(originals)) if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
+  }
+});
+
+
+for (const reuse of [false, true]) test(`hash invitation flushes pending editor drafts before switching (reuse=${reuse})`, { timeout: 2000 }, async () => {
+  const source = createEmptyProject("private");
+  source.cards = [{ id: "draft-card", title: "before", foundAt: 1 }];
+  source.links = [{ id: "draft-link", from: "draft-card", to: "draft-card", kind: "connects", label: "before", createdAt: 1 }];
+  const target = createEmptyProject("existing room");
+  const room = "z".repeat(22);
+  target.share = { room, seq: 0, pending: [] };
+  const saved = new Map([[source.id, source]]);
+  if (reuse) saved.set(target.id, target);
+  const originals = Object.fromEntries(["location", "history", "WebSocket"].map(k => [k, globalThis[k]]));
+  Object.assign(globalThis, {
+    WebSocket: undefined,
+    location: { hash: "#join=" + room, pathname: "/", search: "" },
+    history: { replaceState() { globalThis.location.hash = ""; } },
+  });
+  let hold = false, release;
+  let savingDraft;
+  const draftStarted = new Promise(resolve => { savingDraft = resolve; });
+  state.installStoreForTests({ ...store,
+    listProjects: async () => [...saved.values()].map(p => ({ id: p.id, name: p.name, cardCount: p.cards.length, updatedAt: 1 })),
+    loadProject: async id => saved.get(id),
+    saveProject: async p => {
+      if (hold && p.id === source.id && p.cards[0]?.title === "debounced draft") {
+        hold = false;
+        savingDraft();
+        await new Promise(resolve => { release = resolve; });
+      }
+      saved.set(p.id, structuredClone(p));
+    },
+  });
+  let unregister = () => {};
+  try {
+    await state.switchProject(source.id);
+    await state.flushSave();
+    hold = true;
+    // Model an editor value still waiting for its debounce deadline.
+    unregister = state.registerPendingEditFlusher(async () => {
+      await state.updateCard("draft-card", { title: "debounced draft" });
+      await state.updateLink("draft-link", { label: "debounced label" });
+    });
+    const joining = state.joinFromHash(); // Same entry point used by hashchange.
+    await draftStarted;
+    assert.equal(state.project.value.id, source.id);
+    assert.equal(globalThis.location.hash, "#join=" + room);
+    release();
+    assert.equal(await joining, true);
+    unregister();
+    assert.equal(saved.get(source.id).cards[0].title, "debounced draft");
+    assert.equal(saved.get(source.id).links[0].label, "debounced label");
+    assert.equal(state.project.value.share.room, room);
+    if (reuse) assert.equal(state.project.value.id, target.id);
+    assert.equal(globalThis.location.hash, "");
+  } finally {
+    unregister();
+    release?.();
+    await state.flushSave();
+    state.installStoreForTests(store);
     for (const [key, value] of Object.entries(originals)) if (value === undefined) delete globalThis[key]; else globalThis[key] = value;
   }
 });

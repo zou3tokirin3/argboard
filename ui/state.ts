@@ -813,6 +813,7 @@ export async function joinFromHash(): Promise<boolean> {
     typeof location === "undefined" ? "" : location.hash,
   );
   if (!join) return false;
+  await flushSave();
   let joined: Project | undefined;
   for (const summary of await store.listProjects()) {
     const candidate =
@@ -1661,7 +1662,21 @@ export function pickAndImportProject(): void {
   input.click();
 }
 
+const pendingEditFlushers = new Set<() => Promise<void>>();
+
+/** Include editor drafts that have not reached their debounce deadline yet. */
+export function registerPendingEditFlusher(
+  flush: () => Promise<void>,
+): () => void {
+  pendingEditFlushers.add(flush);
+  return () => {
+    pendingEditFlushers.delete(flush);
+  };
+}
+
 export async function flushSave(): Promise<void> {
+  for (const flush of pendingEditFlushers) await flush();
+  await cardUpdateChain;
   await persistQueue.flush();
   if (project.value) await persistQueue.enqueue(project.value);
   await persistQueue.flush();

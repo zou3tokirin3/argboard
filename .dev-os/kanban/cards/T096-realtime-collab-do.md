@@ -1,13 +1,13 @@
 ---
 id: T096
 title: 同時オンライン編集（Cloudflare DO + WebSocket）
-status: doing
+status: done
 owner: argboard開発
 gate: human
 branch: task/T096-collab-slice1
 template_ver: generic-0.2
 created: 2026-10-23
-updated: 2026-11-01
+updated: 2026-11-07
 ---
 
 ## 背景
@@ -92,3 +92,15 @@ updated: 2026-11-01
 - 2026-11-01 argboard開発: PR #8 レビュー1回目（Cursor クラウドエージェント）はブロッキングなし。取り次ぎ側の2ブラウザ確認で見つけた「開いているタブで招待リンクを開くと参加しない（hashchange）」を Codex が修正。あわせてフレーム集約（最大500操作/フレーム）、share 除去を parseProjectJson に集約、src/ を biome 対象に、同期テスト追加（135件）。再検証: check/test/build/smoke 緑、wrangler dev＋2ブラウザで反映・オフライン合流・タブ再オープン後の合流を確認。
 - 次 PR 以降に回す（レビュー1回目の非ブロッキング指摘）: 同一フィールド・タグ配列の同時編集は後勝ち（タグの和集合マージ）、events（履歴）は共有されずリプレイが人ごとに分かれる、ドラッグ中にリモートの位置で上書きされうる、Origin なし/null の扱い、GitHub Pages 版では共同編集できないことの明記、招待リンクの専用 UI（今は prompt）と共有の停止、boards[0] だけが共有対象、ルーム上限 50,000 操作と操作ログ圧縮、sync 層の位置づけ（PLAN §6）、画像共有、人間による2ブラウザ確認。
 - 2026-11-01 argboard開発: PR #8 レビュー2回目（Cursor クラウドエージェント、a7230e4）もブロッキングなし。非ブロッキングで次 PR に回すもの: DO の hello/配信フレームにも 256KiB のバイト上限分割、1操作が 256KiB を超えたときの文言、hashchange 参加の重入防止、参加・切り替え前の保存フラッシュ（デバウンス中の編集の取りこぼし防止）、export の share 除去を共通関数に。status は doing のまま（done・APP_RELEASE はマージ時）。マージは隆さんの OK 待ち。
+
+- 2026-11-07 Codex（取り次ぎ argboard開発）: 隆さんの承認（08:16 JST、原文「#8は全部おすすめでマージしていい」）を受けて PR #8 の最後の直し。A: joinFromHash（初期参加・hashchange 共通）で、デバウンス中のカード/リンク編集も含む flushSave を await してから参加先へ切り替える。B: hostname の純関数判定で GitHub Pages の共有ボタンを非表示にし、workers.dev／ローカル wrangler dev は表示を維持。回帰テスト追加。status を done、APP_RELEASE を 0.83→0.84（APP_PREVIEW は空のまま）に更新。コミット・push・依存追加なし。smoke は取り次ぎ側で実行。本番確認は隆さん未実施。受け入れ条件の「人間が2つのブラウザで動作確認する」は未チェックのまま残す。
+
+  - 検証: `export COREPACK_HOME="$HOME/.cache/node/corepack"`、既存 Node 22.23.4 を使用して pnpm check・test・build 成功。pnpm test は30ファイル成功、全 unit ファイルの直接実行は145件成功（追加10件: 参加前フラッシュ2件、共有ボタン判定8件）。git diff --check 成功。smoke は指定どおり取り次ぎ側へ委ねる。
+
+## 次 PR に回す既知の制限
+
+- 同一フィールドは後勝ち。タグ配列は丸ごと上書き。
+- events/リプレイ・画像は共有しない。
+- 共同編集は workers.dev のみ（Pages では共有ボタン非表示）。ローカル wrangler dev は検証用として共有ボタンを表示。
+- 招待リンクは prompt 表示。
+- その他のレビュー指摘は上記の履歴に残す（今回解消した参加前の保存フラッシュを除く）。
