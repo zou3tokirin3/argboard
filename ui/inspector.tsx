@@ -25,6 +25,7 @@ import {
   mergeProjectTags,
   openExploreCompose,
   openImageOverlay,
+  registerPendingEditFlusher,
   removeCard,
   removeLink,
   renameProjectTag,
@@ -351,6 +352,24 @@ export function Inspector() {
   const debouncedSaveLink = useMemo(
     () => debounce((linkId: string) => void saveLinkLabel(linkId), 400),
     [saveLinkLabel],
+  );
+
+  useEffect(
+    () =>
+      registerPendingEditFlusher(async () => {
+        debouncedSaveCard.cancel();
+        debouncedSaveLink.cancel();
+        if (singleCardEditId) await saveCardFields(singleCardEditId);
+        if (link?.id) await saveLinkLabel(link.id);
+      }),
+    [
+      singleCardEditId,
+      link?.id,
+      debouncedSaveCard,
+      debouncedSaveLink,
+      saveCardFields,
+      saveLinkLabel,
+    ],
   );
 
   useEffect(() => {

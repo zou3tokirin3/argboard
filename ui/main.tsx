@@ -9,6 +9,7 @@ import { getPersistenceRequestCount } from "./db.ts";
 import { Inspector } from "./inspector.tsx";
 import { LaneWorkspace } from "./lane-view.tsx";
 import { appTitle } from "./release.ts";
+import { shouldShowShareButton } from "./sharing-host.ts";
 import {
   activeProjectId,
   addCard,
@@ -27,6 +28,7 @@ import {
   importProjectFromText,
   initialize,
   isReplaying,
+  joinFromHash,
   laneView,
   panelPhase,
   pasteExploreImage,
@@ -50,10 +52,12 @@ import {
   selectSingleCard,
   setAppMode,
   setPanelPhase,
+  shareProject,
   spawnThoughtFromLink,
   startDigging,
   stopDigging,
   switchProject,
+  syncStatus,
   updateCardRole,
   updateLink,
 } from "./state.ts";
@@ -347,6 +351,29 @@ function TopBar() {
       </div>
       <div class="topbar__actions">
         <SaveStatusLabel />
+        {project.value?.share && (
+          <small role="status">共有中・{syncStatus.value}</small>
+        )}
+        {shouldShowShareButton(location.hostname) && (
+          <button
+            type="button"
+            onClick={() => {
+              void shareProject().then((link) => {
+                if (link) {
+                  void navigator.clipboard
+                    ?.writeText(link)
+                    .catch(() => undefined);
+                  prompt(
+                    "招待リンク（リンクを知っている全員が編集できます・添付画像は共有されません）",
+                    link,
+                  );
+                }
+              });
+            }}
+          >
+            共有
+          </button>
+        )}
         <button
           type="button"
           data-testid="export-btn"
@@ -805,7 +832,12 @@ function moveChromeTab(event: KeyboardEvent): boolean {
 function App() {
   useAppTitle();
   useEffect(() => {
-    initialize();
+    const onHashChange = () => {
+      void joinFromHash();
+    };
+    window.addEventListener("hashchange", onHashChange);
+    void initialize();
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   useEffect(() => {

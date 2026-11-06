@@ -8,7 +8,7 @@
     "dev": "node scripts/build.js && node scripts/serve.js",
     "cf:dev": "node scripts/build.js && wrangler dev",
     "cf:deploy": "node scripts/build.js && wrangler deploy",
-    "check": "biome check ui/ scripts/ && tsc --noEmit",
+    "check": "biome check ui/ src/ scripts/ && tsc --noEmit && tsc --noEmit -p src",
     "test": "node --experimental-strip-types --test tests/unit/*.test.ts",
     "smoke": "node scripts/build.js && playwright test",
     "budget": "node tools/budget.js"

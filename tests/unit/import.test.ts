@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createDemoProject, parseProjectJson } from "../../ui/project.ts";
 
@@ -33,4 +34,13 @@ test("parseProjectJson rejects unsupported version", () => {
       throw error;
     }
   }
+});
+
+test("parseProjectJson always strips shared room credentials and pending operations", () => {
+  const source = createDemoProject(1);
+  source.share = { room: "a".repeat(22), seq: 3, pending: [{ oid: "x:1", op: { k: "name", v: "pending" } }] };
+  const parsed = parseProjectJson(JSON.stringify(source));
+  assert.equal(Object.hasOwn(parsed, "share"), false);
+  const { share, ...expected } = source;
+  assert.deepEqual(parsed, expected);
 });
