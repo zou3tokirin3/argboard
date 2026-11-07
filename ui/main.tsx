@@ -569,7 +569,7 @@ function CaptureChrome() {
 // ── パターンB: 右エリア出し分け ──────────────────────────
 function RightPanelB() {
   const isOpen = captureRightOpen.value;
-  const hasCard = !!selectedCardId.value;
+  const hasSelection = !!(selectedCardId.value || selectedLinkId.value);
 
   return (
     <div class={`right-panel-b${isOpen ? "" : " right-panel-b--closed"}`}>
@@ -585,12 +585,15 @@ function RightPanelB() {
       </button>
       {isOpen && (
         <div class="right-panel-b__content">
-          {hasCard ? (
+          {hasSelection ? (
             <>
               <button
                 type="button"
                 class="right-panel-b__new-btn"
-                onClick={() => clearCardSelection()}
+                onClick={() => {
+                  selectedLinkId.value = null;
+                  clearCardSelection();
+                }}
               >
                 ＋ 新規
               </button>

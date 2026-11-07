@@ -1,13 +1,6 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { CardImageField } from "./card-image-field.tsx";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
-import { debounce } from "./debounce.ts";
 import { IconTip } from "./icon-tip.tsx";
 import { ImageOverlay } from "./image-overlay.tsx";
 import { isLocalMediaRef } from "./media.ts";
@@ -286,6 +279,12 @@ function TagField(props: {
 }
 
 export function Inspector() {
+  // A separate editor owns each selection's refs, including its unmount flush.
+  const key = `${selectedCardIds.value.join(",")}:${selectedLink.value?.id ?? ""}`;
+  return <InspectorEditor key={key} />;
+}
+
+function InspectorEditor() {
   const multiIds = selectedCardIds.value;
   const card = selectedCard.value;
   const link = selectedLink.value;
@@ -310,8 +309,18 @@ export function Inspector() {
     storyUntil: "",
   });
   const labelRef = useRef("");
-  fieldsRef.current = { title, body, url, storyWhen, storyUntil };
-  labelRef.current = label;
+  const labelDirtyRef = useRef(false);
+  const labelStartRef = useRef("");
+  const composingRef = useRef(false);
+  type Field = keyof typeof fieldsRef.current;
+  const startsRef = useRef<Partial<Record<Field, string>>>({});
+  const setters = {
+    title: setTitle,
+    body: setBody,
+    url: setUrl,
+    storyWhen: setStoryWhen,
+    storyUntil: setStoryUntil,
+  };
 
   const singleCardEditId = !link && multiIds.length <= 1 ? card?.id : undefined;
 
@@ -321,56 +330,105 @@ export function Inspector() {
     new Set<"title" | "body" | "url" | "storyWhen" | "storyUntil">(),
   );
 
-  const saveCardFields = useCallback(async (id: string) => {
+  const saveCardFields = useCallback(async (id: string, field?: Field) => {
     if (isReplaying.value) return;
-    const fields = fieldsRef.current;
-    const dirty = dirtyFieldsRef.current;
     const patch: Parameters<typeof updateCard>[1] = {};
-    if (dirty.has("title")) patch.title = fields.title;
-    if (dirty.has("body")) patch.body = fields.body;
-    if (dirty.has("url")) patch.url = fields.url;
-    if (dirty.has("storyWhen")) patch.storyWhen = fields.storyWhen;
-    if (dirty.has("storyUntil")) patch.storyUntil = fields.storyUntil;
-    if (pendingOgpImageRef.current !== undefined) {
+    const current = viewProject.value?.cards.find((item) => item.id === id);
+    if (!current) return;
+    for (const key of [...dirtyFieldsRef.current]) {
+      if (field && key !== field) continue;
+      dirtyFieldsRef.current.delete(key);
+      const value = fieldsRef.current[key];
+      const changed = value !== startsRef.current[key];
+      delete startsRef.current[key];
+      if (changed && value !== (current[key] ?? "")) patch[key] = value;
+      const next = changed ? value : (current[key] ?? "");
+      fieldsRef.current[key] = next;
+      setters[key](next);
+    }
+    if (!field && pendingOgpImageRef.current !== undefined) {
       patch.ogpImage = pendingOgpImageRef.current;
       pendingOgpImageRef.current = undefined;
     }
-    if (Object.keys(patch).length === 0) return;
-    await updateCard(id, patch);
+    if (Object.keys(patch).length) await updateCard(id, patch);
   }, []);
-
-  const debouncedSaveCard = useMemo(
-    () => debounce((id: string) => void saveCardFields(id), 400),
-    [saveCardFields],
-  );
 
   const saveLinkLabel = useCallback(async (linkId: string) => {
-    if (isReplaying.value) return;
-    await updateLink(linkId, { label: labelRef.current });
+    if (isReplaying.value || !labelDirtyRef.current) return;
+    labelDirtyRef.current = false;
+    const current = viewProject.value?.links.find((item) => item.id === linkId);
+    if (!current) return;
+    const value = labelRef.current;
+    const changed = value !== labelStartRef.current;
+    labelRef.current = changed ? value : (current.label ?? "");
+    setLabel(labelRef.current);
+    if (changed && value !== (current.label ?? ""))
+      await updateLink(linkId, { label: value });
   }, []);
-
-  const debouncedSaveLink = useMemo(
-    () => debounce((linkId: string) => void saveLinkLabel(linkId), 400),
-    [saveLinkLabel],
-  );
 
   useEffect(
     () =>
       registerPendingEditFlusher(async () => {
-        debouncedSaveCard.cancel();
-        debouncedSaveLink.cancel();
         if (singleCardEditId) await saveCardFields(singleCardEditId);
         if (link?.id) await saveLinkLabel(link.id);
       }),
-    [
-      singleCardEditId,
-      link?.id,
-      debouncedSaveCard,
-      debouncedSaveLink,
-      saveCardFields,
-      saveLinkLabel,
-    ],
+    [singleCardEditId, link?.id, saveCardFields, saveLinkLabel],
   );
+
+  function confirmEnter(event: KeyboardEvent & { currentTarget: HTMLElement }) {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      !event.isComposing &&
+      event.keyCode !== 229 &&
+      !composingRef.current
+    ) {
+      event.preventDefault();
+      event.currentTarget.blur();
+    }
+  }
+
+  const compositionHandlers = {
+    onCompositionStart: () => {
+      composingRef.current = true;
+    },
+    onCompositionEnd: () => {
+      composingRef.current = false;
+    },
+    onKeyDown: confirmEnter,
+  };
+
+  function fieldHandlers(field: Field) {
+    return {
+      ...compositionHandlers,
+      onCompositionEnd: (event: Event & { currentTarget: HTMLElement }) => {
+        composingRef.current = false;
+        if (
+          document.activeElement !== event.currentTarget &&
+          singleCardEditId
+        ) {
+          void saveCardFields(singleCardEditId, field);
+        }
+      },
+      onInput: (
+        event: Event & {
+          currentTarget: HTMLInputElement | HTMLTextAreaElement;
+        },
+      ) => {
+        const value = event.currentTarget.value;
+        if (!dirtyFieldsRef.current.has(field))
+          startsRef.current[field] = fieldsRef.current[field];
+        fieldsRef.current[field] = value;
+        dirtyFieldsRef.current.add(field);
+        setters[field](value);
+      },
+      onBlur: () => {
+        if (!composingRef.current && singleCardEditId) {
+          void saveCardFields(singleCardEditId, field);
+        }
+      },
+    };
+  }
 
   useEffect(() => {
     const id = card?.id;
@@ -379,6 +437,13 @@ export function Inspector() {
     if (replaying || idChanged) {
       dirtyFieldsRef.current.clear();
       pendingOgpImageRef.current = undefined;
+      fieldsRef.current = {
+        title: card?.title ?? "",
+        body: card?.body ?? "",
+        url: card?.url ?? "",
+        storyWhen: card?.storyWhen ?? "",
+        storyUntil: card?.storyUntil ?? "",
+      };
       setTitle(card?.title ?? "");
       setBody(card?.body ?? "");
       setUrl(card?.url ?? "");
@@ -387,12 +452,11 @@ export function Inspector() {
       setStoryUntil(card?.storyUntil ?? "");
     } else {
       // Card data changed externally (e.g. from the log) — sync only non-dirty fields.
-      const dirty = dirtyFieldsRef.current;
-      if (!dirty.has("title")) setTitle(card?.title ?? "");
-      if (!dirty.has("body")) setBody(card?.body ?? "");
-      if (!dirty.has("url")) setUrl(card?.url ?? "");
-      if (!dirty.has("storyWhen")) setStoryWhen(card?.storyWhen ?? "");
-      if (!dirty.has("storyUntil")) setStoryUntil(card?.storyUntil ?? "");
+      for (const key of Object.keys(setters) as Field[]) {
+        if (dirtyFieldsRef.current.has(key)) continue;
+        fieldsRef.current[key] = card?.[key] ?? "";
+        setters[key](fieldsRef.current[key]);
+      }
     }
   }, [
     card?.id,
@@ -408,7 +472,9 @@ export function Inspector() {
     const id = link?.id;
     const idChanged = id !== prevLinkIdRef.current;
     prevLinkIdRef.current = id;
-    if (replaying || idChanged) {
+    if (replaying || idChanged || !labelDirtyRef.current) {
+      labelRef.current = link?.label ?? "";
+      labelDirtyRef.current = false;
       setLabel(link?.label ?? "");
     }
   }, [link?.id, link?.label, replaying]);
@@ -417,19 +483,17 @@ export function Inspector() {
     if (!singleCardEditId) return;
     const id = singleCardEditId;
     return () => {
-      debouncedSaveCard.cancel();
       void saveCardFields(id);
     };
-  }, [singleCardEditId, debouncedSaveCard, saveCardFields]);
+  }, [singleCardEditId, saveCardFields]);
 
   useEffect(() => {
     const linkId = link?.id;
     if (!linkId) return;
     return () => {
-      debouncedSaveLink.cancel();
       void saveLinkLabel(linkId);
     };
-  }, [link?.id, debouncedSaveLink, saveLinkLabel]);
+  }, [link?.id, saveLinkLabel]);
 
   useEffect(() => {
     if (!card?.id) return;
@@ -462,16 +526,21 @@ export function Inspector() {
             value={label}
             placeholder="同一人物？ など"
             disabled={replaying}
+            {...compositionHandlers}
+            onCompositionEnd={(event) => {
+              composingRef.current = false;
+              if (document.activeElement !== event.currentTarget)
+                void saveLinkLabel(link.id);
+            }}
             onInput={(event) => {
+              if (!labelDirtyRef.current)
+                labelStartRef.current = labelRef.current;
+              labelRef.current = event.currentTarget.value;
+              labelDirtyRef.current = true;
               setLabel(event.currentTarget.value);
-              debouncedSaveLink(link.id);
             }}
             onBlur={() => {
-              debouncedSaveLink.cancel();
-              void saveLinkLabel(link.id);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
+              if (!composingRef.current) void saveLinkLabel(link.id);
             }}
           />
         </label>
@@ -548,7 +617,6 @@ export function Inspector() {
   }
 
   function flushCardFields() {
-    debouncedSaveCard.cancel();
     if (singleCardEditId) void saveCardFields(singleCardEditId);
   }
 
@@ -636,12 +704,7 @@ export function Inspector() {
           data-testid="inspector-title"
           value={title}
           disabled={replaying}
-          onInput={(event) => {
-            dirtyFieldsRef.current.add("title");
-            setTitle(event.currentTarget.value);
-            if (singleCardEditId) debouncedSaveCard(singleCardEditId);
-          }}
-          onBlur={flushCardFields}
+          {...fieldHandlers("title")}
         />
       </label>
       {card.role === "thought" ? (
@@ -661,12 +724,7 @@ export function Inspector() {
             value={url}
             placeholder="https://"
             disabled={replaying}
-            onInput={(event) => {
-              dirtyFieldsRef.current.add("url");
-              setUrl(event.currentTarget.value);
-              if (singleCardEditId) debouncedSaveCard(singleCardEditId);
-            }}
-            onBlur={flushCardFields}
+            {...fieldHandlers("url")}
           />
           {url?.startsWith("http") ? (
             <button
@@ -688,10 +746,10 @@ export function Inspector() {
                   if (singleCardEditId) {
                     if (json.title) {
                       dirtyFieldsRef.current.add("title");
+                      fieldsRef.current.title = json.title;
                       setTitle(json.title);
                     }
                     pendingOgpImageRef.current = json.image ?? null;
-                    debouncedSaveCard.cancel();
                     void saveCardFields(singleCardEditId);
                   }
                   setOgpImage(json.image ?? null);
@@ -722,15 +780,7 @@ export function Inspector() {
             placeholder="起点 例: 12:34"
             disabled={replaying}
             aria-label="作中時間の起点"
-            onInput={(event) => {
-              dirtyFieldsRef.current.add("storyWhen");
-              setStoryWhen(event.currentTarget.value);
-              if (singleCardEditId) debouncedSaveCard(singleCardEditId);
-            }}
-            onBlur={flushCardFields}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
-            }}
+            {...fieldHandlers("storyWhen")}
           />
           <span class="inspector__story-when-sep" aria-hidden="true">
             〜
@@ -742,15 +792,7 @@ export function Inspector() {
             placeholder="帯の端 例: 13:00 / 20min"
             disabled={replaying}
             aria-label="作中時間の帯の端"
-            onInput={(event) => {
-              dirtyFieldsRef.current.add("storyUntil");
-              setStoryUntil(event.currentTarget.value);
-              if (singleCardEditId) debouncedSaveCard(singleCardEditId);
-            }}
-            onBlur={flushCardFields}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
-            }}
+            {...fieldHandlers("storyUntil")}
           />
         </div>
       </div>
@@ -764,12 +806,7 @@ export function Inspector() {
           rows={6}
           value={body}
           disabled={replaying}
-          onInput={(event) => {
-            dirtyFieldsRef.current.add("body");
-            setBody(event.currentTarget.value);
-            if (singleCardEditId) debouncedSaveCard(singleCardEditId);
-          }}
-          onBlur={flushCardFields}
+          {...fieldHandlers("body")}
         />
       </label>
       <div class="inspector__field">
