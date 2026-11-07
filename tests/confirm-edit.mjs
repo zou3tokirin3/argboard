@@ -7,6 +7,7 @@ export async function instrumentEdits(page) {
     const source = await response.text();
     const needle = 'async function updateCard(id, patch) {';
     assert.ok(source.includes(needle), 'updateCard instrumentation must attach');
+    assert.ok(source.includes('async function updateLink(linkId, patch) {'), 'updateLink instrumentation must attach');
     await route.fulfill({ response, body: source.replace(needle,
       `${needle} (globalThis.__t098Calls ??= []).push({id, patch});`).replace('async function updateLink(linkId, patch) {', 'async function updateLink(linkId, patch) { (globalThis.__t098Calls ??= []).push({id: linkId, patch});') });
   });
@@ -82,10 +83,18 @@ export async function verifyEdits(page, origin, shot = async () => {}) {
   const link = (await state(page)).links.find(l => l.from === a && l.to === b);
   await page.getByTestId('card-links').selectOption(link.id);
   const label = page.getByTestId('link-label-input');
+  const labelCalls = (await calls(page)).length;
   await label.fill('確定ラベル'); await page.waitForTimeout(650);
+  assert.equal(await label.inputValue(), '確定ラベル', 'label draft survives idle');
+  assert.equal((await calls(page)).length, labelCalls, 'label idle makes zero update attempts');
   assert.equal((await state(page)).links.find(l => l.id === link.id).label ?? '', '');
   await label.press('Enter');
   await page.waitForFunction(id => window.__argboardTest.getState().links.find(l => l.id === id)?.label === '確定ラベル', link.id);
+  assert.deepEqual((await calls(page)).slice(labelCalls), [{ id: link.id, patch: { label: '確定ラベル' } }]);
+  const clearCalls = (await calls(page)).length;
+  await label.fill(''); await label.press('Enter');
+  await page.waitForFunction(id => { const link = window.__argboardTest.getState().links.find(l => l.id === id); return !!link && link.label === undefined; }, link.id);
+  assert.deepEqual((await calls(page)).slice(clearCalls), [{ id: link.id, patch: { label: '' } }]);
   passed.push('link label: idle does not save, Enter commits');
   return { passed, a, b };
 }

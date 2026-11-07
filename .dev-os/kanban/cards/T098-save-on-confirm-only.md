@@ -79,4 +79,10 @@ T097で `updateCard` が部分更新対応になった後、呼び出し側の�
 
 - 2026-11-07 Codex（phase2成功証跡の反映、実装/テスト変更なし）: coordinatorの修正後外側evidenceは実ローカルWrangler DO＋WebSocket・独立2 contextで8シナリオすべてPASS、blockerなし。idle/Enter、合成composition/ref/isComposing/key229、Esc後の更新呼出し0、切替保存、変更時blur、focused flushSave開始値更新・compositionend欠落後復帰、同じタイトル欄のB1（X/Y/Z、両表示/保存値Z、自分の更新呼出し0）、blur後の相手値反映を確認。本文/タグ/サイズ維持もassert成功。約33秒左右録画と1280/390画像は生成・サニタイズ・コピー済み（[動画](../../../docs/handoffs/2026-11-07/media/T098-phase2-verification.mp4)、[1280](../../../docs/handoffs/2026-11-07/media/T098-phase2-1280.png)、[390](../../../docs/handoffs/2026-11-07/media/T098-phase2-390.png)）。先のcomposition失敗は履歴で、最新結果は成功。独立cc再レビュー最終判定・録画の人間確認・実OS IME・phase2マージ承認は未完。レビューリンクは作成予定PRコメントへ記録予定。review/human・release0.84維持、done/bumpなし。厳格計数365行は不変。
 
+- 2026-11-07 Codex（最終smokeの準備競合対応）: 最終smokeは1成功/1失敗。stream検査前、既存verifyEditsのlabel Enter待機でtimeoutし、error contextでは入力欄が空。既存Inspectorの初回link-load passive effectが即時fill後のdirty/draftを初期化する順序を特定。製品コードは変更せず、helperで非空fixtureラベルの反映を待ち、実入力で空へ戻してから既存のidle/Enter条件を検査する。元のassertionを維持し、下書き表示・idle更新呼出し0・Enterのlabel-only1回を追加assert。check/unit145/build成功、修正後外側smokeとcc再レビューは未完。既存の実DO evidence8成功・実メディアは保持するが、smoke成功の代替とはしない。厳格計数376行（コード/テスト235＋scratch evidence141）、review/human・0.84・個別マージ承認待ちを維持。
+
+- 2026-11-07 Codex（smoke前提の再検証）: 前ログの「準備競合を特定」は断定過剰で、元の最終label Enter失敗については仮説へ訂正。新しい空文字比較timeoutは別問題。実applyUpdateLink呼出しでlabel空文字がundefinedへ正規化されることを証明し、待機条件をlink存在＋label undefinedへ修正、clear patchも厳密assert。元のidle/Enter assertionは維持。元手順と準備待機手順を比較できる診断モードを既存helper/specへ追加（初期化idChanged/dirty/値、入力、保存、呼出し、表示を記録）、本番実装は無変更。更新計測・3診断probeの挿入とbundle構文検査成功、check/unit145/build成功。外側での仮説検証・smoke・cc再レビューは未完。厳格計数394行（コード/テスト253＋scratch runner141）。review/human・0.84・mergepending維持。
+
+- 2026-11-07 Codex（smoke比較成功後の最終整理）: 外側probeは元fixture手順2/2成功7.2秒、準備待機手順2/2成功8.0秒。元の初期化競合仮説は証明されず、非空readyLabel setup・一時probe診断を撤去。元fixture手順と既存/追加のidle・表示・呼出し数・最終Enter assertionは保持。空ラベル正規化の検査側誤りへの修正は、最終Enter成功条件の後の独立clear操作として保持（link存在・label undefined・label空文字patch1回）。製品実装と実DO evidence8成功/約33秒mediaは無変更。check/unit145/build再成功。最終整理版の外側smokeとcc再レビュー待ち。厳格計数374行（コード/テスト233＋scratch runner141）、review/human・0.84・mergependingを維持。
+
 ## 差し戻し履歴（追記のみ）
