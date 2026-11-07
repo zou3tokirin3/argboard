@@ -81,13 +81,17 @@ export async function verifyEdits(page, origin, shot = async () => {}) {
   }, [a, b]);
   await select(page, a);
   const link = (await state(page)).links.find(l => l.from === a && l.to === b);
+  // Empty input presence cannot distinguish mount from completed link initialization.
+  const initialLabel = 'fixture-initial-label';
+  await page.evaluate(({ id, label }) => window.__argboardTest.updateLink(id, { label }), { id: link.id, label: initialLabel });
   await page.getByTestId('card-links').selectOption(link.id);
   const label = page.getByTestId('link-label-input');
+  await page.waitForFunction(value => document.querySelector('[data-testid="link-label-input"]')?.value === value, initialLabel);
   const labelCalls = (await calls(page)).length;
   await label.fill('確定ラベル'); await page.waitForTimeout(650);
   assert.equal(await label.inputValue(), '確定ラベル', 'label draft survives idle');
   assert.equal((await calls(page)).length, labelCalls, 'label idle makes zero update attempts');
-  assert.equal((await state(page)).links.find(l => l.id === link.id).label ?? '', '');
+  assert.equal((await state(page)).links.find(l => l.id === link.id).label, initialLabel);
   await label.press('Enter');
   await page.waitForFunction(id => window.__argboardTest.getState().links.find(l => l.id === id)?.label === '確定ラベル', link.id);
   assert.deepEqual((await calls(page)).slice(labelCalls), [{ id: link.id, patch: { label: '確定ラベル' } }]);

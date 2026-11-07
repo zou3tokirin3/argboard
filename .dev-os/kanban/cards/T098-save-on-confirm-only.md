@@ -85,4 +85,6 @@ T097で `updateCard` が部分更新対応になった後、呼び出し側の�
 
 - 2026-11-07 Codex（smoke比較成功後の最終整理）: 外側probeは元fixture手順2/2成功7.2秒、準備待機手順2/2成功8.0秒。元の初期化競合仮説は証明されず、非空readyLabel setup・一時probe診断を撤去。元fixture手順と既存/追加のidle・表示・呼出し数・最終Enter assertionは保持。空ラベル正規化の検査側誤りへの修正は、最終Enter成功条件の後の独立clear操作として保持（link存在・label undefined・label空文字patch1回）。製品実装と実DO evidence8成功/約33秒mediaは無変更。check/unit145/build再成功。最終整理版の外側smokeとcc再レビュー待ち。厳格計数374行（コード/テスト233＋scratch runner141）、review/human・0.84・mergependingを維持。
 
+- 2026-11-07 Codex（最終HEADのidle消失を受けたfixture修正）: 最新smokeは1成功/1失敗、Enter前の「label draft survives idle」で空文字を観測。比較実行の成功は不安定さの反証にならず、review-4はNOT OK/blocking1。既存Inspectorは初期空文字を描画後にlink-load effectで読み込み、初回effectはdirtyでも上書きするため、空inputの存在だけを準備完了扱いしたautomation順序を修正。製品コードは変更せず、選択前に特徴的なlabel seedをfixtureへ設定し、実入力欄がseedと一致するまで条件待機する。idleの保存値はseed、表示はdraft、更新呼出し0、Enterのlabel-only1回をassertし、独立clearのundefined正規化も維持。seed→空への準備操作や固定待機は追加しない。製品の初期化前入力への対応は実装せず、別判断が必要。check/unit145/build成功、厳格計数380行（コード/テスト239＋scratch runner141）。最新fixture版の外側連続smoke・cc再レビュー待ち。実DO8成功/33秒mediaは不変、review/human・0.84・mergepending維持。
+
 ## 差し戻し履歴（追記のみ）
