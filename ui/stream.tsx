@@ -1,12 +1,5 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
-import { debounce } from "./debounce.ts";
 import { DigClearViaButton, DigStartButton } from "./digging-controls.tsx";
 import { IconTip } from "./icon-tip.tsx";
 import { ImageEnlargeButton } from "./image-overlay.tsx";
@@ -30,6 +23,7 @@ import {
   openExploreCompose,
   openOutcomeOnly,
   placedOnly,
+  registerPendingEditFlusher,
   removeCard,
   revealStreamCardId,
   type StoryWhenFilter,
@@ -227,44 +221,44 @@ function StreamCardTitle(props: {
   const { card, editable } = props;
   const [draft, setDraft] = useState(card.title);
   const draftRef = useRef(draft);
-  const cardRef = useRef(card);
-  draftRef.current = draft;
-  cardRef.current = card;
+  const startRef = useRef(card.title);
+  const dirtyRef = useRef(false);
+  const focusedRef = useRef(false);
+  const composingRef = useRef(false);
+
+  function resetDraft(value: string) {
+    draftRef.current = value;
+    setDraft(value);
+  }
 
   useEffect(() => {
-    setDraft(card.title);
+    if (!focusedRef.current && !dirtyRef.current) resetDraft(card.title);
+  }, [card.title]);
+
+  const commitNow = useCallback(async () => {
+    const current = viewProject.value?.cards.find(
+      (item) => item.id === card.id,
+    );
+    if (!current) return;
+    const next = draftRef.current.trim();
+    const changed = dirtyRef.current && next && next !== startRef.current;
+    dirtyRef.current = false;
+    startRef.current = changed ? next : current.title;
+    resetDraft(startRef.current);
+    if (changed && next !== current.title)
+      await updateCard(current.id, { title: next });
   }, [card.id]);
 
-  const commitNow = useCallback(async (nextTitle?: string) => {
-    const current = cardRef.current;
-    const next = (nextTitle ?? draftRef.current).trim();
-    if (!next) {
-      setDraft(current.title);
-      return;
-    }
-    if (next === current.title) return;
-    await updateCard(current.id, { title: next });
-  }, []);
-
-  const debouncedCommit = useMemo(
-    () => debounce(() => void commitNow(), 400),
-    [commitNow],
-  );
-
   useEffect(() => {
+    const unregister = registerPendingEditFlusher(commitNow);
     return () => {
-      debouncedCommit.cancel();
+      unregister();
       void commitNow();
     };
-  }, [card.id, debouncedCommit, commitNow]);
+  }, [commitNow]);
 
   if (!editable) {
     return <strong>{card.title}</strong>;
-  }
-
-  function flushCommit(nextTitle?: string) {
-    debouncedCommit.cancel();
-    void commitNow(nextTitle);
   }
 
   return (
@@ -274,26 +268,48 @@ function StreamCardTitle(props: {
       data-testid="stream-card-title-input"
       value={draft}
       aria-label="タイトル"
+      onFocus={() => {
+        focusedRef.current = true;
+        composingRef.current = false;
+        startRef.current = draftRef.current;
+      }}
       onInput={(event) => {
-        setDraft(event.currentTarget.value);
-        debouncedCommit();
+        dirtyRef.current = true;
+        resetDraft(event.currentTarget.value);
+      }}
+      // Preact preserves casing when the DOM lacks an oncomposition* property.
+      {...{
+        oncompositionstart: () => {
+          composingRef.current = true;
+        },
+        oncompositionend: () => {
+          composingRef.current = false;
+        },
       }}
       onClick={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
         event.stopPropagation();
+        if (event.isComposing || event.keyCode === 229 || composingRef.current)
+          return;
         if (event.key === "Enter") {
           event.preventDefault();
-          flushCommit(event.currentTarget.value);
           event.currentTarget.blur();
         }
         if (event.key === "Escape") {
           event.preventDefault();
-          setDraft(card.title);
+          dirtyRef.current = false;
+          const latest = viewProject.value?.cards.find((c) => c.id === card.id);
+          resetDraft(latest?.title ?? card.title);
+          event.currentTarget.value = draftRef.current;
           event.currentTarget.blur();
         }
       }}
-      onBlur={(event) => flushCommit(event.currentTarget.value)}
+      onBlur={() => {
+        focusedRef.current = false;
+        composingRef.current = false;
+        void commitNow();
+      }}
     />
   );
 }
