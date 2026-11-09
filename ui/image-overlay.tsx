@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "preact/hooks";
+import { t } from "../src/i18n/index.ts";
 import { openImageOverlay } from "./state.ts";
 import { useMediaUrl } from "./use-media-url.ts";
 
@@ -13,8 +14,8 @@ export function ImageEnlargeButton(props: {
       type="button"
       class={`image-enlarge-btn ${props.className}`}
       data-testid={props.testId}
-      aria-label="画像を拡大して見る（1×）"
-      title="拡大して見る（1×）"
+      aria-label={t("imageOverlay.enlarge.label")}
+      title={t("imageOverlay.enlarge.title")}
       onClick={(event) => {
         event.stopPropagation();
         openImageOverlay(props.cardId);
@@ -34,7 +35,7 @@ export function FixedScaleImage(props: { image: string | undefined }) {
         <img
           class="image-overlay__img"
           src={url}
-          alt="添付スクショ（1×）"
+          alt={t("imageOverlay.image.alt")}
           draggable={false}
         />
       ) : null}
@@ -70,17 +71,17 @@ export function ImageOverlay(props: {
       class="image-overlay"
       data-testid="image-overlay"
       role="dialog"
-      aria-label={`${props.title} の画像`}
+      aria-label={t("imageOverlay.dialog.label", { title: props.title })}
     >
       <header class="image-overlay__head">
         <strong>{props.title}</strong>
-        <span class="image-overlay__hint">1×・右で編集できます</span>
+        <span class="image-overlay__hint">{t("imageOverlay.edit.hint")}</span>
         <button
           type="button"
           data-testid="image-overlay-close"
           onClick={props.onClose}
         >
-          閉じる（Esc）
+          {t("imageOverlay.close.label")}
         </button>
       </header>
       <FixedScaleImage image={props.image} />
