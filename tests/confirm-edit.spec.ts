@@ -1,8 +1,9 @@
 import * as cp from "node:child_process";
 import { test } from "@playwright/test";
 import { verifyEdits } from "./confirm-edit.mjs";
+import { selectStream, verifyStream } from "./stream-confirm.mjs";
 
-test("T098 phase1 confirms only the changed Inspector field", async ({ page }) => {
+test("T098 confirms changed fields and stream Escape cancellation", async ({ page }) => {
   const server = cp.spawn("node", ["scripts/serve.js"], {
     env: { ...process.env, PORT: "4198" }, stdio: "ignore",
   });
@@ -14,6 +15,14 @@ test("T098 phase1 confirms only the changed Inspector field", async ({ page }) =
       await page.waitForTimeout(50);
     }
     await verifyEdits(page, "http://127.0.0.1:4198");
+    await page.reload();
+    await page.waitForFunction(() => window.__argboardTest?.getState()?.id);
+    const [id, destination] = await page.evaluate(async () => [
+      await window.__argboardTest.addCard("TITLE-X-original"),
+      await window.__argboardTest.addCard("Destination"),
+    ]);
+    await selectStream(page, id);
+    await verifyStream(page, null, id, destination);
   } finally {
     server.kill();
   }
