@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { t } from "../src/i18n/index.ts";
 import { readCaptureDraft } from "./capture-draft.ts";
 import { CaptureImageSlot, withStoryFields } from "./capture-image-slot.tsx";
 import { parseCaptureLine } from "./capture-notation.ts";
@@ -102,7 +103,9 @@ function CaptureDiggingBar() {
     <div
       class="capture__digging"
       data-testid="capture-digging-bar"
-      aria-label={`掘り中: ${chain.at(-1)?.title ?? ""}`}
+      aria-label={t("capture.digging.label", {
+        title: chain.at(-1)?.title ?? "",
+      })}
       aria-live="polite"
     >
       <span class="capture__digging-source">
@@ -129,7 +132,9 @@ function CaptureDiggingBar() {
               </span>
               <span
                 class="capture__digging-ellipsis"
-                aria-label={`${chain.length - 2}階層`}
+                aria-label={t("capture.digging.depth.label", {
+                  count: chain.length - 2,
+                })}
               >
                 …
               </span>
@@ -184,7 +189,7 @@ function CaptureTagChips(props: {
       class="capture-tag-chips"
       data-testid="capture-tag-chips"
       role="group"
-      aria-label="付けるタグ（既出のみ）"
+      aria-label={t("capture.tags.label")}
     >
       {usage.map((entry) => {
         const on = selected.has(entry.name);
@@ -199,7 +204,11 @@ function CaptureTagChips(props: {
             data-testid="capture-tag-chip"
             aria-pressed={on}
             disabled={props.disabled}
-            title={unsettled ? `未定着（1枚のみ）: ${entry.name}` : entry.name}
+            title={
+              unsettled
+                ? t("capture.tags.unsettled.title", { name: entry.name })
+                : entry.name
+            }
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => props.onToggle(entry.name)}
           >
@@ -235,9 +244,7 @@ function ExploreImageStaging(props: {
       );
       props.onCommitted();
     } catch (error) {
-      alert(
-        error instanceof Error ? error.message : "カードを追加できませんでした",
-      );
+      alert(error instanceof Error ? error.message : t("capture.add.error"));
     }
   }
 
@@ -263,7 +270,7 @@ function ExploreImageStaging(props: {
       <div class="capture-image-staging__preview">
         <img
           src={draft.previewUrl}
-          alt="準備中のスクショ"
+          alt={t("capture.staging.image.alt")}
           width={1600}
           height={1000}
           data-testid="capture-image-staging-preview"
@@ -276,9 +283,9 @@ function ExploreImageStaging(props: {
           class="capture-compose__title"
           data-testid="capture-image-staging-title"
           value={draft.title}
-          placeholder="タイトル"
+          placeholder={t("capture.title.label")}
           disabled={replaying}
-          aria-label="タイトル"
+          aria-label={t("capture.title.label")}
           onInput={(event) =>
             patchExploreImageDraft({ title: event.currentTarget.value })
           }
@@ -293,9 +300,9 @@ function ExploreImageStaging(props: {
           data-testid="capture-image-staging-body"
           rows={3}
           value={draft.body}
-          placeholder="事実や考察を書く…"
+          placeholder={t("capture.body.placeholder")}
           disabled={replaying}
-          aria-label="メモ"
+          aria-label={t("capture.body.label")}
           onInput={(event) =>
             patchExploreImageDraft({ body: event.currentTarget.value })
           }
@@ -307,9 +314,9 @@ function ExploreImageStaging(props: {
           class="capture-compose__story-when"
           data-testid="capture-image-staging-story-when"
           value={draft.storyWhen}
-          placeholder="起点"
+          placeholder={t("capture.storyWhen.placeholder")}
           disabled={replaying}
-          aria-label="作中時間の起点"
+          aria-label={t("capture.storyWhen.label")}
           onInput={(event) =>
             patchExploreImageDraft({ storyWhen: event.currentTarget.value })
           }
@@ -319,9 +326,9 @@ function ExploreImageStaging(props: {
           class="capture-compose__story-until"
           data-testid="capture-image-staging-story-until"
           value={draft.storyUntil}
-          placeholder="帯の端"
+          placeholder={t("capture.storyUntil.placeholder")}
           disabled={replaying}
-          aria-label="作中時間の帯の端"
+          aria-label={t("capture.storyUntil.label")}
           onInput={(event) =>
             patchExploreImageDraft({ storyUntil: event.currentTarget.value })
           }
@@ -331,9 +338,9 @@ function ExploreImageStaging(props: {
           class="capture-compose__url"
           data-testid="capture-image-staging-url"
           value={draft.url}
-          placeholder="出典URL"
+          placeholder={t("capture.source.label")}
           disabled={replaying}
-          aria-label="出典URL"
+          aria-label={t("capture.source.label")}
           onInput={(event) =>
             patchExploreImageDraft({ url: event.currentTarget.value })
           }
@@ -344,7 +351,7 @@ function ExploreImageStaging(props: {
           data-testid="capture-image-staging-submit"
           disabled={replaying}
         >
-          追加
+          {t("capture.add.label")}
         </button>
         <button
           type="button"
@@ -353,7 +360,7 @@ function ExploreImageStaging(props: {
           disabled={replaying}
           onClick={() => clearExploreImageDraft()}
         >
-          やめる
+          {t("capture.cancel.label")}
         </button>
       </div>
     </form>
@@ -370,7 +377,7 @@ function CaptureIntentToggle(props: {
     <div
       class="inspector__size-toggle capture-intent-toggle"
       role="group"
-      aria-label="追加の種別"
+      aria-label={t("capture.intent.label")}
       onClick={(event) => event.stopPropagation()}
     >
       <button
@@ -378,8 +385,8 @@ function CaptureIntentToggle(props: {
         class={props.mode === "dig" ? "is-active" : undefined}
         data-testid="capture-intent-dig"
         aria-pressed={props.mode === "dig"}
-        aria-label="掘る"
-        title="発見として追加"
+        aria-label={t("capture.intent.dig.label")}
+        title={t("capture.intent.dig.title")}
         disabled={disabled}
         onClick={() => props.onChange("dig")}
       >
@@ -390,8 +397,8 @@ function CaptureIntentToggle(props: {
         class={props.mode === "thought" ? "is-active" : undefined}
         data-testid="capture-intent-thought"
         aria-pressed={props.mode === "thought"}
-        aria-label="考察"
-        title="考察として追加"
+        aria-label={t("capture.intent.thought.label")}
+        title={t("capture.intent.thought.title")}
         disabled={disabled}
         onClick={() => props.onChange("thought")}
       >
@@ -494,8 +501,8 @@ function ExploreImageReference(props: { wide?: boolean }) {
           class="capture-image-reference__resize"
           role="separator"
           aria-orientation="horizontal"
-          aria-label="プレビューの高さをドラッグで変える"
-          title="ドラッグで高さを変える"
+          aria-label={t("capture.preview.resize.label")}
+          title={t("capture.preview.resize.title")}
           aria-valuenow={previewHeight}
           aria-valuemin={PREVIEW_MIN_PX}
           aria-valuemax={maxPreviewHeight(globalThis.innerHeight)}
@@ -524,7 +531,9 @@ function ExploreImageReference(props: { wide?: boolean }) {
           <strong>{card.title}</strong>
           {digging ? (
             <span class="capture-image-reference__digging-label">
-              {captureMode === "thought" ? "を見ながら考察" : "から掘り中"}
+              {captureMode === "thought"
+                ? t("capture.reference.thought.label")
+                : t("capture.reference.dig.label")}
             </span>
           ) : null}
         </span>
@@ -543,7 +552,7 @@ function ExploreImageReference(props: { wide?: boolean }) {
           disabled={replaying}
           onClick={() => closeExploreCompose()}
         >
-          閉じる
+          {t("capture.close.label")}
         </button>
       </div>
     </div>
@@ -724,7 +733,7 @@ export function Capture(props: { wide?: boolean }) {
       await pasteExploreImage(blob, draft ?? undefined);
     } catch (error) {
       alert(
-        error instanceof Error ? error.message : "画像を添付できませんでした",
+        error instanceof Error ? error.message : t("cardImage.attach.error"),
       );
     }
   }
@@ -758,15 +767,23 @@ export function Capture(props: { wide?: boolean }) {
             <input
               ref={input}
               data-testid="capture-input"
-              aria-label={inCompose ? "画像を見ながら追加" : "新しい手がかり"}
+              aria-label={
+                inCompose
+                  ? t("capture.input.reference.label")
+                  : t("capture.input.label")
+              }
               aria-describedby="capture-hint"
               autocomplete="off"
               placeholder={
                 inCompose && referenceCaptureMode === "thought"
-                  ? `「${composeCard!.title}」を見ながら考える…`
+                  ? t("capture.input.thought.placeholder", {
+                      title: composeCard!.title,
+                    })
                   : captureSourceCard
-                    ? `「${captureSourceCard.title}」から見つけたこと…`
-                    : "見つけたことを1行で…"
+                    ? t("capture.input.dig.placeholder", {
+                        title: captureSourceCard.title,
+                      })
+                    : t("capture.input.placeholder")
               }
               onKeyDown={onHistoryKey}
               onInput={() => {
@@ -778,9 +795,9 @@ export function Capture(props: { wide?: boolean }) {
               type="text"
               class="capture__story-when"
               data-testid="capture-story-when"
-              aria-label="作中時間の起点"
+              aria-label={t("capture.storyWhen.label")}
               autocomplete="off"
-              placeholder="起点"
+              placeholder={t("capture.storyWhen.placeholder")}
               disabled={replaying}
             />
             <input
@@ -788,9 +805,9 @@ export function Capture(props: { wide?: boolean }) {
               type="text"
               class="capture__story-until"
               data-testid="capture-story-until"
-              aria-label="作中時間の帯の端"
+              aria-label={t("capture.storyUntil.label")}
               autocomplete="off"
-              placeholder="帯の端"
+              placeholder={t("capture.storyUntil.placeholder")}
               disabled={replaying}
             />
             {wide ? (
@@ -806,7 +823,7 @@ export function Capture(props: { wide?: boolean }) {
                 default submit button exists. Keep the 1-line Enter path.
               */}
             <button type="submit" class="capture__submit-sr">
-              追加
+              {t("capture.add.label")}
             </button>
             <kbd>↵</kbd>
           </form>
@@ -820,47 +837,65 @@ export function Capture(props: { wide?: boolean }) {
       <p class="capture-hint" id="capture-hint">
         {staging ? (
           compactHints ? (
-            <>画像を準備中 · タイトルで追加 · やめるで取消 · タグは任意</>
+            // biome-ignore lint/complexity/noUselessFragments: Preserve the original capture hint tree.
+            <>{t("capture.hint.staging.compact")}</>
           ) : (
             <>
-              画像を準備中 · <kbd>⌘/Ctrl+↵</kbd> またはタイトルで<kbd>↵</kbd>
-              で追加 · メモは<kbd>Shift+↵</kbd>で改行 · <kbd>Esc</kbd>
-              ／やめるで取消 · もう一度貼ると差し替え ·
-              タイトル下のチップで既出タグ
+              {t("capture.hint.staging.start")}
+              <kbd>⌘/Ctrl+↵</kbd>
+              {t("capture.hint.staging.title")}
+              <kbd>↵</kbd>
+              {t("capture.hint.staging.submit")}
+              <kbd>Shift+↵</kbd>
+              {t("capture.hint.staging.newline")}
+              <kbd>Esc</kbd>
+              {t("capture.hint.staging.cancel")}
             </>
           )
         ) : inCompose ? (
           compactHints ? (
             <>
-              画像を見ながら1行で追加 · 上で<strong>掘る</strong>／
-              <strong>考察</strong>
-              を切替 · ↵で新カード · 閉じるで終了
+              {t("capture.hint.reference.start")}
+              <strong>{t("capture.intent.dig.label")}</strong>／
+              <strong>{t("capture.intent.thought.label")}</strong>
+              {t("capture.hint.reference.compactEnd")}
             </>
           ) : (
             <>
-              画像を見ながら1行で追加 · 上で<strong>掘る</strong>／
-              <strong>考察</strong>
-              を切替 · <kbd>↵</kbd>で新カード · <kbd>Esc</kbd>／閉じるで終了 ·
-              タイトル下のチップで既出タグ
+              {t("capture.hint.reference.start")}
+              <strong>{t("capture.intent.dig.label")}</strong>／
+              <strong>{t("capture.intent.thought.label")}</strong>
+              {t("capture.hint.reference.switch")}
+              <kbd>↵</kbd>
+              {t("capture.hint.reference.submit")}
+              <kbd>Esc</kbd>
+              {t("capture.hint.reference.close")}
             </>
           )
         ) : compactHints ? (
           <>
-            <code>題 {/* ひとこと */}</code> · URLは出典 · 画像はファイル選択 ·
-            タグは任意
+            <code>
+              {t("capture.hint.default.title")}
+              {/* ひとこと */}
+            </code>
+            {t("capture.hint.default.compact")}
           </>
         ) : (
           <>
-            <code>題 {/* ひとこと */}</code> · URLはそのまま貼ると出典に ·
-            作中時間は任意 ·
+            <code>
+              {t("capture.hint.default.title")}
+              {/* ひとこと */}
+            </code>
+            {t("capture.hint.default.source")}
             {wide ? (
               <>
                 {" "}
-                <kbd>⌘V</kbd>／ドラッグでスクショ（確定前に編集） ·
+                <kbd>⌘V</kbd>
+                {t("capture.hint.default.image")}
               </>
             ) : null}
-            <kbd>↑</kbd>/<kbd>↓</kbd> で入力履歴 ·
-            タイトル下のチップで既出タグ（任意）
+            <kbd>↑</kbd>/<kbd>↓</kbd>
+            {t("capture.hint.default.history")}
           </>
         )}
       </p>
