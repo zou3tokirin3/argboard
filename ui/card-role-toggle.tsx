@@ -1,3 +1,4 @@
+import { t } from "../src/i18n/index.ts";
 import { IconTip, type IconTipAlign } from "./icon-tip.tsx";
 import { isReplaying, updateCardRole } from "./state.ts";
 import type { Card } from "./types.ts";
@@ -23,16 +24,16 @@ export function CardRoleToggle({
     <div
       class="inspector__size-toggle"
       role="group"
-      aria-label="種別"
+      aria-label={t("stream.role.label")}
       onClick={(event) => event.stopPropagation()}
     >
-      <IconTip align={tipAlign} label="種別 · 発見（事実・手がかり）">
+      <IconTip align={tipAlign} label={t("cardRole.finding.tip")}>
         <button
           type="button"
           class={`icon-labeled-btn${isThought ? "" : " is-active"}`}
           data-testid={`${testIdPrefix}-card-role-finding`}
           aria-pressed={!isThought}
-          aria-label="発見"
+          aria-label={t("stream.role.finding")}
           disabled={replaying}
           onClick={(event) => {
             event.stopPropagation();
@@ -42,16 +43,16 @@ export function CardRoleToggle({
           <svg viewBox="0 0 16 16" aria-hidden="true">
             <circle cx="8" cy="6" r="3.5" fill="currentColor" />
           </svg>
-          <span class="icon-labeled-btn__text">発見</span>
+          <span class="icon-labeled-btn__text">{t("stream.role.finding")}</span>
         </button>
       </IconTip>
-      <IconTip align={tipAlign} label="種別 · 考察（仮説・解釈）">
+      <IconTip align={tipAlign} label={t("cardRole.thought.tip")}>
         <button
           type="button"
           class={`icon-labeled-btn${isThought ? " is-active" : ""}`}
           data-testid={`${testIdPrefix}-card-role-thought`}
           aria-pressed={isThought}
-          aria-label="考察"
+          aria-label={t("capture.intent.thought.label")}
           disabled={replaying}
           onClick={(event) => {
             event.stopPropagation();
@@ -71,7 +72,9 @@ export function CardRoleToggle({
               stroke-dasharray="2.5 2"
             />
           </svg>
-          <span class="icon-labeled-btn__text">考察</span>
+          <span class="icon-labeled-btn__text">
+            {t("capture.intent.thought.label")}
+          </span>
         </button>
       </IconTip>
     </div>

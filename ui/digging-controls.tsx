@@ -1,3 +1,4 @@
+import { t } from "../src/i18n/index.ts";
 /** Icon-only digging controls — orange chips, distinct from text meta buttons. */
 
 import { IconTip, type IconTipAlign } from "./icon-tip.tsx";
@@ -97,17 +98,17 @@ type DigStartButtonProps = {
 export function DigStartButton({
   active = false,
   testId = "stream-dig-start",
-  title = "ここから掘る",
+  title = t("digging.start"),
   tipAlign = "center",
   onClick,
 }: DigStartButtonProps) {
   if (active) {
     return (
-      <IconTip align={tipAlign} label="掘り中 — この手がかりから追加中">
+      <IconTip align={tipAlign} label={t("digging.active.tip")}>
         <span
           class="dig-act is-active"
           data-testid="stream-dig-active"
-          aria-label="掘り中"
+          aria-label={t("digging.active.label")}
         >
           <DigShovelIcon />
         </span>
@@ -138,7 +139,7 @@ type DigStopButtonProps = {
 
 export function DigStopButton({
   testId = "capture-digging-stop",
-  title = "掘り中を外す",
+  title = t("digging.stop"),
   tipAlign = "center",
   onClick,
 }: DigStopButtonProps) {
@@ -166,7 +167,7 @@ type DigClearViaButtonProps = {
 
 export function DigClearViaButton({
   testId = "stream-clear-found-via",
-  title = "間違えて掘った分を埋める",
+  title = t("stream.via.clear"),
   tipAlign = "center",
   onClick,
 }: DigClearViaButtonProps) {

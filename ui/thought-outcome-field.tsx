@@ -1,3 +1,4 @@
+import { t } from "../src/i18n/index.ts";
 import { IconTip, type IconTipAlign } from "./icon-tip.tsx";
 import { updateCardOutcome } from "./state.ts";
 import {
@@ -19,14 +20,14 @@ type ThoughtOutcomeFieldProps = {
 
 function outcomeTip(value: ThoughtOutcome, active: boolean): string {
   const label = thoughtOutcomeLabel(value);
-  if (active) return `仮説 · ${label}を外す`;
+  if (active) return t("thoughtOutcome.clear.tip", { label });
   switch (value) {
     case "open":
-      return "仮説 · 未検証（まだ確定していない）";
+      return t("thoughtOutcome.open.tip");
     case "held":
-      return "仮説 · 採用（有力と判断）";
+      return t("thoughtOutcome.held.tip");
     case "failed":
-      return "仮説 · 棄却（却下）";
+      return t("thoughtOutcome.failed.tip");
   }
 }
 
@@ -49,11 +50,11 @@ export function ThoughtOutcomeField({
         compact ? " inspector__outcome--compact" : ""
       }`}
     >
-      {!compact ? <span>仮説の成否（任意・未設定＝解釈メモ）</span> : null}
+      {!compact ? <span>{t("thoughtOutcome.field.label")}</span> : null}
       <div
         class="inspector__outcome-toggle"
         role="group"
-        aria-label="仮説の成否"
+        aria-label={t("thoughtOutcome.field.group")}
         onClick={(event) => event.stopPropagation()}
       >
         {THOUGHT_OUTCOMES.map((value) => {

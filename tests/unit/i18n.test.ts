@@ -86,13 +86,19 @@ test("Japanese literal detector catches UI forms, allowing comments", () => {
 });
 
 test("extracted surface contains no Japanese UI literals", () => {
-  // Phase 1 slices 1–5. Expand this strict scope with each extraction PR; no file-wide exemptions.
+  // Phase 1 slices 1–6. Expand this strict scope with each extraction PR; no file-wide exemptions.
   for (const path of [
     "ui/image-overlay.tsx",
     "ui/card-image-field.tsx",
     "ui/capture-image-slot.tsx",
     "ui/capture.tsx",
     "ui/stream.tsx",
+    "ui/inspector.tsx",
+    "ui/card-role-toggle.tsx",
+    "ui/thought-outcome-field.tsx",
+    "ui/thought-outcome.ts",
+    "ui/digging-controls.tsx",
+
   ]) {
     const source = readFileSync(
       new URL(`../../${path}`, import.meta.url),

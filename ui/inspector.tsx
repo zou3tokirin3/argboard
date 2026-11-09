@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { t } from "../src/i18n/index.ts";
 import { CardImageField } from "./card-image-field.tsx";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { IconTip } from "./icon-tip.tsx";
@@ -51,8 +52,8 @@ async function organizeTag(tag: string, usage: TagUsage[]): Promise<void> {
   const others = usage.filter((e) => e.name !== tag).map((e) => e.name);
   const next = globalThis.prompt(
     others.length
-      ? `「${tag}」を改名、または既存名で統合（${others.join(" / ")}）`
-      : `「${tag}」の新しい名前`,
+      ? t("inspector.tag.merge.prompt", { tag, others: others.join(" / ") })
+      : t("inspector.tag.rename.prompt", { tag }),
     tag,
   );
   if (next == null) return;
@@ -74,7 +75,7 @@ function HistoryEntry() {
           class="inspector__history-btn"
           onClick={() => clearReplay()}
         >
-          いまに戻る
+          {t("inspector.history.exit")}
         </button>
       </div>
     );
@@ -86,10 +87,10 @@ function HistoryEntry() {
         data-testid="replay-enter"
         class="inspector__history-btn"
         disabled={steps.length === 0}
-        title="ボードが育った手順をステップでたどる"
+        title={t("inspector.history.title")}
         onClick={() => enterReplay()}
       >
-        タイムライン
+        {t("stream.eyebrow")}
       </button>
     </div>
   );
@@ -162,8 +163,8 @@ function TagField(props: {
     <div class="inspector__field inspector__tags">
       <span>
         {bulk
-          ? `タグ（${ids.length}枚・共通のみ外せる）`
-          : `タグ（上限${TAG_KIND_LIMIT}・新規は候補から）`}
+          ? t("inspector.tag.bulk.label", { count: ids.length })
+          : t("inspector.tag.label", { limit: TAG_KIND_LIMIT })}
       </span>
       {attached.length > 0 ? (
         <div class="inspector__tag-chips">
@@ -173,7 +174,7 @@ function TagField(props: {
               <span
                 key={tag}
                 class={`inspector__tag-chip${unsettled ? " is-unsettled" : ""}`}
-                title={unsettled ? "未定着（1枚のみ）" : tag}
+                title={unsettled ? t("inspector.tag.unsettled.title") : tag}
               >
                 <span class="inspector__tag-chip-label">#{tag}</span>
                 {unsettled ? (
@@ -181,14 +182,14 @@ function TagField(props: {
                     type="button"
                     class="inspector__tag-organize-btn"
                     disabled={props.disabled}
-                    title="改名または統合"
+                    title={t("inspector.tag.organize.title")}
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
                       if (!props.disabled) void organizeTag(tag, usage);
                     }}
                   >
-                    整理
+                    {t("inspector.tag.organize.label")}
                   </button>
                 ) : null}
                 <button
@@ -197,8 +198,8 @@ function TagField(props: {
                   disabled={props.disabled}
                   aria-label={
                     bulk
-                      ? `「${tag}」を選んだカードすべてから外す`
-                      : `「${tag}」を外す`
+                      ? t("inspector.tag.bulk.remove", { tag })
+                      : t("inspector.tag.remove", { tag })
                   }
                   onClick={(event) => {
                     event.preventDefault();
@@ -226,7 +227,11 @@ function TagField(props: {
           data-testid="inspector-tag-input"
           value={draft}
           disabled={props.disabled}
-          placeholder={bulk ? "選んだカードへ付けて整理…" : "付けて整理…"}
+          placeholder={
+            bulk
+              ? t("inspector.tag.bulk.placeholder")
+              : t("inspector.tag.placeholder")
+          }
           autocomplete="off"
           onInput={(event) => {
             setDraft(event.currentTarget.value);
@@ -256,11 +261,13 @@ function TagField(props: {
                   }}
                 >
                   {item.kind === "create" ? (
-                    `「${item.name}」を新規作成`
+                    t("inspector.tag.create", { name: item.name })
                   ) : (
                     <>
                       #{item.name}
-                      {item.unsettled ? <small>未定着</small> : null}
+                      {item.unsettled ? (
+                        <small>{t("inspector.tag.unsettled")}</small>
+                      ) : null}
                     </>
                   )}
                 </button>
@@ -268,7 +275,7 @@ function TagField(props: {
             ))}
             {blocked ? (
               <li class="inspector__tag-suggest-hint">
-                種類上限です。既存から選ぶか整理してください
+                {t("inspector.tag.limit.hint")}
               </li>
             ) : null}
           </ul>
@@ -511,20 +518,24 @@ function InspectorEditor() {
 
   if (link) {
     return (
-      <aside class="inspector" aria-label="糸の編集">
+      <aside class="inspector" aria-label={t("inspector.link.label")}>
         <div class="section-heading">
           <div>
-            <span class="eyebrow">糸</span>
-            <h2>{replaying ? "表示" : "ラベル"}</h2>
+            <span class="eyebrow">{t("inspector.link.eyebrow")}</span>
+            <h2>
+              {replaying
+                ? t("inspector.link.view")
+                : t("inspector.link.heading")}
+            </h2>
           </div>
         </div>
         <label class="inspector__field">
-          <span>ひとこと</span>
+          <span>{t("inspector.link.text.label")}</span>
           <input
             type="text"
             data-testid="link-label-input"
             value={label}
-            placeholder="同一人物？ など"
+            placeholder={t("inspector.link.placeholder")}
             disabled={replaying}
             {...compositionHandlers}
             onCompositionEnd={(event) => {
@@ -545,7 +556,7 @@ function InspectorEditor() {
           />
         </label>
         <label class="inspector__field">
-          <span>状態</span>
+          <span>{t("inspector.link.kind.label")}</span>
           <select
             data-testid="link-kind-toggle"
             value={link.kind}
@@ -556,12 +567,16 @@ function InspectorEditor() {
               })
             }
           >
-            <option value="connects">通常</option>
-            <option value="contradicts">要検討</option>
+            <option value="connects">
+              {t("inspector.link.kind.connects")}
+            </option>
+            <option value="contradicts">
+              {t("inspector.link.kind.contradicts")}
+            </option>
           </select>
         </label>
         {replaying ? (
-          <p class="inspector__hint">タイムライン表示中は読めます</p>
+          <p class="inspector__hint">{t("inspector.replay.hint")}</p>
         ) : (
           <>
             <button
@@ -570,9 +585,9 @@ function InspectorEditor() {
               data-testid="link-delete"
               onClick={() => removeLink(link.id)}
             >
-              この糸を削除
+              {t("inspector.link.delete")}
             </button>
-            <p class="inspector__hint">Delete キーでも削除できます</p>
+            <p class="inspector__hint">{t("inspector.delete.hint")}</p>
           </>
         )}
         <HistoryEntry />
@@ -586,16 +601,14 @@ function InspectorEditor() {
       multiIds,
     );
     return (
-      <aside class="inspector" aria-label="複数カードの整理">
+      <aside class="inspector" aria-label={t("inspector.multi.label")}>
         <div class="section-heading">
           <div>
-            <span class="eyebrow">複数選択</span>
-            <h2>{multiIds.length}枚を整理</h2>
+            <span class="eyebrow">{t("inspector.multi.eyebrow")}</span>
+            <h2>{t("inspector.multi.heading", { count: multiIds.length })}</h2>
           </div>
         </div>
-        <p class="inspector__hint">
-          Shift＋空白ドラッグで囲む。紙クリックで追加／もう一度で外す。糊付け帯でまとめて移動
-        </p>
+        <p class="inspector__hint">{t("inspector.multi.hint")}</p>
         <TagField
           cardId={multiIds[0]!}
           cardIds={multiIds}
@@ -609,8 +622,8 @@ function InspectorEditor() {
 
   if (!card) {
     return (
-      <aside class="inspector" aria-label="カード編集">
-        <p class="inspector__empty">カードか糸を選ぶと、ここで編集できます</p>
+      <aside class="inspector" aria-label={t("inspector.label")}>
+        <p class="inspector__empty">{t("inspector.empty")}</p>
         <HistoryEntry />
       </aside>
     );
@@ -627,11 +640,17 @@ function InspectorEditor() {
     ) ?? [];
 
   return (
-    <aside class="inspector" aria-label="カード編集">
+    <aside class="inspector" aria-label={t("inspector.label")}>
       <div class="section-heading">
         <div>
-          <span class="eyebrow">{replaying ? "タイムライン" : "簡易編集"}</span>
-          <h2>{card.role === "thought" ? "考察カード" : "発見カード"}</h2>
+          <span class="eyebrow">
+            {replaying ? t("stream.eyebrow") : t("inspector.eyebrow")}
+          </span>
+          <h2>
+            {card.role === "thought"
+              ? t("inspector.card.thought")
+              : t("inspector.card.finding")}
+          </h2>
         </div>
         <div class="inspector__heading-tools">
           <CardRoleToggle
@@ -643,15 +662,15 @@ function InspectorEditor() {
           <div
             class="inspector__size-toggle"
             role="group"
-            aria-label="ボード上のサイズ"
+            aria-label={t("inspector.size.label")}
           >
-            <IconTip label="ボード上のサイズ · 標準">
+            <IconTip label={t("inspector.size.medium.tip")}>
               <button
                 type="button"
                 class={card.size === "l" ? undefined : "is-active"}
                 data-testid="inspector-card-size-m"
                 aria-pressed={card.size !== "l"}
-                aria-label="標準"
+                aria-label={t("inspector.size.medium")}
                 disabled={replaying}
                 onClick={() => void updateCardSize(card.id, "m")}
               >
@@ -669,13 +688,13 @@ function InspectorEditor() {
                 </svg>
               </button>
             </IconTip>
-            <IconTip label="ボード上のサイズ · 大きめ">
+            <IconTip label={t("inspector.size.large.tip")}>
               <button
                 type="button"
                 class={card.size === "l" ? "is-active" : undefined}
                 data-testid="inspector-card-size-l"
                 aria-pressed={card.size === "l"}
-                aria-label="大きめ"
+                aria-label={t("inspector.size.large")}
                 disabled={replaying}
                 onClick={() => void updateCardSize(card.id, "l")}
               >
@@ -697,7 +716,7 @@ function InspectorEditor() {
         </div>
       </div>
       <label class="inspector__field">
-        <span>タイトル</span>
+        <span>{t("capture.title.label")}</span>
         <input
           ref={titleRef}
           type="text"
@@ -716,7 +735,7 @@ function InspectorEditor() {
       ) : null}
       <TagField cardId={card.id} tags={card.tags} disabled={replaying} />
       <label class="inspector__field">
-        <span>出典URL</span>
+        <span>{t("capture.source.label")}</span>
         <div class="inspector__url-row">
           <input
             type="url"
@@ -732,7 +751,7 @@ function InspectorEditor() {
               class="inspector__ogp-btn"
               data-testid="inspector-ogp-fetch"
               disabled={ogpFetching || replaying}
-              title="OGPからタイトルを取得"
+              title={t("inspector.ogp.title")}
               onClick={async () => {
                 setOgpFetching(true);
                 try {
@@ -760,7 +779,7 @@ function InspectorEditor() {
                 }
               }}
             >
-              {ogpFetching ? "…" : "タイトル取得"}
+              {ogpFetching ? "…" : t("inspector.ogp.label")}
             </button>
           ) : null}
         </div>
@@ -771,15 +790,15 @@ function InspectorEditor() {
         </div>
       ) : null}
       <div class="inspector__field">
-        <span>作中時間</span>
+        <span>{t("stream.storyWhen.label")}</span>
         <div class="inspector__story-when-row">
           <input
             type="text"
             data-testid="inspector-story-when"
             value={storyWhen}
-            placeholder="起点 例: 12:34"
+            placeholder={t("inspector.storyWhen.placeholder")}
             disabled={replaying}
-            aria-label="作中時間の起点"
+            aria-label={t("capture.storyWhen.label")}
             {...fieldHandlers("storyWhen")}
           />
           <span class="inspector__story-when-sep" aria-hidden="true">
@@ -789,18 +808,18 @@ function InspectorEditor() {
             type="text"
             data-testid="inspector-story-until"
             value={storyUntil}
-            placeholder="帯の端 例: 13:00 / 20min"
+            placeholder={t("inspector.storyUntil.placeholder")}
             disabled={replaying}
-            aria-label="作中時間の帯の端"
+            aria-label={t("capture.storyUntil.label")}
             {...fieldHandlers("storyUntil")}
           />
         </div>
       </div>
       <p class="inspector__hint inspector__hint--inline">
-        発見ログ左の時刻は壁時計。作中は上へ。帯の端が空なら点
+        {t("inspector.storyWhen.hint")}
       </p>
       <label class="inspector__field">
-        <span>メモ</span>
+        <span>{t("capture.body.label")}</span>
         <textarea
           data-testid="inspector-body"
           rows={6}
@@ -826,7 +845,7 @@ function InspectorEditor() {
             disabled={replaying}
             onClick={() => openExploreCompose(card.id)}
           >
-            大きく見ながら書く
+            {t("stream.image.edit.label")}
           </button>
         ) : null}
       </div>
@@ -842,7 +861,7 @@ function InspectorEditor() {
       ) : null}
       {cardLinks.length ? (
         <label class="inspector__field">
-          <span>つながり</span>
+          <span>{t("inspector.links.label")}</span>
           <select
             data-testid="card-links"
             value=""
@@ -853,15 +872,18 @@ function InspectorEditor() {
               clearCardSelection();
             }}
           >
-            <option value="">糸を選ぶ…</option>
+            <option value="">{t("inspector.links.placeholder")}</option>
             {cardLinks.map((item) => {
               const other = cards.find(
                 (c) => c.id === (item.from === card.id ? item.to : item.from),
               );
               return (
                 <option key={item.id} value={item.id}>
-                  {other?.title ?? "？"} · {item.label || "（ラベルなし）"} ·{" "}
-                  {item.kind === "contradicts" ? "要検討" : "通常"}
+                  {other?.title ?? "？"} ·{" "}
+                  {item.label || t("inspector.link.unlabeled")} ·{" "}
+                  {item.kind === "contradicts"
+                    ? t("inspector.link.kind.contradicts")
+                    : t("inspector.link.kind.connects")}
                 </option>
               );
             })}
@@ -869,7 +891,7 @@ function InspectorEditor() {
         </label>
       ) : null}
       {replaying ? (
-        <p class="inspector__hint">タイムライン表示中は読めます</p>
+        <p class="inspector__hint">{t("inspector.replay.hint")}</p>
       ) : (
         <>
           {diggingCardId.value === card.id ? (
@@ -877,7 +899,7 @@ function InspectorEditor() {
               class="inspector__dig is-active"
               data-testid="inspector-dig-active"
             >
-              掘り中（このカード起点）
+              {t("inspector.dig.active")}
             </span>
           ) : (
             <button
@@ -886,7 +908,7 @@ function InspectorEditor() {
               data-testid="inspector-dig-start"
               onClick={() => startDigging(card.id)}
             >
-              このカードから掘る
+              {t("inspector.dig.start")}
             </button>
           )}
           <button
@@ -895,9 +917,9 @@ function InspectorEditor() {
             data-testid="card-delete"
             onClick={() => removeCard(card.id)}
           >
-            このカードを削除
+            {t("inspector.card.delete")}
           </button>
-          <p class="inspector__hint">Delete キーでも削除できます</p>
+          <p class="inspector__hint">{t("inspector.delete.hint")}</p>
         </>
       )}
       <HistoryEntry />

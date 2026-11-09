@@ -1,3 +1,4 @@
+import { t } from "../src/i18n/index.ts";
 /** Hypothesis disposition on thought cards. Values may evolve later. */
 export type ThoughtOutcome = "open" | "held" | "failed";
 
@@ -13,21 +14,21 @@ export function normalizeThoughtOutcome(
 export function thoughtOutcomeLabel(value: ThoughtOutcome): string {
   switch (value) {
     case "open":
-      return "未検証";
+      return t("thoughtOutcome.open.label");
     case "held":
-      return "採用";
+      return t("thoughtOutcome.held.label");
     case "failed":
-      return "棄却";
+      return t("thoughtOutcome.failed.label");
   }
 }
 
 export function thoughtOutcomeShort(value: ThoughtOutcome): string {
   switch (value) {
     case "open":
-      return "未検";
+      return t("stream.outcome.open");
     case "held":
-      return "採用";
+      return t("thoughtOutcome.held.label");
     case "failed":
-      return "棄却";
+      return t("thoughtOutcome.failed.label");
   }
 }
