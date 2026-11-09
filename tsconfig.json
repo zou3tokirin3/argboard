@@ -10,6 +10,6 @@
     "strict": true,
     "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },
-  "include": ["ui/**/*", "scripts/**/*"],
+  "include": ["ui/**/*", "scripts/**/*", "tests/unit/i18n.types.ts"],
   "exclude": ["dist", "node_modules"]
 }

@@ -1,13 +1,13 @@
 ---
 id: T103
 title: 画面の文言を型付き辞書に切り出し、日本語のまま差し替え可能にしてから英語を足す
-status: backlog
-owner: none
+status: review
+owner: Codex
 gate: human
-branch: ""
+branch: "task/T103-i18n-ja-extract"
 template_ver: generic-0.2
 created: 2026-11-07
-updated: 2026-11-07
+updated: 2026-11-09
 ---
 
 ## 目的
@@ -42,7 +42,7 @@ updated: 2026-11-07
 - [ ] 対象（ラベル・ボタン・placeholder・aria-label/title・エラー/トースト・prompt/confirm）が `t()` 経由になり、直書き検出テストが通る
 - [ ] 全ロケールでキーと差し込み変数が一致することをテストで確認でき、欠けたキーは ja にフォールバックする
 - [ ] 保存データ・IndexedDB・event/room op・エクスポートの形が変わっていない（既存テストと smoke が通る）
-- [ ] `docs/i18n.md` と AGENTS.md の参照がある
+- [x] `docs/i18n.md` と AGENTS.md の参照がある
 - [ ] ②後、`?lang=en` で英語、未指定・不正値で日本語になる（1280/390 のスクショ）
 - [ ] flow しきい値（本体行 +200 / 操作 +3 / 概念 +2 / gzip +8KB / Won't）を意識し、超過見込みなら評価パケットへの人間GOが作業ログにある
 
@@ -60,5 +60,14 @@ updated: 2026-11-07
 ## 作業ログ（追記のみ）
 
 - 2026-11-07 14:10 JST カード起票（argboard開発）。実装は未承認
+
+- 2026-11-09 21:57 JST 隆さん承認「argboard T103を実装まで進めて。マージは別確認」。実装からPRまで承認、マージは未承認。11/07時点の実装未承認をこの範囲で更新。
+- 2026-11-09 Codex writer: phase1最初のスライスとして基盤・用語集・AI手順・型/キー/変数/直書き検査＋画像拡大画面6文言だけを抽出。全UIは約400コード行超のため停止し、後続画面別PR計画を docs/i18n.md に記載。phase1全体・phase2は未完了。status reviewはこのスライスのレビュー用（PR作成はcoordinatorへ引き継ぎ）。
+- 2026-11-09 開始HEAD df131d1（T098完了、APP_RELEASE 0.85）。ローカルmain参照は古いが、提供された現ブランチから作業。既存origin/main参照もdf131d1と一致。ネットワーク禁止のためリモート最新mainの照合は未実施。T098/T101・データ形・releaseは変更しない。
+- 2026-11-09 抽出前スクショをPlaywrightで試行したが、Chromiumが sandbox_host_linux.cc の shutdown: Operation not permitted で起動不可。1280/390前後比較は未検証、coordinator環境で再実行が必要。手順は /workspace/argboard-t103/screenshots.mjs。
+
+- 2026-11-09 検証: check・全31 unit testファイル・build成功。追加i18n 5ケース成功。元HEADと抽出後の仮想DOM（要素/文字/属性、コールバックは正規化）11ケース一致。ブラウザ画面比較の代替とはしない。smokeは指示どおりcoordinator担当。writer報告・検証ログ・ローカルPR原稿は /workspace/argboard-t103/。
+
+- 2026-11-09 調整担当が画像拡大画面の文言抽出前後のスクリーンショットを1280/390の両幅で比較し、ピクセル単位で完全一致を確認。証跡は docs/i18n/media/ 配下。ステータスは review を維持。
 
 ## 差し戻し履歴（追記のみ）
