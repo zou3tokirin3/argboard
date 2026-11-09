@@ -1,13 +1,13 @@
 ---
 id: T098
 title: Inspector・stream の保存を「確定時のみ・変更項目だけ」に統一する
-status: review
+status: done
 owner: Codex
 gate: human
 branch: "task/T098-stream-confirm"
 template_ver: generic-0.2
 created: 2026-10-26
-updated: 2026-11-07
+updated: 2026-11-09
 ---
 
 ## 目的
@@ -37,14 +37,19 @@ T097で `updateCard` が部分更新対応になった後、呼び出し側の�
 
 ## 受け入れ条件（2026-11-07 承認の6項目）
 
-- [ ] 入力停止では保存せず、blur / Enter で変更した欄だけを保存する（400ms debounce 撤去）
-- [ ] 別カードへの切替時は、未確定欄を元のカードへ強制保存する
-- [ ] 共同編集は focused dirty 欄を保護し、blur 後に届く相手の値を反映する
-- [ ] stream の Esc は下書きを破棄し、blur・待機後も updateCard 呼出し0（保留 debounce なし）
-- [ ] title / url / body / storyWhen / storyUntil / 糸ラベルへ適用。タグ・サイズは即時保存を維持
-- [ ] IME変換中 Enter は確定しない。最終編集で check / test / build / smoke を確認し、日本語入力・Esc・共同編集の録画を人間が確認してから別途マージ承認
+- [x] 入力停止では保存せず、blur / Enter で変更した欄だけを保存する（400ms debounce 撤去）
+- [x] 別カードへの切替時は、未確定欄を元のカードへ強制保存する
+- [x] 共同編集は focused dirty 欄を保護し、blur 後に届く相手の値を反映する
+- [x] stream の Esc は下書きを破棄し、blur・待機後も updateCard 呼出し0（保留 debounce なし）
+- [x] title / url / body / storyWhen / storyUntil / 糸ラベルへ適用。タグ・サイズは即時保存を維持
+- [x] IME変換中 Enter は確定しない（合成 composition / isComposing / key229 の検証済み。実OS IMEとは別）
+- [x] 最終メタデータ更新後の check / test / build を確認する（2026-11-09、test は30成功・失敗0）
+- [ ] 最終メタデータ更新後の smoke を確認する（coordinator 担当）
+- [ ] 実OSの日本語IMEを人間が確認する
+- [ ] 日本語入力・Esc・共同編集の録画を人間が確認する
+- [x] phase2 PR #11 の個別マージ承認を得る（2026-11-09 21:57 JST）
 
-自動 composition イベントは実OSの日本語IME確認と区別する。T098はreviewのまま。phase1はPR #9でマージ済み、phase2のマージは別承認待ち。旧証跡はsplit前の履歴で、phase1のB1成功証跡として扱わない。
+自動 composition イベントは実OSの日本語IME確認と区別する。2026-11-09 21:57 JST の承認を受けて T098 は done / gate: human。phase1 は PR #9 でマージ済み、phase2 PR #11 はマージ承認済み（ここではマージしない）。実OS IME・録画の人間確認は未確認のまま残す。phase2 の本番確認はマージ後に行う。旧証跡はsplit前の履歴で、phase1のB1成功証跡として扱わない。
 
 ## このカードでやらない
 
@@ -86,5 +91,7 @@ T097で `updateCard` が部分更新対応になった後、呼び出し側の�
 - 2026-11-07 Codex（smoke比較成功後の最終整理）: 外側probeは元fixture手順2/2成功7.2秒、準備待機手順2/2成功8.0秒。元の初期化競合仮説は証明されず、非空readyLabel setup・一時probe診断を撤去。元fixture手順と既存/追加のidle・表示・呼出し数・最終Enter assertionは保持。空ラベル正規化の検査側誤りへの修正は、最終Enter成功条件の後の独立clear操作として保持（link存在・label undefined・label空文字patch1回）。製品実装と実DO evidence8成功/約33秒mediaは無変更。check/unit145/build再成功。最終整理版の外側smokeとcc再レビュー待ち。厳格計数374行（コード/テスト233＋scratch runner141）、review/human・0.84・mergependingを維持。
 
 - 2026-11-07 Codex（最終HEADのidle消失を受けたfixture修正）: 最新smokeは1成功/1失敗、Enter前の「label draft survives idle」で空文字を観測。比較実行の成功は不安定さの反証にならず、review-4はNOT OK/blocking1。既存Inspectorは初期空文字を描画後にlink-load effectで読み込み、初回effectはdirtyでも上書きするため、空inputの存在だけを準備完了扱いしたautomation順序を修正。製品コードは変更せず、選択前に特徴的なlabel seedをfixtureへ設定し、実入力欄がseedと一致するまで条件待機する。idleの保存値はseed、表示はdraft、更新呼出し0、Enterのlabel-only1回をassertし、独立clearのundefined正規化も維持。seed→空への準備操作や固定待機は追加しない。製品の初期化前入力への対応は実装せず、別判断が必要。check/unit145/build成功、厳格計数380行（コード/テスト239＋scratch runner141）。最新fixture版の外側連続smoke・cc再レビュー待ち。実DO8成功/33秒mediaは不変、review/human・0.84・mergepending維持。
+
+- 2026-11-09 Codex（最終メタデータ）: 21:57 JST 人間承認「argboard #11をマージしていい」「argboard T103を実装まで進めて。マージは別確認」を記録。T098 を done、APP_RELEASE を 0.84→0.85（ローカル serve に残っていた0.75も0.85へ同期）、APP_PREVIEW は空のまま。確認済みの受け入れ条件だけチェックし、実OS IME・録画の人間確認は未チェック。#11 はマージ承認済み、本番確認はマージ後。T103 の実装承認とマージ承認は別で、この作業では実装しない。check・test（30成功/失敗0）・build は成功。smoke は coordinator 担当。コミット・push・マージ・ネットワーク操作なし。
 
 ## 差し戻し履歴（追記のみ）

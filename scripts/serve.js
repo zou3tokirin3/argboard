@@ -11,7 +11,7 @@ const root = path.join(
 const port = Number(process.env.PORT ?? "8000");
 
 // Keep in sync with ui/release.ts
-const APP_RELEASE = "0.75";
+const APP_RELEASE = "0.85";
 const APP_PREVIEW = null;
 
 function appTitle(branch) {
