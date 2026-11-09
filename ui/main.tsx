@@ -1,6 +1,7 @@
 import { signal } from "@preact/signals";
 import { render } from "preact";
 import { useEffect, useState } from "preact/hooks";
+import { t } from "../src/i18n/index.ts";
 import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
 import { readCaptureDraft } from "./capture-draft.ts";
@@ -97,9 +98,7 @@ function InstallTip() {
 
   return (
     <div class="install-tip" role="status" data-testid="install-tip">
-      <p>
-        ホーム画面やDockに追加すると、このブラウザでの保存がより安定します。
-      </p>
+      <p>{t("main.install.hint")}</p>
       <button
         type="button"
         data-testid="install-tip-dismiss"
@@ -112,7 +111,7 @@ function InstallTip() {
           setOpen(false);
         }}
       >
-        閉じる
+        {t("capture.close.label")}
       </button>
     </div>
   );
@@ -176,18 +175,20 @@ declare global {
 function SaveStatusLabel() {
   const status = saveStatus.value;
   const savingProject = saveStatusProject.value;
-  const prefix =
-    savingProject && savingProject.id !== activeProjectId.value
-      ? `『${savingProject.name}』を`
-      : "";
+  const otherProject =
+    savingProject && savingProject.id !== activeProjectId.value;
   const label =
     status === "saving"
-      ? `${prefix}保存中…`
+      ? otherProject
+        ? t("main.save.project.saving", { name: savingProject.name })
+        : t("main.save.saving")
       : status === "error"
-        ? `${prefix}保存できませんでした`
+        ? otherProject
+          ? t("main.save.project.error", { name: savingProject.name })
+          : t("main.save.error")
         : status === "loading"
-          ? "読み込み中…"
-          : "このブラウザに保存済み";
+          ? t("main.loading")
+          : t("main.save.saved");
   return (
     <span
       class={`save-status is-${status}`}
@@ -202,7 +203,7 @@ function SaveStatusLabel() {
           data-testid="save-retry"
           onClick={() => void retrySave()}
         >
-          もう一度保存
+          {t("main.save.retry")}
         </button>
       )}
     </span>
@@ -257,20 +258,20 @@ function TopBar() {
               if (next) void refreshProjectSummaries();
             }}
           >
-            プロジェクト
+            {t("main.project.label")}
           </button>
           {projectMenuOpen ? (
             <div
               id="project-menu-panel"
               class="project-menu__panel"
               role="menu"
-              aria-label="プロジェクト操作"
+              aria-label={t("main.project.menu.label")}
             >
               <label class="project-menu__field">
-                <span>切替</span>
+                <span>{t("main.project.switch")}</span>
                 <select
                   data-testid="project-select"
-                  aria-label="プロジェクト切替"
+                  aria-label={t("main.project.switch.label")}
                   value={activeProjectId.value}
                   onChange={(event) => {
                     void switchProject(event.currentTarget.value);
@@ -291,7 +292,11 @@ function TopBar() {
                       );
                       return (
                         <option key={item.id} value={item.id}>
-                          {item.name}（{item.cardCount}枚・{when}）
+                          {t("main.project.summary", {
+                            name: item.name,
+                            count: item.cardCount,
+                            when,
+                          })}
                         </option>
                       );
                     })}
@@ -307,7 +312,7 @@ function TopBar() {
                   setProjectMenuOpen(false);
                 }}
               >
-                新規作成
+                {t("main.project.create")}
               </button>
               <form
                 class="project-menu__rename"
@@ -318,10 +323,10 @@ function TopBar() {
                 }}
               >
                 <label class="project-menu__field">
-                  <span>名前変更</span>
+                  <span>{t("main.project.rename")}</span>
                   <input
                     data-testid="project-rename-input"
-                    aria-label="プロジェクト名"
+                    aria-label={t("main.project.name.label")}
                     value={projectRename}
                     onInput={(event) =>
                       setProjectRename(event.currentTarget.value)
@@ -333,7 +338,7 @@ function TopBar() {
                   class="project-menu__action"
                   data-testid="project-rename-save"
                 >
-                  保存
+                  {t("main.project.save")}
                 </button>
               </form>
             </div>
@@ -352,7 +357,9 @@ function TopBar() {
       <div class="topbar__actions">
         <SaveStatusLabel />
         {project.value?.share && (
-          <small role="status">共有中・{syncStatus.value}</small>
+          <small role="status">
+            {t("main.share.status", { status: syncStatus.value })}
+          </small>
         )}
         {shouldShowShareButton(location.hostname) && (
           <button
@@ -363,15 +370,12 @@ function TopBar() {
                   void navigator.clipboard
                     ?.writeText(link)
                     .catch(() => undefined);
-                  prompt(
-                    "招待リンク（リンクを知っている全員が編集できます・添付画像は共有されません）",
-                    link,
-                  );
+                  prompt(t("main.share.prompt"), link);
                 }
               });
             }}
           >
-            共有
+            {t("main.share.label")}
           </button>
         )}
         <button
@@ -381,14 +385,14 @@ function TopBar() {
             void exportProject();
           }}
         >
-          JSONを書き出す
+          {t("main.export")}
         </button>
         <button
           type="button"
           data-testid="import-btn"
           onClick={pickAndImportProject}
         >
-          JSONを読み込む
+          {t("main.import")}
         </button>
       </div>
     </header>
@@ -472,7 +476,7 @@ function Workspace() {
       <aside
         class="side-panel"
         id="discovery-side"
-        aria-label="発見ログ"
+        aria-label={t("stream.label")}
         aria-hidden={!open}
         inert={!open || undefined}
       >
@@ -486,8 +490,8 @@ function Workspace() {
             type="button"
             class="side-phase"
             data-testid={wide ? "side-rail" : "side-wide"}
-            aria-label={wide ? "発見ログを狭く" : "発見ログを広く"}
-            title={wide ? "発見ログを狭く" : "発見ログを広く"}
+            aria-label={wide ? t("main.stream.narrow") : t("main.stream.widen")}
+            title={wide ? t("main.stream.narrow") : t("main.stream.widen")}
             onClick={() => void setPanelPhase(wide ? "rail" : "wide")}
           >
             <span aria-hidden="true">{wide ? "«" : "»"}</span>
@@ -499,8 +503,8 @@ function Workspace() {
           data-testid={open ? "side-close" : "side-open"}
           aria-expanded={open}
           aria-controls="discovery-side"
-          aria-label={open ? "発見ログを閉じる" : "発見ログを開く"}
-          title={open ? "発見ログを閉じる" : "発見ログを開く"}
+          aria-label={open ? t("main.stream.close") : t("main.stream.open")}
+          title={open ? t("main.stream.close") : t("main.stream.open")}
           onClick={() => void setPanelPhase(open ? "closed" : "rail")}
         >
           <span aria-hidden="true">{open ? "<" : ">"}</span>
@@ -537,7 +541,7 @@ function CaptureChromeTrigger() {
       type="button"
       class={`side-capture-btn${open ? " is-open" : ""}`}
       data-testid="capture-chrome-toggle"
-      aria-label={open ? "入力フォームを閉じる" : "カードを追加する"}
+      aria-label={open ? t("main.capture.close") : t("main.capture.add")}
       aria-expanded={open}
       onClick={() => {
         captureFloatOpen.value = !open;
@@ -576,7 +580,7 @@ function RightPanelB() {
       <button
         type="button"
         class="right-panel-b__toggle"
-        aria-label={isOpen ? "右パネルを閉じる" : "右パネルを開く"}
+        aria-label={isOpen ? t("main.right.close") : t("main.right.open")}
         onClick={() => {
           captureRightOpen.value = !captureRightOpen.value;
         }}
@@ -595,7 +599,7 @@ function RightPanelB() {
                   clearCardSelection();
                 }}
               >
-                ＋ 新規
+                {t("main.capture.new")}
               </button>
               <Inspector />
             </>
@@ -631,7 +635,7 @@ function RightPanelC() {
             rightPanelTab.value = "new";
           }}
         >
-          ＋ 新規
+          {t("main.capture.new")}
         </button>
         <button
           type="button"
@@ -642,7 +646,7 @@ function RightPanelC() {
             rightPanelTab.value = "detail";
           }}
         >
-          詳細
+          {t("main.right.detail")}
         </button>
       </div>
       <div class="right-panel-c__body">
@@ -669,7 +673,7 @@ function CaptureModal() {
         type="button"
         class="capture-modal-fab"
         data-testid="capture-modal-fab"
-        aria-label="カードを追加する"
+        aria-label={t("main.capture.add")}
         onClick={() => {
           captureModalOpen.value = true;
           requestAnimationFrame(() => {
@@ -693,12 +697,12 @@ function CaptureModal() {
             class="capture-modal__body"
             role="dialog"
             aria-modal="true"
-            aria-label="カードを追加"
+            aria-label={t("main.capture.dialog.label")}
           >
             <button
               type="button"
               class="capture-modal__close"
-              aria-label="閉じる"
+              aria-label={t("capture.close.label")}
               onClick={() => {
                 captureModalOpen.value = false;
               }}
@@ -717,12 +721,12 @@ function CaptureModal() {
 function UiVariantBadge() {
   const labels: Record<string, string> = {
     a: "A: side-chrome＋",
-    b: "B: 右エリア出し分け",
-    c: "C: 右エリアタブ",
-    d: "D: モーダル",
+    b: t("main.variant.b"),
+    c: t("main.variant.c"),
+    d: t("main.variant.d"),
   };
   return (
-    <div class="ui-variant-badge" title="?ui=a/b/c/d で切り替え">
+    <div class="ui-variant-badge" title={t("main.variant.tip")}>
       {labels[UI_VARIANT] ?? UI_VARIANT}
     </div>
   );
@@ -737,7 +741,7 @@ function _CaptureFloat() {
         type="button"
         class="capture-float__toggle"
         data-testid="capture-float-toggle"
-        aria-label={open ? "入力フォームを閉じる" : "カードを追加する"}
+        aria-label={open ? t("main.capture.close") : t("main.capture.add")}
         aria-expanded={open}
         onClick={() => {
           captureFloatOpen.value = !open;
@@ -766,7 +770,7 @@ function AppShell() {
   return (
     <div class="app-shell">
       <a class="skip-link" href="#main-content" data-testid="skip-link">
-        本文へ
+        {t("main.skip")}
       </a>
       <InstallTip />
       <TopBar />
@@ -779,7 +783,7 @@ function AppShell() {
 
 function ProjectBootstrap() {
   if (!hasProject.value) {
-    return <main class="loading">読み込み中…</main>;
+    return <main class="loading">{t("main.loading")}</main>;
   }
   return <AppShell />;
 }
