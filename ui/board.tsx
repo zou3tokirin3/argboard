@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "preact/hooks";
+import { t } from "../src/i18n/index.ts";
 import { isLocalMediaRef } from "./media.ts";
 import { MediaThumb } from "./media-thumb.tsx";
 import {
@@ -417,7 +418,9 @@ function LinkHit({ link, geometry }: { link: Link; geometry: LinkGeometry }) {
       role="button"
       tabIndex={0}
       aria-label={
-        link.label ? `糸: ${link.label}` : `糸 ${link.from} → ${link.to}`
+        link.label
+          ? t("board.link.named.label", { label: link.label })
+          : t("board.link.endpoints.label", { from: link.from, to: link.to })
       }
     >
       <line
@@ -515,7 +518,7 @@ function BoardNode({
         rx="3"
         onPointerDown={(event) => onAdhesivePointerDown(event, card.id)}
         role="button"
-        aria-label="糊付け部分をドラッグして移動"
+        aria-label={t("board.node.move.label")}
       />
       <foreignObject
         x="14"
@@ -525,7 +528,9 @@ function BoardNode({
         style={{ pointerEvents: "none" }}
       >
         <div class="board-node__adhesive-meta">
-          <span class="board-node__index">{thought ? "考察" : "発見"}</span>
+          <span class="board-node__index">
+            {thought ? t("stream.role.thought") : t("stream.role.finding")}
+          </span>
           {hasTags ? (
             <div class="board-node__tags" aria-hidden="true">
               {visibleTags.map((tag) => {
@@ -553,7 +558,7 @@ function BoardNode({
           target="_blank"
           rel="noopener noreferrer"
           data-testid="board-node-source"
-          aria-label="出典を開く"
+          aria-label={t("board.source.open")}
           onPointerDown={(event) => event.stopPropagation()}
         >
           <title>{sourceHost(card.url)}</title>
@@ -631,7 +636,7 @@ function BoardNode({
         transform={`translate(${dims.w} ${threadY})`}
         onPointerDown={(event) => onThreadPointerDown(event, card.id)}
         role="button"
-        aria-label="糸をドラッグして接続"
+        aria-label={t("board.link.connect.label")}
       >
         <rect
           class="board-node__thread-hit"
@@ -664,7 +669,7 @@ function ReplayBar(props: {
           testId="replay-prev"
           disabled={stepIndex <= 0}
           onClick={() => stepReplay(-1)}
-          label="前のステップ"
+          label={t("board.replay.previous")}
           path="M10 3L5 8l5 5"
         />
         <IconButton
@@ -672,7 +677,7 @@ function ReplayBar(props: {
           testId="replay-next"
           disabled={stepIndex >= stepsLength - 1}
           onClick={() => stepReplay(1)}
-          label="次のステップ"
+          label={t("board.replay.next")}
           path="M6 3l5 5-5 5"
         />
         <IconButton
@@ -680,7 +685,7 @@ function ReplayBar(props: {
           testId="replay-end"
           disabled={stepIndex >= stepsLength - 1}
           onClick={() => setReplayIndex(stepsLength - 1)}
-          label="最後のステップへ"
+          label={t("board.replay.end")}
           path="M4 3l5 5-5 5M12 3v10"
         />
         <input
@@ -691,7 +696,7 @@ function ReplayBar(props: {
           max={Math.max(0, stepsLength - 1)}
           step={1}
           value={stepIndex}
-          aria-label="タイムラインのステップ"
+          aria-label={t("board.replay.step.label")}
           onInput={(event) => setReplayIndex(Number(event.currentTarget.value))}
         />
         <span class="board__replay-count">
@@ -701,7 +706,7 @@ function ReplayBar(props: {
           class="board__replay-icon"
           testId="replay-now"
           onClick={() => clearReplay()}
-          label="いまに戻る"
+          label={t("inspector.history.exit")}
           path="M4 4l8 8M12 4l-8 8"
         />
       </div>
@@ -724,9 +729,7 @@ function FocusFloat(props: {
       class="board__focus-float"
       data-testid="board-focus"
       title={
-        cardFocusActive
-          ? "視点中：糸で届くカードだけを表示"
-          : "このカードを起点に視点を絞る"
+        cardFocusActive ? t("board.focus.active.tip") : t("board.focus.tip")
       }
       style={style}
       onPointerDown={(event) => event.stopPropagation()}
@@ -734,27 +737,27 @@ function FocusFloat(props: {
       {cardFocusActive ? (
         <>
           <span class="board__focus-meta" aria-live="polite">
-            視点 · {hops}
+            {t("stream.focus.hops", { hops })}
           </span>
           <IconButton
             class="board__focus-icon"
             testId="focus-shrink"
             disabled={hops <= 1}
-            label="一周戻す"
+            label={t("stream.focus.shrink.label")}
             onClick={() => shrinkFocusHops()}
             path="M3 8h10"
           />
           <IconButton
             class="board__focus-icon"
             testId="focus-expand"
-            label="もう一周広げる"
+            label={t("stream.focus.expand.label")}
             onClick={() => expandFocusHops()}
             path="M8 3v10M3 8h10"
           />
           <IconButton
             class="board__focus-icon"
             testId="focus-clear"
-            label="視点をやめる"
+            label={t("stream.focus.clear.label")}
             onClick={() => clearFocusView()}
             path="M4 4l8 8M12 4l-8 8"
           />
@@ -762,11 +765,11 @@ function FocusFloat(props: {
             type="button"
             class="board__focus-enter"
             data-testid="story-chrono-set"
-            aria-label="作中で並べる"
-            title="糸で届く作中時間つきカードを時間順に並べる"
+            aria-label={t("lane.label")}
+            title={t("board.chrono.tip")}
             onClick={() => void openStoryChrono(barAnchorId)}
           >
-            作中で並べる
+            {t("lane.label")}
           </button>
         </>
       ) : (
@@ -775,21 +778,21 @@ function FocusFloat(props: {
             type="button"
             class="board__focus-enter"
             data-testid="focus-set"
-            aria-label="この視点で見る"
-            title="つながるカードだけを浮かべ、ほかは沈める"
+            aria-label={t("board.focus.enter")}
+            title={t("board.focus.enter.tip")}
             onClick={() => setFocusView(barAnchorId)}
           >
-            この視点で見る
+            {t("board.focus.enter")}
           </button>
           <button
             type="button"
             class="board__focus-enter"
             data-testid="story-chrono-set"
-            aria-label="作中で並べる"
-            title="糸で届く作中時間つきカードを時間順に並べる"
+            aria-label={t("lane.label")}
+            title={t("board.chrono.tip")}
             onClick={() => void openStoryChrono(barAnchorId)}
           >
-            作中で並べる
+            {t("lane.label")}
           </button>
         </>
       )}
@@ -1265,11 +1268,11 @@ export function BoardView() {
   return (
     <section
       class={`board ${replaying ? "is-replaying" : ""}`}
-      aria-label="捜査ボード"
+      aria-label={t("board.label")}
     >
       {replaying && (
         <div class="board__replay-overlay" data-testid="replay-badge">
-          タイムライン（読み取り専用）
+          {t("board.replay.readOnly")}
         </div>
       )}
       {replaying && currentStep && stepIndex != null ? (
@@ -1299,7 +1302,7 @@ export function BoardView() {
             barAnchorId={barAnchorId}
           />
         ) : null}
-        <svg aria-label="手がかりの関係図">
+        <svg aria-label={t("board.graph.label")}>
           <defs>
             {(
               [
@@ -1408,10 +1411,11 @@ export function BoardView() {
         </svg>
         <div class="board__legend">
           <span>
-            <i class="thread"></i> 通常
+            <i class="thread"></i> {t("inspector.link.kind.connects")}
           </span>
           <span>
-            <i class="thread is-dashed"></i> 要検討
+            <i class="thread is-dashed"></i>{" "}
+            {t("inspector.link.kind.contradicts")}
           </span>
         </div>
       </div>
