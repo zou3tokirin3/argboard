@@ -4,7 +4,7 @@ title: 画面の文言を型付き辞書に切り出し、日本語のまま差�
 status: review
 owner: Codex
 gate: human
-branch: "task/T103-i18n-slice4"
+branch: "task/T103-i18n-slice5"
 template_ver: generic-0.2
 created: 2026-11-07
 updated: 2026-11-09
@@ -87,4 +87,8 @@ updated: 2026-11-09
 - 2026-11-09 Codex writer / slice4: base 76803a0、task/T103-i18n-slice4。Captureの残り全体（ui/capture.tsx）1面だけをt()抽出し、ja.tsへ47キー追加、画像添付エラーは既存キーを再利用。同ファイル全体を直書き検査に追加。通常入力・掘り中・タグ・画像準備/参照・ヒントが対象。既存JSXと空白・ユーザー入力・Error.message・操作を維持。共有コントロール、state/image-compress上流エラー、Stream/Board等は後続。status review、T103全体は未完了、APP_RELEASE 0.85維持。英語・URL言語選択は追加しない。
 - 2026-11-09 slice4 writer検証: check・unit（31ファイル成功/失敗0）・build・diff --check成功。辞書解決後のCaptureモジュール全体が抽出前とesbuild出力一致（JSX/空白・イベント/エラー処理含む）。スクショスクリプトは同じesbuildで両版ビルド成功、Chromiumは sandbox_host_linux.cc の shutdown: Operation not permitted で起動不可。固定時計・font-smoothing none・animation/transition無効、1280/390×6状態すべてのPNGのSHA-256完全一致を必須とし、描画ノイズは許容しない。PNG完全一致と既存smokeはcoordinator確認待ち。手順・残計画・ログは /workspace/argboard-t103-slice4/writer.md と screenshots.mjs。ネットワーク・commit/push/post/merge/login/vault操作なし。
 
+- 2026-11-09 slice5 coordinator検証完了: Stream抽出前後の1280/390×18状態、全36組（36/36）のPNGでSHA-256完全一致を確認。前後PNGは `docs/i18n/media/T103-slice5-{before,after}-*.png`、成功ログは `/workspace/argboard-t103-slice5/shot.log`。下記slice5 writer記録のPNG比較・smoke確認待ちを更新。npm run check・unit 150件（失敗0）・npm run build・既存smoke 2件がすべて成功（同ディレクトリの check.log / unit.log / build.log / smoke.log）。今回の記録更新でも全36組のSHA-256一致と保存済み検証ログを確認。status review・APP_RELEASE 0.85を維持し、T103全体は未完了、マージは別承認。今回の変更は docs/i18n.md と本カードの作業ログのみ。製品コード変更・commit・ネットワーク・login・vault操作なし。
+
 ## 差し戻し履歴（追記のみ）
+
+- 2026-11-09 Codex writer / slice5: base e86e0b8、task/T103-i18n-slice5。ui/stream.tsx全体の日本語UIを58キーで抽出し、ファイル全体を直書き検査へ追加。コード差分264行（追加183/削除81、docs/カード除外）。check・unit test全31ファイル・build成功。スクショ比較スクリプトは同じesbuild、固定時計、animations無効、font-smoothing none、1280/390、18状態36組のSHA-256完全一致を要求。Chromiumが shutdown: Operation not permitted で起動不可、PNG比較とsmokeはcoordinator検証待ち。status review・APP_RELEASE 0.85維持、T103全体は未完了。英語/?langなし。残計画と証跡は /workspace/argboard-t103-slice5/writer.md。ネットワーク・commit/push/post/merge/login/vault操作なし。
