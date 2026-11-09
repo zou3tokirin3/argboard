@@ -6,6 +6,17 @@ export const ja = {
   "imageOverlay.dialog.label": "{title} の画像",
   "imageOverlay.edit.hint": "1×・右で編集できます",
   "imageOverlay.close.label": "閉じる（Esc）",
+  "cardImage.label": "スクショ",
+  "cardImage.image.alt": "添付スクショ",
+  "cardImage.attach.error": "画像を添付できませんでした",
+  "cardImage.inline.hint": "画像",
+  "cardImage.inline.pasteHint": "⌘V",
+  "cardImage.compact.hint": "ファイルを選ぶ／貼り付け",
+  "cardImage.desktop.hint": "ここに貼り付け（⌘V）またはドロップ",
+  "cardImage.inline.replace.label": "差し替え",
+  "cardImage.replace.label": "差し替え…",
+  "cardImage.pick.label": "ファイルを選ぶ…",
+  "cardImage.clear.label": "削除",
 } as const;
 
 export type Messages = { [K in keyof typeof ja]: string };

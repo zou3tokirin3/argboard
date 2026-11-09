@@ -4,7 +4,7 @@ title: 画面の文言を型付き辞書に切り出し、日本語のまま差�
 status: review
 owner: Codex
 gate: human
-branch: "task/T103-i18n-ja-extract"
+branch: "task/T103-i18n-next"
 template_ver: generic-0.2
 created: 2026-11-07
 updated: 2026-11-09
@@ -69,5 +69,13 @@ updated: 2026-11-09
 - 2026-11-09 検証: check・全31 unit testファイル・build成功。追加i18n 5ケース成功。元HEADと抽出後の仮想DOM（要素/文字/属性、コールバックは正規化）11ケース一致。ブラウザ画面比較の代替とはしない。smokeは指示どおりcoordinator担当。writer報告・検証ログ・ローカルPR原稿は /workspace/argboard-t103/。
 
 - 2026-11-09 調整担当が画像拡大画面の文言抽出前後のスクリーンショットを1280/390の両幅で比較し、ピクセル単位で完全一致を確認。証跡は docs/i18n/media/ 配下。ステータスは review を維持。
+
+- 2026-11-09 22:37 JST 隆さんが#12のマージを承認（be9c285へ反映済み）。残画面・英語/URL言語選択は後続PRで継続可。今回のslice2のマージは別承認が必要。
+- 2026-11-09 Codex writer / slice2: 指定ブランチ task/T103-i18n-next、base be9c285から画像添付欄 ui/card-image-field.tsx のみ抽出。ja.tsへ11キー追加、拡大の既存2キーを再利用、直書き検出対象を同ファイルへ拡張。captureのpasteExploreImage・画像下書きとstateの入力検証を調査し、400コード行以内の独立面を守るため後続へ分割。docs/i18n.mdに対象・エラー境界・後続計画を追記。status reviewを維持、T103全体は未完了、APP_RELEASE 0.85維持。英語・en.ts・URL言語選択は変更しない。
+- 2026-11-09 slice2のブラウザ起動を試行したが、Chromiumが sandbox_host_linux.cc の shutdown: Operation not permitted で停止。1280/390の抽出前後スクショは未検証。coordinator向け再現スクリプトとログを /workspace/argboard-t103-slice2/ に残す。ネットワーク・commit/push/post/merge/login/vault操作は行わない。
+
+- 2026-11-09 slice2検証: npm run check（Biome・tsc 2構成）、npm test（31ファイル成功・失敗0）、npm run build、git diff --check成功。抽出前be9c285と抽出後の仮想DOM96ケース（compact/inline/既定、狭幅ヒント、disabled、画像なし/読込中/あり、拡大有無）とエラーフォールバック・Error.message通過・busy解除が一致。画面比較の代替とはしない。コード差分は46行（追加30/削除16、docs・カードを除く）で約400行以内。スクショ再現スクリプトの構文検査のみ成功、実画面比較と既存smokeはcoordinatorへ引き継ぎ。報告: /workspace/argboard-t103-slice2/writer.md。
+
+- 2026-11-09 レビュー指摘対応: #12は22:37 JSTにマージ済み（be9c285）。今回のslice2は `ui/card-image-field.tsx` の日本語文言抽出。coordinatorが1280/390の抽出前後スクショ比較と既存smokeを完了し、上記の引き継ぎ時点の未検証を更新。PNGにはサブピクセル描画・AAによる1〜2階調・小さなbboxの描画ノイズが残る場合があるが、DOM96ケースと表示文字列は一致。前後PNG・差分マスクは `docs/i18n/media/T103-slice2-*`、比較の説明と各証跡へのリンクは [docs/i18n.md](../../../docs/i18n.md#slice2の画面比較証跡)。statusはreviewのまま、T103全体はdoneにしない。APP_RELEASEは0.85を維持。英語・URL言語選択は今回の対象外。今回のslice2のマージは別承認。
 
 ## 差し戻し履歴（追記のみ）

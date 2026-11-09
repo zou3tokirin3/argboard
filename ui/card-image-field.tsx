@@ -1,4 +1,5 @@
 import { useState } from "preact/hooks";
+import { t } from "../src/i18n/index.ts";
 import {
   imageBlobFromClipboard,
   imageBlobFromDataTransfer,
@@ -32,7 +33,7 @@ export function CardImageField(props: {
       await setCardImage(props.cardId, blob);
     } catch (error) {
       alert(
-        error instanceof Error ? error.message : "画像を添付できませんでした",
+        error instanceof Error ? error.message : t("cardImage.attach.error"),
       );
     } finally {
       setBusy(false);
@@ -64,7 +65,7 @@ export function CardImageField(props: {
         hasImage ? " has-image" : ""
       }`}
     >
-      {variant === "compact" ? <span>スクショ</span> : null}
+      {variant === "compact" ? <span>{t("cardImage.label")}</span> : null}
       <div
         class="card-image-field__drop"
         data-testid={props.testId ?? "card-image-field"}
@@ -85,14 +86,14 @@ export function CardImageField(props: {
             type="button"
             class="card-image-field__enlarge"
             data-testid="inspector-image-enlarge"
-            aria-label="画像を拡大して見る（1×）"
-            title="拡大して見る（1×）"
+            aria-label={t("imageOverlay.enlarge.label")}
+            title={t("imageOverlay.enlarge.title")}
             onClick={props.onEnlarge}
           >
             <img
               class="card-image-field__preview"
               src={url}
-              alt="添付スクショ"
+              alt={t("cardImage.image.alt")}
               width={1600}
               height={1000}
             />
@@ -104,7 +105,7 @@ export function CardImageField(props: {
           <img
             class="card-image-field__preview"
             src={url}
-            alt="添付スクショ"
+            alt={t("cardImage.image.alt")}
             width={1600}
             height={1000}
           />
@@ -114,11 +115,11 @@ export function CardImageField(props: {
           <p class="card-image-field__hint">
             {variant === "inline"
               ? compactHints
-                ? "画像"
-                : "⌘V"
+                ? t("cardImage.inline.hint")
+                : t("cardImage.inline.pasteHint")
               : compactHints
-                ? "ファイルを選ぶ／貼り付け"
-                : "ここに貼り付け（⌘V）またはドロップ"}
+                ? t("cardImage.compact.hint")
+                : t("cardImage.desktop.hint")}
           </p>
         )}
       </div>
@@ -131,7 +132,7 @@ export function CardImageField(props: {
               disabled={props.disabled || busy}
               onClick={onPick}
             >
-              差し替え
+              {t("cardImage.inline.replace.label")}
             </button>
             <button
               type="button"
@@ -141,7 +142,7 @@ export function CardImageField(props: {
                 void clearCardImage(props.cardId);
               }}
             >
-              削除
+              {t("cardImage.clear.label")}
             </button>
           </div>
         ) : null
@@ -153,7 +154,9 @@ export function CardImageField(props: {
             disabled={props.disabled || busy}
             onClick={onPick}
           >
-            {hasImage ? "差し替え…" : "ファイルを選ぶ…"}
+            {hasImage
+              ? t("cardImage.replace.label")
+              : t("cardImage.pick.label")}
           </button>
           {hasImage ? (
             <button
@@ -164,7 +167,7 @@ export function CardImageField(props: {
                 void clearCardImage(props.cardId);
               }}
             >
-              削除
+              {t("cardImage.clear.label")}
             </button>
           ) : null}
         </div>
