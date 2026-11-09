@@ -17,6 +17,10 @@ export const ja = {
   "cardImage.replace.label": "差し替え…",
   "cardImage.pick.label": "ファイルを選ぶ…",
   "cardImage.clear.label": "削除",
+  "captureImage.pick.label": "スクショを選ぶ",
+  "captureImage.paste.title": "スクショを貼る（⌘V）",
+  "captureImage.paste.label": "スクショを貼り付け",
+  "captureImage.file.label": "画像ファイルを選ぶ",
 } as const;
 
 export type Messages = { [K in keyof typeof ja]: string };

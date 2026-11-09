@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { readCaptureDraft } from "./capture-draft.ts";
+import { CaptureImageSlot, withStoryFields } from "./capture-image-slot.tsx";
 import { parseCaptureLine } from "./capture-notation.ts";
-import {
-  imageBlobFromClipboard,
-  imageBlobFromDataTransfer,
-} from "./clipboard-image.ts";
+import { imageBlobFromDataTransfer } from "./clipboard-image.ts";
 import { useCompactChromeHints } from "./compact-chrome.ts";
 import { DigShovelIcon, DigStopButton } from "./digging-controls.tsx";
 import type { PreviewSurface } from "./image-preview-height.ts";
@@ -173,31 +171,6 @@ function CaptureDiggingBar() {
   );
 }
 
-function withStoryFields(
-  draft: ReturnType<typeof parseCaptureLine> | null,
-  storyWhen: string,
-  storyUntil: string,
-):
-  | ReturnType<typeof parseCaptureLine>
-  | { title: string; storyWhen?: string; storyUntil?: string }
-  | null {
-  const when = storyWhen.trim();
-  const until = storyUntil.trim();
-  if (!draft) {
-    if (!when && !until) return null;
-    return {
-      title: "",
-      ...(when ? { storyWhen: when } : {}),
-      ...(until ? { storyUntil: until } : {}),
-    };
-  }
-  return {
-    ...draft,
-    ...(when ? { storyWhen: when } : {}),
-    ...(until ? { storyUntil: until } : {}),
-  };
-}
-
 function CaptureTagChips(props: {
   selected: string[];
   disabled: boolean;
@@ -235,107 +208,6 @@ function CaptureTagChips(props: {
         );
       })}
     </div>
-  );
-}
-
-function CaptureImageSlot(props: {
-  disabled: boolean;
-  getDraftLine: () => string;
-  getStoryWhen: () => string;
-  getStoryUntil: () => string;
-}) {
-  const compactHints = useCompactChromeHints();
-  const [busy, setBusy] = useState(false);
-
-  function draftFromLine() {
-    const line = props.getDraftLine().trim();
-    const parsed = line ? parseCaptureLine(line) : readCaptureDraft();
-    return withStoryFields(parsed, props.getStoryWhen(), props.getStoryUntil());
-  }
-
-  async function applyBlob(blob: Blob | undefined) {
-    if (!blob || props.disabled || busy) return;
-    setBusy(true);
-    try {
-      await pasteExploreImage(blob, draftFromLine() ?? undefined);
-    } catch (error) {
-      alert(
-        error instanceof Error ? error.message : "画像を添付できませんでした",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function onPaste(event: ClipboardEvent) {
-    if (props.disabled) return;
-    const blob = imageBlobFromClipboard(event);
-    if (!blob) return;
-    event.preventDefault();
-    void applyBlob(blob);
-  }
-
-  function applyFile(file: File | undefined) {
-    if (!file || props.disabled || busy) return;
-    setBusy(true);
-    void pasteExploreImage(file, draftFromLine() ?? undefined)
-      .catch((error) => {
-        alert(
-          error instanceof Error ? error.message : "画像を添付できませんでした",
-        );
-      })
-      .finally(() => setBusy(false));
-  }
-
-  function onPick(event: Event) {
-    event.stopPropagation();
-    if (props.disabled || busy) return;
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = () => {
-      applyFile(input.files?.[0]);
-    };
-    input.click();
-  }
-
-  function onFileChange(event: Event) {
-    const input = event.currentTarget;
-    if (!(input instanceof HTMLInputElement)) return;
-    const file = input.files?.[0];
-    input.value = "";
-    applyFile(file);
-  }
-
-  return (
-    <>
-      <label
-        class="capture__image-slot"
-        title={compactHints ? "スクショを選ぶ" : "スクショを貼る（⌘V）"}
-      >
-        <input
-          type="file"
-          accept="image/*"
-          data-testid="capture-image-slot"
-          aria-label={compactHints ? "スクショを選ぶ" : "スクショを貼り付け"}
-          disabled={props.disabled || busy}
-          onPaste={onPaste}
-          onChange={onFileChange}
-        />
-        <span aria-hidden="true">🖼</span>
-      </label>
-      <button
-        type="button"
-        class="capture__image-pick"
-        data-testid="capture-image-pick"
-        title="画像ファイルを選ぶ"
-        aria-label="画像ファイルを選ぶ"
-        disabled={props.disabled || busy}
-        onClick={onPick}
-      >
-        …
-      </button>
-    </>
   );
 }
 

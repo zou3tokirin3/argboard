@@ -4,7 +4,7 @@ title: 画面の文言を型付き辞書に切り出し、日本語のまま差�
 status: review
 owner: Codex
 gate: human
-branch: "task/T103-i18n-next"
+branch: "task/T103-i18n-slice3"
 template_ver: generic-0.2
 created: 2026-11-07
 updated: 2026-11-09
@@ -77,5 +77,11 @@ updated: 2026-11-09
 - 2026-11-09 slice2検証: npm run check（Biome・tsc 2構成）、npm test（31ファイル成功・失敗0）、npm run build、git diff --check成功。抽出前be9c285と抽出後の仮想DOM96ケース（compact/inline/既定、狭幅ヒント、disabled、画像なし/読込中/あり、拡大有無）とエラーフォールバック・Error.message通過・busy解除が一致。画面比較の代替とはしない。コード差分は46行（追加30/削除16、docs・カードを除く）で約400行以内。スクショ再現スクリプトの構文検査のみ成功、実画面比較と既存smokeはcoordinatorへ引き継ぎ。報告: /workspace/argboard-t103-slice2/writer.md。
 
 - 2026-11-09 レビュー指摘対応: #12は22:37 JSTにマージ済み（be9c285）。今回のslice2は `ui/card-image-field.tsx` の日本語文言抽出。coordinatorが1280/390の抽出前後スクショ比較と既存smokeを完了し、上記の引き継ぎ時点の未検証を更新。PNGにはサブピクセル描画・AAによる1〜2階調・小さなbboxの描画ノイズが残る場合があるが、DOM96ケースと表示文字列は一致。前後PNG・差分マスクは `docs/i18n/media/T103-slice2-*`、比較の説明と各証跡へのリンクは [docs/i18n.md](../../../docs/i18n.md#slice2の画面比較証跡)。statusはreviewのまま、T103全体はdoneにしない。APP_RELEASEは0.85を維持。英語・URL言語選択は今回の対象外。今回のslice2のマージは別承認。
+
+- 2026-11-09 Codex writer / slice3: base c4153cb、task/T103-i18n-slice3。CaptureImageSlot（ファイル選択・貼り付け）だけを ui/capture-image-slot.tsx に分離し、ja.tsへ4キー追加・既存エラーキー1つを2箇所で再利用。作中時間補助関数は原文のまま同ファイルへ移動。直書き検査対象は新ファイル全体へ拡張。約400コード行以内の独立面で停止し、画像準備・参照と上流エラーは後続。status review、T103全体は未完了、APP_RELEASE 0.85維持。英語・en.ts・URL言語選択は追加しない。検証結果と同一描画条件のスクショ再現スクリプトは /workspace/argboard-t103-slice3/writer.md と screenshots.mjs に記録。ネットワーク・commit/push/post/merge/login/vault操作は行わない。
+
+- 2026-11-09 slice3検証: npm run check・npm test（31ファイル成功/失敗0）・npm run build・git diff --check成功。辞書解決後の移動2関数（JSX・全イベント/エラー/busy処理を含む）は抽出前とesbuild出力一致。コード差分285行（追加153/削除132、新規ファイル141行を含む、docs/カード除外）。同じesbuild処理で両版をビルドする screenshots.mjs は構文・両版ビルドまで成功。Chromiumが sandbox_host_linux.cc の shutdown: Operation not permitted で起動不可のため、1280/390のPNG完全一致は未検証。固定時計・DPR1・fonts.ready・networkidle・指定CSS・animations disabledを設定し、画像なし/ファイル選択後の4組すべてのSHA-256一致を必須にする。実画面比較と既存smokeはcoordinator確認待ち。描画ノイズの許容で完全一致条件を緩和しない。
+
+- 2026-11-09 slice3 coordinator検証完了: `/workspace/argboard-t103-slice3/screenshots/` の `before/after-{empty,selected}-{1280,390}.png` 全4組でSHA-256が一致し、抽出前後のPNG完全一致を確認。上記の画面比較・既存smokeの確認待ちを更新。npm run check・unit 150件（失敗0）・npm run build・既存smoke 2件が成功（同ディレクトリ直下の check.log / unit.log / build.log / smoke.log）。今回のログ更新でもPNGのSHA-256一致と保存済み検証ログを確認。status review・APP_RELEASE 0.85を維持し、T103全体は未完了、マージは別承認。今回の変更はカードの作業ログ追記のみで、製品コード変更・commit・ネットワーク・login・vault操作なし。
 
 ## 差し戻し履歴（追記のみ）
