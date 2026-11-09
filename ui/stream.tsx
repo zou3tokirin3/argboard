@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { t } from "../src/i18n/index.ts";
 import { CardRoleToggle } from "./card-role-toggle.tsx";
 import { DigClearViaButton, DigStartButton } from "./digging-controls.tsx";
 import { IconTip } from "./icon-tip.tsx";
@@ -66,20 +67,21 @@ function streamEmptyReason(input: {
   openOutcomeOnly: boolean;
   storyWhenFilter: StoryWhenFilter;
 }): string {
-  if (input.total === 0) return "まだ手がかりがありません";
-  if (input.query) return `「${input.query}」に合う手がかりはありません`;
+  if (input.total === 0) return t("stream.empty.initial");
+  if (input.query) return t("stream.empty.query", { query: input.query });
   const filters: string[] = [];
-  if (input.unplacedOnly) filters.push("未配置のみ");
-  if (input.placedOnly) filters.push("配置済のみ");
-  if (input.findingOnly) filters.push("発見のみ");
-  if (input.thoughtOnly) filters.push("考察のみ");
-  if (input.openOutcomeOnly) filters.push("未検証の仮説");
-  if (input.storyWhenFilter === "with") filters.push("時あり");
-  if (input.storyWhenFilter === "without") filters.push("時なし");
+  if (input.unplacedOnly) filters.push(t("stream.filter.unplaced"));
+  if (input.placedOnly) filters.push(t("stream.filter.placed"));
+  if (input.findingOnly) filters.push(t("stream.filter.finding"));
+  if (input.thoughtOnly) filters.push(t("stream.filter.thought"));
+  if (input.openOutcomeOnly) filters.push(t("stream.filter.open"));
+  if (input.storyWhenFilter === "with") filters.push(t("stream.when.with"));
+  if (input.storyWhenFilter === "without")
+    filters.push(t("stream.when.without"));
   if (filters.length > 0) {
-    return `${filters.join("・")}に合う手がかりはありません`;
+    return t("stream.empty.filters", { filters: filters.join("・") });
   }
-  return "表示できる手がかりはありません";
+  return t("stream.empty.fallback");
 }
 
 type PlacementFilter = "all" | "unplaced" | "placed";
@@ -135,21 +137,21 @@ function cycleStoryWhenFilter(): void {
 }
 
 function placementFilterLabel(state: PlacementFilter): string {
-  if (state === "unplaced") return "未配";
-  if (state === "placed") return "掲載";
-  return "すべて";
+  if (state === "unplaced") return t("stream.placement.unplaced");
+  if (state === "placed") return t("stream.placement.placed");
+  return t("stream.filter.all");
 }
 
 function roleFilterLabel(state: RoleFilter): string {
-  if (state === "finding") return "発見";
-  if (state === "thought") return "考察";
-  return "すべて";
+  if (state === "finding") return t("stream.role.finding");
+  if (state === "thought") return t("stream.role.thought");
+  return t("stream.filter.all");
 }
 
 function storyWhenFilterLabel(state: StoryWhenFilter): string {
-  if (state === "with") return "時あり";
-  if (state === "without") return "時なし";
-  return "すべて";
+  if (state === "with") return t("stream.when.with");
+  if (state === "without") return t("stream.when.without");
+  return t("stream.filter.all");
 }
 
 function sourceLabel(url: string): string {
@@ -164,8 +166,12 @@ function streamCardStatus(
   card: { id: string; image?: string },
   boardCardIds: Set<string>,
 ): string {
-  const parts = [boardCardIds.has(card.id) ? "ボード済" : "未配置"];
-  if (isLocalMediaRef(card.image)) parts.push("画像");
+  const parts = [
+    boardCardIds.has(card.id)
+      ? t("stream.status.placed")
+      : t("stream.status.unplaced"),
+  ];
+  if (isLocalMediaRef(card.image)) parts.push(t("stream.status.image"));
   return parts.join(" · ");
 }
 
@@ -174,9 +180,13 @@ function streamMetaLabel(
   status: string,
   childCount: number,
 ): string {
-  const role = card.role === "thought" ? "考察" : "発見";
+  const role =
+    card.role === "thought"
+      ? t("stream.role.thought")
+      : t("stream.role.finding");
   const outcome = card.outcome ? ` · ${thoughtOutcomeLabel(card.outcome)}` : "";
-  const branch = childCount > 0 ? ` · 枝${childCount}` : "";
+  const branch =
+    childCount > 0 ? t("stream.meta.branch", { count: childCount }) : "";
   return `${role}${outcome} · ${status}${branch}`;
 }
 
@@ -267,7 +277,7 @@ function StreamCardTitle(props: {
       class="stream-card__title-input"
       data-testid="stream-card-title-input"
       value={draft}
-      aria-label="タイトル"
+      aria-label={t("stream.title.label")}
       onFocus={() => {
         focusedRef.current = true;
         composingRef.current = false;
@@ -393,14 +403,22 @@ function StreamCardRow(props: StreamCardRowProps) {
           {childCount > 0 ? (
             <IconTip
               align="start"
-              label={branchCollapsed ? "枝を開く" : "枝を畳む"}
+              label={
+                branchCollapsed
+                  ? t("stream.branch.expand")
+                  : t("stream.branch.collapse")
+              }
             >
               <button
                 type="button"
                 class="stream__branch-toggle"
                 data-testid="stream-branch-toggle"
                 aria-expanded={!branchCollapsed}
-                aria-label={branchCollapsed ? "枝を開く" : "枝を畳む"}
+                aria-label={
+                  branchCollapsed
+                    ? t("stream.branch.expand")
+                    : t("stream.branch.collapse")
+                }
                 onClick={(event) => {
                   event.stopPropagation();
                   onToggleBranch?.();
@@ -419,7 +437,10 @@ function StreamCardRow(props: StreamCardRowProps) {
           ) : null}
           <time>{timeFormatter.format(card.foundAt)}</time>
           {hasStoryWhen(card) ? (
-            <span class="stream-card__story-when" title="作中時間">
+            <span
+              class="stream-card__story-when"
+              title={t("stream.storyWhen.label")}
+            >
               {formatStoryWhenLabel(card)}
             </span>
           ) : null}
@@ -457,8 +478,8 @@ function StreamCardRow(props: StreamCardRowProps) {
                   tipAlign="end"
                   title={
                     viaCard
-                      ? `「${viaCard.title}」からの発見を埋める`
-                      : "間違えて掘った分を埋める"
+                      ? t("stream.via.clearFrom", { title: viaCard.title })
+                      : t("stream.via.clear")
                   }
                   onClick={(event) => {
                     event.stopPropagation();
@@ -476,7 +497,7 @@ function StreamCardRow(props: StreamCardRowProps) {
                   void removeCard(card.id);
                 }}
               >
-                削除
+                {t("stream.delete.label")}
               </button>
             </span>
           ) : (
@@ -504,7 +525,9 @@ function StreamCardRow(props: StreamCardRowProps) {
                 {card.outcome ? (
                   <IconTip
                     align="start"
-                    label={`仮説 · ${thoughtOutcomeLabel(card.outcome)}`}
+                    label={t("stream.outcome.tipLabel", {
+                      outcome: thoughtOutcomeLabel(card.outcome),
+                    })}
                   >
                     <span
                       class={`stream-card__outcome is-${card.outcome}`}
@@ -520,12 +543,12 @@ function StreamCardRow(props: StreamCardRowProps) {
               </span>
               {isLocalMediaRef(card.image) ? (
                 <span class="stream-card__thumb-wrap">
-                  <IconTip align="end" label="画像 · 大きく見ながら書く">
+                  <IconTip align="end" label={t("stream.image.edit.tip")}>
                     <button
                       type="button"
                       class="stream-card__thumb-btn"
                       data-testid="stream-card-thumb"
-                      aria-label="大きく見ながら書く"
+                      aria-label={t("stream.image.edit.label")}
                       onClick={(event) => {
                         event.stopPropagation();
                         if (selectedCardId.value !== card.id) {
@@ -577,7 +600,9 @@ function StreamCardRow(props: StreamCardRowProps) {
                 {card.outcome ? (
                   <IconTip
                     align="start"
-                    label={`仮説 · ${thoughtOutcomeLabel(card.outcome)}`}
+                    label={t("stream.outcome.tipLabel", {
+                      outcome: thoughtOutcomeLabel(card.outcome),
+                    })}
                   >
                     <span
                       class={`stream-card__outcome is-${card.outcome}`}
@@ -593,12 +618,12 @@ function StreamCardRow(props: StreamCardRowProps) {
               </span>
               {isLocalMediaRef(card.image) ? (
                 <span class="stream-card__thumb-wrap">
-                  <IconTip align="end" label="画像 · 大きく見ながら書く">
+                  <IconTip align="end" label={t("stream.image.edit.tip")}>
                     <button
                       type="button"
                       class="stream-card__thumb-btn"
                       data-testid="stream-card-thumb"
-                      aria-label="大きく見ながら書く"
+                      aria-label={t("stream.image.edit.label")}
                       onClick={(event) => {
                         event.stopPropagation();
                         if (selectedCardId.value !== card.id) {
@@ -651,11 +676,11 @@ function TagFocusControls() {
   return (
     <div class="stream__tag-focus">
       <div class="stream__tag-focus-head">
-        <span class="stream__tag-focus-label">タグ視点</span>
+        <span class="stream__tag-focus-label">{t("stream.focus.label")}</span>
         <div
           class="stream__tag-focus-list"
           role="group"
-          aria-label="タグで視点"
+          aria-label={t("stream.focus.tags.label")}
         >
           {usage.map((entry) => (
             <button
@@ -667,7 +692,10 @@ function TagFocusControls() {
               data-testid="stream-tag-focus-btn"
               data-tag={entry.name}
               aria-pressed={tagFocus === entry.name}
-              title={`「${entry.name}」の視点で見る（${entry.count}件）`}
+              title={t("stream.focus.tag.title", {
+                name: entry.name,
+                count: entry.count,
+              })}
               onClick={() => setFocusViewByTag(entry.name)}
             >
               #{entry.name}
@@ -677,37 +705,40 @@ function TagFocusControls() {
         </div>
       </div>
       {tagFocus ? (
-        <div class="stream__tag-focus-ops" aria-label={`視点 #${tagFocus}`}>
+        <div
+          class="stream__tag-focus-ops"
+          aria-label={t("stream.focus.active.label", { tag: tagFocus })}
+        >
           <span class="board__focus-meta" aria-live="polite">
-            視点 · {hops}
+            {t("stream.focus.hops", { hops })}
           </span>
-          <IconTip label="視点 · 一周戻す">
+          <IconTip label={t("stream.focus.shrink.tip")}>
             <button
               type="button"
               class="board__focus-icon"
               disabled={hops <= 1}
-              aria-label="一周戻す"
+              aria-label={t("stream.focus.shrink.label")}
               onClick={() => shrinkFocusHops()}
             >
               −
             </button>
           </IconTip>
-          <IconTip label="視点 · もう一周広げる">
+          <IconTip label={t("stream.focus.expand.tip")}>
             <button
               type="button"
               class="board__focus-icon"
-              aria-label="もう一周広げる"
+              aria-label={t("stream.focus.expand.label")}
               onClick={() => expandFocusHops()}
             >
               ＋
             </button>
           </IconTip>
-          <IconTip label="視点 · やめる">
+          <IconTip label={t("stream.focus.clear.tip")}>
             <button
               type="button"
               class="board__focus-icon"
               data-testid="tag-focus-clear"
-              aria-label="視点をやめる"
+              aria-label={t("stream.focus.clear.label")}
               onClick={() => clearFocusView()}
             >
               ×
@@ -836,7 +867,7 @@ export function Stream() {
   }, [revealId]);
 
   return (
-    <section class="stream" aria-label="発見ログ">
+    <section class="stream" aria-label={t("stream.label")}>
       <div
         class={`stream__chrome${imageReferenceActive ? " is-dimmed" : ""}`}
         inert={imageReferenceActive ? true : undefined}
@@ -844,8 +875,8 @@ export function Stream() {
       >
         <div class="section-heading">
           <div>
-            <span class="eyebrow">タイムライン</span>
-            <h2>発見ログ</h2>
+            <span class="eyebrow">{t("stream.eyebrow")}</span>
+            <h2>{t("stream.label")}</h2>
           </div>
           <span class="count">{current?.cards.length ?? 0}</span>
         </div>
@@ -860,25 +891,24 @@ export function Stream() {
                 clearFocusView();
               }
             }}
-            placeholder="手がかりを検索"
-            aria-label="手がかりを検索"
+            placeholder={t("stream.search.label")}
+            aria-label={t("stream.search.label")}
           />
         </label>
         <div
           class="stream__filters"
           role="toolbar"
-          aria-label="発見ログの絞り込み"
+          aria-label={t("stream.filters.label")}
         >
           <div
             class="stream__filter-group stream__filter-group--placement"
             role="group"
-            aria-label="配置"
+            aria-label={t("stream.placement.label")}
           >
-            <span class="stream__filter-group-label">配置</span>
-            <IconTip
-              align="start"
-              label="配置 · クリックで すべて → 未配 → 掲載"
-            >
+            <span class="stream__filter-group-label">
+              {t("stream.placement.label")}
+            </span>
+            <IconTip align="start" label={t("stream.placement.tip")}>
               <button
                 type="button"
                 class={`stream__filter-btn stream__filter-btn--chip stream__filter-btn--text${
@@ -886,7 +916,9 @@ export function Stream() {
                 }`}
                 data-testid="stream-placement-filter"
                 aria-pressed={placement !== "all"}
-                aria-label={`配置: ${placementFilterLabel(placement)}`}
+                aria-label={t("stream.placement.active.label", {
+                  label: placementFilterLabel(placement),
+                })}
                 onClick={cyclePlacementFilter}
               >
                 <span class="stream__filter-btn-label">
@@ -898,13 +930,12 @@ export function Stream() {
           <div
             class="stream__filter-group stream__filter-group--role"
             role="group"
-            aria-label="種別"
+            aria-label={t("stream.role.label")}
           >
-            <span class="stream__filter-group-label">種別</span>
-            <IconTip
-              align="start"
-              label="種別 · クリックで すべて → 発見 → 考察"
-            >
+            <span class="stream__filter-group-label">
+              {t("stream.role.label")}
+            </span>
+            <IconTip align="start" label={t("stream.role.tip")}>
               <button
                 type="button"
                 class={`stream__filter-btn stream__filter-btn--chip${
@@ -916,7 +947,9 @@ export function Stream() {
                 }`}
                 data-testid="stream-role-filter"
                 aria-pressed={role !== "all"}
-                aria-label={`種別: ${roleFilterLabel(role)}`}
+                aria-label={t("stream.role.active.label", {
+                  label: roleFilterLabel(role),
+                })}
                 onClick={cycleRoleFilter}
               >
                 {role === "finding" ? (
@@ -947,10 +980,12 @@ export function Stream() {
           <div
             class="stream__filter-group stream__filter-group--outcome"
             role="group"
-            aria-label="成否"
+            aria-label={t("stream.outcome.label")}
           >
-            <span class="stream__filter-group-label">成否</span>
-            <IconTip align="start" label="成否 · クリックで すべて ↔ 未検">
+            <span class="stream__filter-group-label">
+              {t("stream.outcome.label")}
+            </span>
+            <IconTip align="start" label={t("stream.outcome.tip")}>
               <button
                 type="button"
                 class={`stream__filter-btn stream__filter-btn--chip${
@@ -960,14 +995,20 @@ export function Stream() {
                 }`}
                 data-testid="stream-open-outcome-only"
                 aria-pressed={outcomeOn}
-                aria-label={`成否: ${outcomeOn ? "未検" : "すべて"}`}
+                aria-label={t("stream.outcome.active.label", {
+                  label: outcomeOn
+                    ? t("stream.outcome.open")
+                    : t("stream.filter.all"),
+                })}
                 onClick={() => {
                   openOutcomeOnly.value = !openOutcomeOnly.value;
                 }}
               >
                 {outcomeOn ? <ThoughtOutcomeIcon outcome="open" /> : null}
                 <span class="stream__filter-btn-label">
-                  {outcomeOn ? "未検" : "すべて"}
+                  {outcomeOn
+                    ? t("stream.outcome.open")
+                    : t("stream.filter.all")}
                 </span>
               </button>
             </IconTip>
@@ -975,13 +1016,12 @@ export function Stream() {
           <div
             class="stream__filter-group stream__filter-group--story-when"
             role="group"
-            aria-label="作中時間"
+            aria-label={t("stream.storyWhen.label")}
           >
-            <span class="stream__filter-group-label">作中</span>
-            <IconTip
-              align="start"
-              label="作中 · クリックで すべて → 時あり → 時なし（壁時計の発見時刻ではない）"
-            >
+            <span class="stream__filter-group-label">
+              {t("stream.when.label")}
+            </span>
+            <IconTip align="start" label={t("stream.when.tip")}>
               <button
                 type="button"
                 class={`stream__filter-btn stream__filter-btn--chip${
@@ -993,7 +1033,9 @@ export function Stream() {
                 }`}
                 data-testid="stream-story-when-filter"
                 aria-pressed={when !== "off"}
-                aria-label={`作中: ${storyWhenFilterLabel(when)}`}
+                aria-label={t("stream.when.active.label", {
+                  label: storyWhenFilterLabel(when),
+                })}
                 onClick={cycleStoryWhenFilter}
               >
                 {when === "with" ? (
