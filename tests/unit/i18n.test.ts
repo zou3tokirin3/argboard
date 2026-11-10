@@ -86,7 +86,7 @@ test("Japanese literal detector catches UI forms, allowing comments", () => {
 });
 
 test("extracted surface contains no Japanese UI literals", () => {
-  // Phase 1 slices 1–8. Expand this strict scope with each extraction PR; no file-wide exemptions.
+  // Phase 1 slices 1–9. Expand this strict scope with each extraction PR; no file-wide exemptions.
   for (const path of [
     "ui/image-overlay.tsx",
     "ui/card-image-field.tsx",
@@ -101,6 +101,12 @@ test("extracted surface contains no Japanese UI literals", () => {
     "ui/main.tsx",
     "ui/board.tsx",
     "ui/lane-view.tsx",
+    "ui/stream-sticky-trail.tsx",
+    "ui/media.ts",
+    "ui/image-compress.ts",
+    "ui/media-thumb.tsx",
+    "ui/icon-tip.tsx",
+    "ui/thought-outcome-icon.tsx",
   ]) {
     const source = readFileSync(
       new URL(`../../${path}`, import.meta.url),
@@ -109,4 +115,12 @@ test("extracted surface contains no Japanese UI literals", () => {
     assert.deepEqual(japaneseLiterals(source), [], path);
   }
   // ja.ts is the canonical literal source; tests/fixtures are intentionally outside UI scope.
+});
+
+test("slice9 shared labels and errors preserve exact Japanese wording", () => {
+  assert.equal(t("stream.stickyTrail.label"), "上にスクロールした親");
+  assert.equal(t("media.zip.unreadable"), "zipとして読めません");
+  assert.equal(t("media.zip.compressed"), "圧縮されたzipは未対応です");
+  assert.equal(t("media.zip.missingProject"), "zipに project.json がありません");
+  assert.equal(t("image.compress.error"), "画像を圧縮できませんでした");
 });

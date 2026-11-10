@@ -271,6 +271,11 @@ export const ja = {
   "board.link.endpoints.label": "糸 {from} → {to}",
   "lane.hops": "作中 · {hops}",
   "lane.origin.hint": "「{title}」から糸で届く作中時間つき。配置は覚えません。",
+  "stream.stickyTrail.label": "上にスクロールした親",
+  "media.zip.unreadable": "zipとして読めません",
+  "media.zip.compressed": "圧縮されたzipは未対応です",
+  "media.zip.missingProject": "zipに project.json がありません",
+  "image.compress.error": "画像を圧縮できませんでした",
 } as const;
 
 export type Messages = { [K in keyof typeof ja]: string };
