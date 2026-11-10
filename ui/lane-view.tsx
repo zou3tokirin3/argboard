@@ -1,3 +1,4 @@
+import { t } from "../src/i18n/index.ts";
 import { laneMemberCards } from "./project.ts";
 import {
   clearLaneView,
@@ -24,14 +25,14 @@ export function LaneWorkspace() {
   const origin = current.cards.find((card) => card.id === originId);
   if (!origin) {
     return (
-      <aside class="lane-panel" aria-label="作中で並べる">
-        <p class="lane-empty">起点カードが見つかりません</p>
+      <aside class="lane-panel" aria-label={t("lane.label")}>
+        <p class="lane-empty">{t("lane.origin.missing")}</p>
         <button
           type="button"
           data-testid="story-chrono-clear"
           onClick={() => clearLaneView()}
         >
-          閉じる
+          {t("capture.close.label")}
         </button>
       </aside>
     );
@@ -44,18 +45,18 @@ export function LaneWorkspace() {
   const suspicious = storyOrderSuspicious(members);
 
   return (
-    <aside class="lane-panel" aria-label="作中で並べる">
+    <aside class="lane-panel" aria-label={t("lane.label")}>
       <header class="lane-panel__header">
         <div class="lane-panel__title-row">
-          <h2>作中で並べる</h2>
+          <h2>{t("lane.label")}</h2>
           <div class="lane-panel__hops" aria-live="polite">
-            <span>作中 · {hops}</span>
+            <span>{t("lane.hops", { hops })}</span>
             <button
               type="button"
               class="lane-panel__hop"
               data-testid="story-chrono-shrink"
               disabled={hops <= 1}
-              aria-label="一周戻す"
+              aria-label={t("stream.focus.shrink.label")}
               onClick={() => shrinkStoryHops()}
             >
               −
@@ -64,7 +65,7 @@ export function LaneWorkspace() {
               type="button"
               class="lane-panel__hop"
               data-testid="story-chrono-expand"
-              aria-label="もう一周広げる"
+              aria-label={t("stream.focus.expand.label")}
               onClick={() => expandStoryHops()}
             >
               ＋
@@ -73,21 +74,25 @@ export function LaneWorkspace() {
               type="button"
               class="lane-panel__hop"
               data-testid="story-chrono-clear"
-              aria-label="作中並びをやめる"
+              aria-label={t("lane.clear")}
               onClick={() => clearLaneView()}
             >
               ×
             </button>
           </div>
         </div>
-        <div class="lane-panel__order" role="group" aria-label="作中並びの向き">
+        <div
+          class="lane-panel__order"
+          role="group"
+          aria-label={t("lane.order.label")}
+        >
           <button
             type="button"
             class="lane-panel__order-btn"
             data-testid="story-chrono-order-asc"
-            aria-label="昇順"
+            aria-label={t("lane.order.asc")}
             aria-pressed={order === "asc" ? "true" : "false"}
-            title="昇順"
+            title={t("lane.order.asc")}
             onClick={() => setStoryChronoOrder("asc")}
           >
             ↑
@@ -96,20 +101,20 @@ export function LaneWorkspace() {
             type="button"
             class="lane-panel__order-btn"
             data-testid="story-chrono-order-desc"
-            aria-label="降順"
+            aria-label={t("lane.order.desc")}
             aria-pressed={order === "desc" ? "true" : "false"}
-            title="降順"
+            title={t("lane.order.desc")}
             onClick={() => setStoryChronoOrder("desc")}
           >
             ↓
           </button>
         </div>
         <p class="lane-empty">
-          「{origin.title}」から糸で届く作中時間つき。配置は覚えません。
+          {t("lane.origin.hint", { title: origin.title })}
         </p>
       </header>
       {members.length === 0 ? (
-        <p class="lane-empty">この範囲に作中時間つきカードがありません</p>
+        <p class="lane-empty">{t("lane.empty")}</p>
       ) : (
         <ul class="lane-list">
           {members.map((card, index) => (
@@ -129,7 +134,7 @@ export function LaneWorkspace() {
                 </span>
                 <span class="lane-list__title">{card.title}</span>
                 {suspicious[index] ? (
-                  <span class="lane-flag">順が怪しい</span>
+                  <span class="lane-flag">{t("lane.order.suspicious")}</span>
                 ) : null}
               </button>
             </li>
