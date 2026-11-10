@@ -1,3 +1,5 @@
+import { t } from "../src/i18n/index.ts";
+
 /** Local card image helpers: zip pack/unpack, media ref checks. */
 
 export function isLocalMediaRef(image: string | undefined): boolean {
@@ -149,7 +151,7 @@ export function parseZip(bytes: Uint8Array): ZipEntry[] {
     const sig = view.getUint32(i, true);
     if (sig === 0x02014b50 || sig === 0x06054b50) break;
     if (sig !== 0x04034b50) {
-      throw new Error("zipとして読めません");
+      throw new Error(t("media.zip.unreadable"));
     }
     const method = view.getUint16(i + 8, true);
     const compSize = view.getUint32(i + 18, true);
@@ -159,14 +161,14 @@ export function parseZip(bytes: Uint8Array): ZipEntry[] {
     const name = td.decode(bytes.subarray(nameStart, nameStart + nameLen));
     const dataStart = nameStart + nameLen + extraLen;
     const dataEnd = dataStart + compSize;
-    if (dataEnd > bytes.length) throw new Error("zipとして読めません");
+    if (dataEnd > bytes.length) throw new Error(t("media.zip.unreadable"));
     if (method !== 0) {
-      throw new Error("圧縮されたzipは未対応です");
+      throw new Error(t("media.zip.compressed"));
     }
     entries.push({ name, data: bytes.subarray(dataStart, dataEnd) });
     i = dataEnd;
   }
-  if (entries.length === 0) throw new Error("zipとして読めません");
+  if (entries.length === 0) throw new Error(t("media.zip.unreadable"));
   return entries;
 }
 
@@ -174,7 +176,7 @@ export function projectJsonFromZip(entries: ZipEntry[]): string {
   const hit = entries.find(
     (e) => e.name === "project.json" || e.name.endsWith("/project.json"),
   );
-  if (!hit) throw new Error("zipに project.json がありません");
+  if (!hit) throw new Error(t("media.zip.missingProject"));
   return td.decode(hit.data);
 }
 

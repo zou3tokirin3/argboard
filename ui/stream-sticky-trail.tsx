@@ -1,5 +1,6 @@
 import type { RefObject } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { t } from "../src/i18n/index.ts";
 import { DigShovelIcon } from "./digging-controls.tsx";
 import { cardFoundViaDepth, foundViaAncestorChain } from "./project.ts";
 import { selectCardFromStream } from "./state.ts";
@@ -157,7 +158,7 @@ export function StreamStickyTrail(props: StreamStickyTrailProps) {
     <div
       class="stream__sticky-trail"
       data-testid="stream-sticky-trail"
-      aria-label="上にスクロールした親"
+      aria-label={t("stream.stickyTrail.label")}
     >
       <span class="stream__sticky-trail-mark" aria-hidden="true">
         <DigShovelIcon />

@@ -1,3 +1,5 @@
+import { t } from "../src/i18n/index.ts";
+
 /** Browser-only image resize / encode for card screenshots. */
 
 const MAX_EDGE = 1600;
@@ -18,13 +20,13 @@ export async function compressImage(
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("画像を圧縮できませんでした");
+    if (!ctx) throw new Error(t("image.compress.error"));
     ctx.drawImage(bitmap, 0, 0, w, h);
     const webp = await canvasToBlob(canvas, "image/webp", WEBP_QUALITY);
     if (webp && webp.size > 0) return webp;
     const jpeg = await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
     if (jpeg && jpeg.size > 0) return jpeg;
-    throw new Error("画像を圧縮できませんでした");
+    throw new Error(t("image.compress.error"));
   } finally {
     bitmap.close();
   }
