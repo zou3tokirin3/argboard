@@ -86,7 +86,7 @@ test("Japanese literal detector catches UI forms, allowing comments", () => {
 });
 
 test("extracted surface contains no Japanese UI literals", () => {
-  // Phase 1 slices 1–9. Expand this strict scope with each extraction PR; no file-wide exemptions.
+  // Phase 1 slices 1–10. Expand this strict scope with each extraction PR; no file-wide exemptions.
   for (const path of [
     "ui/image-overlay.tsx",
     "ui/card-image-field.tsx",
@@ -107,6 +107,7 @@ test("extracted surface contains no Japanese UI literals", () => {
     "ui/media-thumb.tsx",
     "ui/icon-tip.tsx",
     "ui/thought-outcome-icon.tsx",
+    "ui/sync-client.ts",
   ]) {
     const source = readFileSync(
       new URL(`../../${path}`, import.meta.url),
@@ -123,4 +124,37 @@ test("slice9 shared labels and errors preserve exact Japanese wording", () => {
   assert.equal(t("media.zip.compressed"), "圧縮されたzipは未対応です");
   assert.equal(t("media.zip.missingProject"), "zipに project.json がありません");
   assert.equal(t("image.compress.error"), "画像を圧縮できませんでした");
+});
+
+test("state Japanese literals are persisted-data exceptions only", () => {
+  // Saved data, not UI wording. Follow up with project.ts history/demo inventory.
+  const source = readFileSync(
+    new URL("../../ui/state.ts", import.meta.url),
+    "utf8",
+  );
+  assert.deepEqual(japaneseLiterals(source), [
+    // The unchanged detector splits prolonged sound marks (ー).
+    "共有ボ",
+    "ド",
+    "新しいケ",
+    "ス",
+    "新しいケ",
+    "ス",
+    "無題",
+    "無題",
+    "取り込み",
+    "取り込み",
+  ]);
+});
+
+test("slice10 sync status and state errors preserve exact Japanese wording", () => {
+  assert.equal(t("sync.status.offline"), "オフライン");
+  assert.equal(t("sync.status.connected"), "接続中");
+  assert.equal(t("sync.status.error"), "同期エラー");
+  assert.equal(
+    t("sync.status.errorDetail", { error: "room full" }),
+    "同期エラー: room full",
+  );
+  assert.equal(t("image.file.notImage"), "画像ファイルを選んでください");
+  assert.equal(t("project.import.error"), "読み込めませんでした");
 });
