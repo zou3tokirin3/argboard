@@ -1,4 +1,5 @@
 import { computed, signal } from "@preact/signals";
+import { t } from "../src/i18n/index.ts";
 import type { ParsedCapture } from "./capture-notation.ts";
 import { store as defaultStore, type Store } from "./db.ts";
 import { compressImage } from "./image-compress.ts";
@@ -670,7 +671,7 @@ function upsertSummary(next: Project): void {
 
 let syncBaseline: Project | null = null;
 let connection: ReturnType<typeof connectRoom> | undefined;
-export const syncStatus = signal("オフライン");
+export const syncStatus = signal(t("sync.status.offline"));
 let clientId = "",
   opCounter = 0;
 const identify = (op: Op) => {
@@ -686,7 +687,7 @@ function saveSynced(next: Project): void {
 function startSync(): void {
   connection?.close();
   connection = undefined;
-  syncStatus.value = "オフライン";
+  syncStatus.value = t("sync.status.offline");
   syncBaseline = project.value ? structuredClone(project.value) : null;
   if (
     project.value?.share &&
@@ -1032,7 +1033,7 @@ export async function addCardWithImage(
   draft?: ParsedCapture,
 ): Promise<string | null> {
   if (!source.type.startsWith("image/")) {
-    throw new Error("画像ファイルを選んでください");
+    throw new Error(t("image.file.notImage"));
   }
   const compressed = await compressImage(source);
   return createCardWithCompressedImage(compressed, draft);
@@ -1044,7 +1045,7 @@ export async function stageExploreImage(
   parsed?: ParsedCapture,
 ): Promise<void> {
   if (!source.type.startsWith("image/")) {
-    throw new Error("画像ファイルを選んでください");
+    throw new Error(t("image.file.notImage"));
   }
   closeExploreCompose();
   const compressed = await compressImage(source);
@@ -1493,7 +1494,7 @@ export async function setCardImage(
   const card = current.cards.find((item) => item.id === cardId);
   if (!card) return;
   if (!source.type.startsWith("image/")) {
-    throw new Error("画像ファイルを選んでください");
+    throw new Error(t("image.file.notImage"));
   }
   const compressed = await compressImage(source);
   const mediaId = crypto.randomUUID();
@@ -1656,7 +1657,7 @@ export function pickAndImportProject(): void {
     const file = input.files?.[0];
     if (!file) return;
     void importProjectFromFile(file).catch((e) =>
-      alert(e instanceof Error ? e.message : "読み込めませんでした"),
+      alert(e instanceof Error ? e.message : t("project.import.error")),
     );
   };
   input.click();

@@ -276,6 +276,12 @@ export const ja = {
   "media.zip.compressed": "圧縮されたzipは未対応です",
   "media.zip.missingProject": "zipに project.json がありません",
   "image.compress.error": "画像を圧縮できませんでした",
+  "sync.status.offline": "オフライン",
+  "sync.status.connected": "接続中",
+  "sync.status.error": "同期エラー",
+  "sync.status.errorDetail": "同期エラー: {error}",
+  "image.file.notImage": "画像ファイルを選んでください",
+  "project.import.error": "読み込めませんでした",
 } as const;
 
 export type Messages = { [K in keyof typeof ja]: string };

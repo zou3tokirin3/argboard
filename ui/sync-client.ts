@@ -1,3 +1,4 @@
+import { t } from "../src/i18n/index.ts";
 import { type OrderedOp, receiveOps, type SyncOp } from "./sync.ts";
 import type { Project } from "./types.ts";
 
@@ -42,7 +43,7 @@ export function connectRoom(
     if (stopped) return;
     clearTimeout(timer);
     ready = false;
-    status("オフライン");
+    status(t("sync.status.offline"));
     if (navigator.onLine === false) return;
     sent = new Set();
     catchup = [];
@@ -62,7 +63,7 @@ export function connectRoom(
           const m = JSON.parse(event.data);
           if (m.t === "error") {
             ready = false;
-            status(`同期エラー: ${m.error}`);
+            status(t("sync.status.errorDetail", { error: m.error }));
             return;
           }
           if (m.t !== "ops" || !Array.isArray(m.ops)) return;
@@ -96,7 +97,7 @@ export function connectRoom(
             catchup = [];
             ready = true;
             delay = 500;
-            status("接続中");
+            status(t("sync.status.connected"));
             flush();
           } else {
             const result = receiveOps(base, read(), m.ops);
@@ -106,14 +107,14 @@ export function connectRoom(
           }
         } catch {
           ready = false;
-          status("同期エラー");
+          status(t("sync.status.error"));
         }
       };
       ws.onerror = () => ws.close();
       ws.onclose = () => {
         if (stopped || socket !== ws) return;
         ready = false;
-        status("オフライン");
+        status(t("sync.status.offline"));
         timer = setTimeout(connect, delay);
         delay = Math.min(delay * 2, 30000);
       };
