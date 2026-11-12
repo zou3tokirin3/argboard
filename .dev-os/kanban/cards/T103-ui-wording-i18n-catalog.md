@@ -4,7 +4,7 @@ title: 画面の文言を型付き辞書に切り出し、日本語のまま差�
 status: review
 owner: Codex
 gate: human
-branch: "task/T103-i18n-slice5"
+branch: "task/T103-i18n-en-lang"
 template_ver: generic-0.2
 created: 2026-11-07
 updated: 2026-11-09
@@ -40,7 +40,7 @@ updated: 2026-11-09
 
 - [ ] ①後、1280/390 のスクショで抽出前と差分がない
 - [ ] 対象（ラベル・ボタン・placeholder・aria-label/title・エラー/トースト・prompt/confirm）が `t()` 経由になり、直書き検出テストが通る
-- [ ] 全ロケールでキーと差し込み変数が一致することをテストで確認でき、欠けたキーは ja にフォールバックする
+- [x] 全ロケールでキーと差し込み変数が一致することをテストで確認でき、欠けたキーは ja にフォールバックする
 - [ ] 保存データ・IndexedDB・event/room op・エクスポートの形が変わっていない（既存テストと smoke が通る）
 - [x] `docs/i18n.md` と AGENTS.md の参照がある
 - [ ] ②後、`?lang=en` で英語、未指定・不正値で日本語になる（1280/390 のスクショ）
@@ -97,6 +97,9 @@ updated: 2026-11-09
 
 - 2026-11-10 coordinator argboard開発 / slice9: 1280/390×4状態のPNG SHA-256 8/8一致（1280は親trail表示、390は内側スクロールなしでtrail非表示を両版で確認）、trail aria・import alert 3種のJSON前後一致。check・unit 151件（失敗0）・build・既存smoke 2件成功。証跡PNGは docs/i18n/media/T103-slice9-*。status review維持、マージは隆さんの別確認待ち。
 
+- 2026-11-12 13:22 JST 隆さん承認「既定名とCASE 017は今のまま残していい」「英語と?langのPRに進んでいい。マージ前に見せて」。phase2実装/PR着手可、マージ前は人間確認。
+- 2026-11-12 Codex writer / phase2: base d80a642c23634274b5d060a0462c8e9fa2c7f6c3、task/T103-i18n-en-lang。en.tsへ全284キーを翻訳（satisfies Messages）。URLのlang=enだけを英語とし、ja/未指定/不正値は日本語。locationなしのNodeも日本語。起動時一度だけ選択し、HTML lang属性へも反映。切替UI・永続化・ブラウザ言語判定・サービス・依存追加なし。全辞書のキー/変数検査・URL境界・英語表現/差し込み・起動時の辞書固定テストを追加し、日本語の既存検査を維持。保存用既定名/CASE 017/作中時間解析/manifest/コメントは変更なし。docsへ手順・フォールバック・残存方針を記載。check・unit全31ファイル（失敗0）・build成功。画面比較スクリプトは構文検査・同一esbuildによる両版ビルド成功、Chromiumはshutdown: Operation not permittedで起動不可。1280/390×5状態のbefore-ja/after-ja/after-ja-explicitのPNG SHA-256完全一致、after-enの表示、既存smokeはcoordinator確認待ち。人間視覚確認のチェックは未完了。status review・gate human・APP_RELEASE 0.85維持、T103はdoneにしない。通信・commit/push/post/merge/login/vault/ob操作なし。引継ぎ: /workspace/argboard-t103-en/writer.md。
+
 ## 差し戻し履歴（追記のみ）
 
 - 2026-11-09 Codex writer / slice5: base e86e0b8、task/T103-i18n-slice5。ui/stream.tsx全体の日本語UIを58キーで抽出し、ファイル全体を直書き検査へ追加。コード差分264行（追加183/削除81、docs/カード除外）。check・unit test全31ファイル・build成功。スクショ比較スクリプトは同じesbuild、固定時計、animations無効、font-smoothing none、1280/390、18状態36組のSHA-256完全一致を要求。Chromiumが shutdown: Operation not permitted で起動不可、PNG比較とsmokeはcoordinator検証待ち。status review・APP_RELEASE 0.85維持、T103全体は未完了。英語/?langなし。残計画と証跡は /workspace/argboard-t103-slice5/writer.md。ネットワーク・commit/push/post/merge/login/vault操作なし。
@@ -109,3 +112,4 @@ updated: 2026-11-09
 - 2026-11-11 coordinator argboard開発 / slice10: 1280/390×5状態（共有状態4種＋画像形式alert）のPNG SHA-256 10/10一致、status/alert JSON前後一致。check・unit 153件（失敗0）・build・既存smoke 2件成功。status review・APP_RELEASE 0.85維持。
 - 2026-11-12 Codex writer / slice11: base c418eb4c34ff0326cd0258e4c0f274b43b8433b6、task/T103-i18n-slice11。ui/project.tsの表示専用リプレイ履歴とJSON importエラーを14キーでt()抽出。文全体の型付き差し込みで原文を維持し、{title}/$&入りタイトルも再解釈しないことを単体検査。保存用初期名・考察・デモ内容は変更せず、既存検出器の30断片をproject専用明示リストで固定。コード差分112行（追加99/削除13、docs/カード/外部スクリプト除外）。check・unit全31ファイル（失敗0、既存view-at/import変更なし）・build・diff --check成功。slice10ベースのscreenshots.mjsは構文検査・両版オフラインビルド成功。全履歴13種とUI filechooser経由のimport alert 2種、1280/390の30組のPNG SHA-256完全一致とlabel/dialog JSON一致を要求。Chromiumは shutdown: Operation not permitted で起動不可、画面比較と既存smokeはcoordinator確認待ち。docsに証跡記入欄、/workspace/argboard-t103-slice11/writer.mdに結果/残計画を記載。保存データ/デモの扱いは隆さんの判断、story-when正規表現は入力解析で対象外、releaseに日本語なし、英語/?langは別PR。status review・T103全体未完了・APP_RELEASE 0.85維持。ネットワーク・commit/push/post/merge/login/vault操作なし。
 - 2026-11-12 coordinator argboard開発 / slice11: 1280/390×15状態（リプレイ履歴13種＋import alert 2種）のPNG SHA-256 30/30一致、replay label/alert JSON前後一致。check・unit 155件（失敗0）・build・既存smoke 2件成功。status review・APP_RELEASE 0.85維持。
+- 2026-11-12 coordinator argboard開発 / phase2: 1280/390×5状態、before-ja対after-jaおよびbefore-ja対after-ja-explicitが全10組SHA-256完全一致。after-enは全組で日本語とハッシュが異なる。代表6枚は docs/i18n/media/T103-en-*、全点は /workspace/argboard-t103-en/screenshots/。check・unit158・build・smoke2成功。status review・APP_RELEASE 0.85維持。マージせず確認待ち。

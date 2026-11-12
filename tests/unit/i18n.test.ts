@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { transformSync } from "esbuild";
-import { createTranslator, t } from "../../src/i18n/index.ts";
+import { en } from "../../src/i18n/en.ts";
+import {
+  createTranslator,
+  langFromSearch,
+  resolveLang,
+  t,
+} from "../../src/i18n/index.ts";
 import { ja } from "../../src/i18n/ja.ts";
 
 const placeholders = (text: string) =>
@@ -16,8 +22,7 @@ function checkCatalog(candidate: Record<string, string>) {
 }
 
 test("all shipped catalogs have the canonical keys and parameters", () => {
-  // Add each future locale here when phase 2 is authorized.
-  for (const catalog of [ja]) checkCatalog(catalog);
+  for (const catalog of [ja, en]) checkCatalog(catalog);
   assert.throws(() => checkCatalog({ ...ja, extra: "extra" }));
   const { "imageOverlay.close.label": _removed, ...missing } = ja;
   assert.throws(() => checkCatalog(missing));
@@ -122,7 +127,10 @@ test("slice9 shared labels and errors preserve exact Japanese wording", () => {
   assert.equal(t("stream.stickyTrail.label"), "上にスクロールした親");
   assert.equal(t("media.zip.unreadable"), "zipとして読めません");
   assert.equal(t("media.zip.compressed"), "圧縮されたzipは未対応です");
-  assert.equal(t("media.zip.missingProject"), "zipに project.json がありません");
+  assert.equal(
+    t("media.zip.missingProject"),
+    "zipに project.json がありません",
+  );
   assert.equal(t("image.compress.error"), "画像を圧縮できませんでした");
 });
 
@@ -220,4 +228,97 @@ test("project Japanese literals are persisted-data and demo exceptions only", ()
     "メインボ",
     "ド",
   ]);
+});
+
+test("URL language selection accepts only ja and en, defaulting to Japanese", () => {
+  for (const [search, expected] of [
+    ["", "ja"],
+    ["?test=1", "ja"],
+    ["?lang=ja", "ja"],
+    ["?lang=en", "en"],
+    ["?test=1&lang=en", "en"],
+    ["?lang=en&test=1", "en"],
+    ["?lang=", "ja"],
+    ["?lang", "ja"],
+    ["?lang=EN", "ja"],
+    ["?lang=en-US", "ja"],
+    ["?lang=foo", "ja"],
+    ["?lang=%20en", "ja"],
+    ["?lang=en+", "ja"],
+    ["?LANG=en", "ja"],
+    ["?other=lang%3Den", "ja"],
+    ["?lang=ja&lang=en", "ja"],
+    ["?lang=en&lang=ja", "en"],
+    ["?lang=%65%6e", "en"],
+  ] as const) {
+    assert.equal(langFromSearch(search), expected, search);
+    assert.equal(resolveLang({ search }), expected, search);
+    if (expected === "ja") {
+      assert.equal(t("stream.label"), "発見ログ");
+    }
+  }
+  assert.equal(resolveLang(), "ja", "Node has no location");
+});
+
+test("English catalog uses glossary wording and literal typed parameters", () => {
+  const translate = createTranslator(
+    resolveLang({ search: "?lang=en" }) === "en" ? en : ja,
+  );
+  assert.equal(translate("stream.label"), "Discovery log");
+  assert.equal(translate("board.label"), "Investigation board");
+  assert.equal(translate("digging.active.label"), "Exploring");
+  assert.equal(translate("cardImage.image.alt"), "Attached screenshot");
+  assert.equal(translate("capture.source.label"), "Source URL");
+  assert.equal(translate("stream.storyWhen.label"), "Story time");
+  assert.equal(translate("inspector.link.eyebrow"), "Thread");
+  assert.equal(translate("stream.role.thought"), "Thought");
+  for (const title of ["<img src=x>", "$& {title}", "", "日本語"]) {
+    assert.equal(
+      translate("imageOverlay.dialog.label", { title }),
+      `Image for ${title}`,
+    );
+    assert.equal(
+      translate("project.history.cardAdded", { title }),
+      `Added · ${title}`,
+    );
+  }
+  assert.equal(
+    translate("capture.digging.depth.label", { count: 3 }),
+    "3 levels",
+  );
+});
+
+test("boot selects the URL catalog once; changing location does not change t", async () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "location");
+  try {
+    let index = 0;
+    for (const [search, expected] of [
+      ["?lang=en", "Discovery log"],
+      ["?lang=ja", "発見ログ"],
+      ["", "発見ログ"],
+      ["?lang=", "発見ログ"],
+      ["?lang=EN", "発見ログ"],
+      ["?lang=en-US", "発見ログ"],
+      ["?lang=foo", "発見ログ"],
+    ]) {
+      Object.defineProperty(globalThis, "location", {
+        configurable: true,
+        value: { search },
+      });
+      const boot = await import(`../../src/i18n/index.ts?boot=${index++}`);
+      assert.equal(boot.t("stream.label"), expected, search);
+      Object.defineProperty(globalThis, "location", {
+        configurable: true,
+        value: { search: "?lang=en" },
+      });
+      assert.equal(
+        boot.t("stream.label"),
+        expected,
+        "catalog is fixed at boot",
+      );
+    }
+  } finally {
+    if (original) Object.defineProperty(globalThis, "location", original);
+    else Reflect.deleteProperty(globalThis, "location");
+  }
 });

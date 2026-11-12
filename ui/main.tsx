@@ -1,7 +1,7 @@
 import { signal } from "@preact/signals";
 import { render } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { t } from "../src/i18n/index.ts";
+import { lang, t } from "../src/i18n/index.ts";
 import { BoardView } from "./board.tsx";
 import { Capture } from "./capture.tsx";
 import { readCaptureDraft } from "./capture-draft.ts";
@@ -928,4 +928,5 @@ if (isTest) {
   }
 }
 
+document.documentElement.lang = lang;
 render(<App />, document.getElementById("app")!);
