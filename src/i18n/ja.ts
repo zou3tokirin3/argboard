@@ -282,6 +282,20 @@ export const ja = {
   "sync.status.errorDetail": "同期エラー: {error}",
   "image.file.notImage": "画像ファイルを選んでください",
   "project.import.error": "読み込めませんでした",
+  "project.history.cardFallback": "カード",
+  "project.history.cardAdded": "追加 · {title}",
+  "project.history.cardUpdated": "編集 · {title}",
+  "project.history.cardRemoved": "削除 · {title}",
+  "project.history.cardPlaced": "配置 · {title}",
+  "project.history.linkAddedContradicts": "糸 · 要検討",
+  "project.history.linkAdded": "糸 · 接続",
+  "project.history.linkLabel": "ラベル · {label}",
+  "project.history.linkMarkedContradicts": "糸 · 要検討に",
+  "project.history.linkMarkedConnects": "糸 · 通常に",
+  "project.history.linkRemoved": "糸 · 削除",
+  "project.history.foundViaCleared": "発見元を外す · {title}",
+  "project.import.invalidJson": "JSONとして読めません",
+  "project.import.unsupported": "未対応の形式か version です",
 } as const;
 
 export type Messages = { [K in keyof typeof ja]: string };
