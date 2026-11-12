@@ -1,13 +1,13 @@
 ---
 id: T103
 title: 画面の文言を型付き辞書に切り出し、日本語のまま差し替え可能にしてから英語を足す
-status: review
+status: done
 owner: Codex
 gate: human
 branch: "task/T103-i18n-en-lang"
 template_ver: generic-0.2
 created: 2026-11-07
-updated: 2026-11-09
+updated: 2026-11-12
 ---
 
 ## 目的
@@ -113,3 +113,4 @@ updated: 2026-11-09
 - 2026-11-12 Codex writer / slice11: base c418eb4c34ff0326cd0258e4c0f274b43b8433b6、task/T103-i18n-slice11。ui/project.tsの表示専用リプレイ履歴とJSON importエラーを14キーでt()抽出。文全体の型付き差し込みで原文を維持し、{title}/$&入りタイトルも再解釈しないことを単体検査。保存用初期名・考察・デモ内容は変更せず、既存検出器の30断片をproject専用明示リストで固定。コード差分112行（追加99/削除13、docs/カード/外部スクリプト除外）。check・unit全31ファイル（失敗0、既存view-at/import変更なし）・build・diff --check成功。slice10ベースのscreenshots.mjsは構文検査・両版オフラインビルド成功。全履歴13種とUI filechooser経由のimport alert 2種、1280/390の30組のPNG SHA-256完全一致とlabel/dialog JSON一致を要求。Chromiumは shutdown: Operation not permitted で起動不可、画面比較と既存smokeはcoordinator確認待ち。docsに証跡記入欄、/workspace/argboard-t103-slice11/writer.mdに結果/残計画を記載。保存データ/デモの扱いは隆さんの判断、story-when正規表現は入力解析で対象外、releaseに日本語なし、英語/?langは別PR。status review・T103全体未完了・APP_RELEASE 0.85維持。ネットワーク・commit/push/post/merge/login/vault操作なし。
 - 2026-11-12 coordinator argboard開発 / slice11: 1280/390×15状態（リプレイ履歴13種＋import alert 2種）のPNG SHA-256 30/30一致、replay label/alert JSON前後一致。check・unit 155件（失敗0）・build・既存smoke 2件成功。status review・APP_RELEASE 0.85維持。
 - 2026-11-12 coordinator argboard開発 / phase2: 1280/390×5状態、before-ja対after-jaおよびbefore-ja対after-ja-explicitが全10組SHA-256完全一致。after-enは全組で日本語とハッシュが異なる。代表6枚は docs/i18n/media/T103-en-*、全点は /workspace/argboard-t103-en/screenshots/。check・unit158・build・smoke2成功。status review・APP_RELEASE 0.85維持。マージせず確認待ち。
+- 2026-11-12 18:46 JST 隆さん承認「argboard #23 はマージしていい」。カード status を done にし、APP_RELEASE を 0.85 から 0.86 へ上げる（マージ時の決まり。確認待ち時点の 0.85 維持を更新）。
