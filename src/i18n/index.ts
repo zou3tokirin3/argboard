@@ -1,3 +1,4 @@
+import { en } from "./en.ts";
 import { ja, type MessageKey, type Messages } from "./ja.ts";
 
 type Placeholders<S extends string> =
@@ -30,5 +31,18 @@ export function createTranslator(
   };
 }
 
-/** Phase 1 always uses Japanese; no language selection or persistence. */
-export const t = createTranslator(ja);
+export type Lang = "ja" | "en";
+
+export function langFromSearch(search: string): Lang {
+  return new URLSearchParams(search).get("lang") === "en" ? "en" : "ja";
+}
+
+/** Read the browser URL once at boot; non-browser callers default to Japanese. */
+export function resolveLang(
+  source = (globalThis as { location?: { search: string } }).location,
+): Lang {
+  return langFromSearch(source?.search ?? "");
+}
+
+export const lang = resolveLang();
+export const t = createTranslator(lang === "en" ? en : ja);
