@@ -86,7 +86,7 @@ test("Japanese literal detector catches UI forms, allowing comments", () => {
 });
 
 test("extracted surface contains no Japanese UI literals", () => {
-  // Phase 1 slices 1–10. Expand this strict scope with each extraction PR; no file-wide exemptions.
+  // Phase 1 slices 1–11. Expand this strict scope with each extraction PR; no file-wide exemptions.
   for (const path of [
     "ui/image-overlay.tsx",
     "ui/card-image-field.tsx",
@@ -157,4 +157,67 @@ test("slice10 sync status and state errors preserve exact Japanese wording", () 
   );
   assert.equal(t("image.file.notImage"), "画像ファイルを選んでください");
   assert.equal(t("project.import.error"), "読み込めませんでした");
+});
+
+test("slice11 project history labels and import errors preserve exact Japanese wording", () => {
+  assert.equal(t("project.history.cardFallback"), "カード");
+  assert.equal(t("project.history.cardAdded", { title: "A" }), "追加 · A");
+  assert.equal(t("project.history.cardUpdated", { title: "A" }), "編集 · A");
+  assert.equal(t("project.history.cardRemoved", { title: "A" }), "削除 · A");
+  assert.equal(t("project.history.cardPlaced", { title: "A" }), "配置 · A");
+  assert.equal(t("project.history.linkAddedContradicts"), "糸 · 要検討");
+  assert.equal(t("project.history.linkAdded"), "糸 · 接続");
+  assert.equal(t("project.history.linkLabel", { label: "A" }), "ラベル · A");
+  assert.equal(t("project.history.linkMarkedContradicts"), "糸 · 要検討に");
+  assert.equal(t("project.history.linkMarkedConnects"), "糸 · 通常に");
+  assert.equal(t("project.history.linkRemoved"), "糸 · 削除");
+  assert.equal(
+    t("project.history.foundViaCleared", { title: "A" }),
+    "発見元を外す · A",
+  );
+  assert.equal(t("project.import.invalidJson"), "JSONとして読めません");
+  assert.equal(t("project.import.unsupported"), "未対応の形式か version です");
+  const title = "{title} / $&";
+  assert.equal(t("project.history.cardAdded", { title }), `追加 · ${title}`);
+});
+
+test("project Japanese literals are persisted-data and demo exceptions only", () => {
+  // Saved data/demo content, not UI wording; follow-up needs 隆さん’s decision.
+  // The unchanged detector splits prolonged sound marks (ー).
+  const source = readFileSync(
+    new URL("../../ui/project.ts", import.meta.url),
+    "utf8",
+  );
+  assert.deepEqual(japaneseLiterals(source), [
+    "新しいケ",
+    "ス",
+    "メインボ",
+    "ド",
+    "考察",
+    "の短波ラジオ",
+    "毎晩同じ時刻に数字列が流れる",
+    "東口ロッカ",
+    "動画の背景に一瞬だけ映り込んだ",
+    "消えた告知ポスタ",
+    "ア",
+    "カイブにはあるが",
+    "現地では剥がされていた",
+    "夜",
+    "は集合時刻ではなく番号",
+    "時刻",
+    "ロッカ",
+    "投稿",
+    "に",
+    "が繰り返し現れる",
+    "終電後の改札音",
+    "短波のあとに聞こえた",
+    "という証言",
+    "日付が曖昧",
+    "夜の放送",
+    "が反復",
+    "日付が合わない",
+    "そのあと",
+    "メインボ",
+    "ド",
+  ]);
 });

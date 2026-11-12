@@ -1,3 +1,4 @@
+import { t } from "../src/i18n/index.ts";
 import { hasStoryWhen } from "./story-when.ts";
 import { normalizeTag } from "./tags.ts";
 import type { Board, Card, Link, Project, ProjectEvent } from "./types.ts";
@@ -366,7 +367,7 @@ function titleForCard(project: Project, cardId: string): string {
       return event.card.title;
     }
   }
-  return "カード";
+  return t("project.history.cardFallback");
 }
 
 function labelForEvent(project: Project, event: ProjectEvent): string | null {
@@ -374,29 +375,37 @@ function labelForEvent(project: Project, event: ProjectEvent): string | null {
     case "project_opened":
       return null;
     case "card_added":
-      return `追加 · ${event.card.title}`;
+      return t("project.history.cardAdded", { title: event.card.title });
     case "card_updated": {
       const title =
         "title" in event && event.title
           ? event.title
           : titleForCard(project, event.cardId);
-      return `編集 · ${title}`;
+      return t("project.history.cardUpdated", { title });
     }
     case "card_removed":
-      return `削除 · ${event.card.title}`;
+      return t("project.history.cardRemoved", { title: event.card.title });
     case "card_placed":
-      return `配置 · ${titleForCard(project, event.cardId)}`;
+      return t("project.history.cardPlaced", {
+        title: titleForCard(project, event.cardId),
+      });
     case "link_added":
-      return event.link.kind === "contradicts" ? "糸 · 要検討" : "糸 · 接続";
+      return event.link.kind === "contradicts"
+        ? t("project.history.linkAddedContradicts")
+        : t("project.history.linkAdded");
     case "link_updated": {
       const tip = event.label?.trim();
-      if (tip) return `ラベル · ${tip}`;
-      return event.kind === "contradicts" ? "糸 · 要検討に" : "糸 · 通常に";
+      if (tip) return t("project.history.linkLabel", { label: tip });
+      return event.kind === "contradicts"
+        ? t("project.history.linkMarkedContradicts")
+        : t("project.history.linkMarkedConnects");
     }
     case "link_removed":
-      return "糸 · 削除";
+      return t("project.history.linkRemoved");
     case "found_via_cleared":
-      return `発見元を外す · ${titleForCard(project, event.cardId)}`;
+      return t("project.history.foundViaCleared", {
+        title: titleForCard(project, event.cardId),
+      });
   }
 }
 
@@ -656,7 +665,7 @@ export function parseProjectJson(text: string): Project {
   try {
     data = JSON.parse(text);
   } catch {
-    throw new Error("JSONとして読めません");
+    throw new Error(t("project.import.invalidJson"));
   }
   const p = data as Partial<Project>;
   if (
@@ -670,7 +679,7 @@ export function parseProjectJson(text: string): Project {
     !Array.isArray(p.links) ||
     !Array.isArray(p.boards)
   )
-    throw new Error("未対応の形式か version です");
+    throw new Error(t("project.import.unsupported"));
   const { share: _, ...project } = data as Project;
   return project;
 }
